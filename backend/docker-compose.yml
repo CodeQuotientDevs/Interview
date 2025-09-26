@@ -1,0 +1,47 @@
+
+services:
+    interview-backend:
+        build: .
+        container_name: interview-backend
+        ports:
+            - "4004:80"
+        env_file:
+            - .env
+            - ${COMPOSE_ENV_FILE:-.docker.env}
+        restart: unless-stopped
+        networks:
+            - interview-network
+        depends_on:
+            - mongo
+            - redis
+        security_opt:
+            - no-new-privileges:true
+        command: ["pnpm", "start"]
+
+    mongo:
+        image: mongo:6.0
+        container_name: interview-mongo
+        restart: unless-stopped
+        volumes:
+            - interview-storage:/data/db
+        networks:
+            - interview-network
+
+    redis:
+        image: redis:7
+        container_name: interview-redis
+        restart: unless-stopped
+        volumes:
+            - redis-data:/data
+            - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+        networks:
+            - interview-network
+
+networks:
+    interview-network:
+        driver: bridge
+
+volumes:
+    redis-data:
+    interview-storage:

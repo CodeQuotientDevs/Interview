@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project documentation
+    url: https://github.com/CodeQuotientHQ/ai-interview-platform/tree/main#readme
+    about: Review the project README for setup instructions and architecture notes.
+  - name: Project discussions
+    url: https://github.com/CodeQuotientHQ/ai-interview-platform/discussions
+    about: Ask open-ended questions or share ideas that are not actionable issues.

@@ -1,0 +1,43 @@
+name: "Feature request"
+description: "Suggest an enhancement or a new capability"
+title: "[Feature]: <short description>"
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea that would make interviews smoother? Let us know. Be as specific as possible so we can scope the work accurately.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Opportunity
+      description: "What user need, pain point, or workflow gap are you trying to solve?"
+      placeholder: "Hiring managers need to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: "Describe the feature, interaction, or change you would like to see."
+      placeholder: "Add a new tab on the candidate profile that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: "Have you tried any workarounds or other ideas?"
+      placeholder: "We currently ask interviewers to ..."
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: "Who benefits from this? How will you measure success?"
+      placeholder: "This will save about 30 minutes per weekly hiring sync because ..."
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: "Screens, mocks, references, or any extra information."

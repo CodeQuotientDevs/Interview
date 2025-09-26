@@ -1,0 +1,35 @@
+name: "Support request"
+description: "Ask for guidance on configuration, usage, or contributing"
+title: "[Support]: <topic>"
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help getting the platform running or understanding a workflow? Share the context below and we will point you in the right direction.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: "Describe the blocking issue or question."
+      placeholder: "I cannot connect the backend to my local Redis because ..."
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried so far?
+      description: "List the steps, commands, or docs you have already followed."
+      placeholder: "1. Updated .env...\n2. Ran pnpm dev..."
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: "Share relevant environment details (branch, OS, tooling versions)."
+      placeholder: "frontend@main on Windows 11, Node 20.11"
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: "Screenshots, logs, repo links, or anything else that would help us respond quickly."
