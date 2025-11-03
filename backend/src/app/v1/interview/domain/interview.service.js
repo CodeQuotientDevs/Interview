@@ -2,6 +2,7 @@ const constants = require('@/constants');
 const { interviewCreationSchema } = require('@/zod/interview');
 const candidateModel = require('@/app/v1/candidate/data-access/candidate.models');
 
+
 module.exports =  class InterviewService {
     /** @type {import('../data-access/interview.repository')} */
     #model
@@ -85,7 +86,7 @@ module.exports =  class InterviewService {
         return this.#model.update(interviewId, updateObj, sessionObj);
     }
 
-    /** @returns {Promise<{ interviews: { created: { today: number }; recentActivity: Record<string, any>[] }; candidateInterviews: { scheduled: number; upcoming: number; concluded: { today: number; overall: number } } }>} */
+    /** @returns {Promise<{ interviews: { created: { today: number } }; interviewSessions: { scheduled: number; upcoming: number; concluded: { today: number; overall: number }; recent: Record<string, any>[] } }>} */
     async getStats() {
        const todayStart = new Date();
        todayStart.setHours(0, 0, 0, 0);
@@ -133,17 +134,30 @@ module.exports =  class InterviewService {
        });
 
        // Get recent active interviews (only the latest version of each)
-       const recentActivity = await this.#model.model.find({ isActive: true }).sort({ createdAt: -1 }).limit(5);
+       const recentSessions = await candidateModel.find(
+           { isActive: true }, 
+           { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1, score: 1 },
+       )
+       .populate({
+            path: 'interview',
+            select: '_id id title duration'
+        })
+        .populate({
+            path: 'user',
+            select: '_id name email'
+        })
+       .sort({ completedAt: -1 })
+       .limit(10);
 
        return {
             interviews: {
-                created: { today: createdToday },
-                recentActivity
+                created: { today: createdToday }
             },
-            candidateInterviews: {
+            interviewSessions: {
                 concluded: { today: concludedToday, overall: concluded },
                 scheduled: scheduledToday,
-                upcoming
+                upcoming,
+                recent: recentSessions
             }
        };
     }

@@ -64,6 +64,22 @@ const schema = Schema({
     }],
 }, {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+schema.virtual('interview', {
+  ref: 'interview',
+  localField: 'interviewId',
+  foreignField: 'id',
+  justOne: true
+});
+
+schema.virtual('user', {
+  ref: 'user',
+  localField: 'userId',
+  foreignField: 'id',
+  justOne: true
 });
 
 schema.index({ externalUserUniquenessKey: 1 }, { background: true, sparse: true });
