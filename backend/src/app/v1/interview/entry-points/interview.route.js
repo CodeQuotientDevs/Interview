@@ -10,6 +10,20 @@ const { interviewCreationSchema } = require('@/zod/interview');
  * @param {{ interviewServices:  import('../domain/interview.service') }} param0 
  */
 function createInterviewRoutes ({ interviewServices }) {
+
+    router.get('/stats', middleware.authMiddleware.checkIfLogin, async (req, res) => {
+        try {
+            const stats = await interviewServices.getStats(req.session);
+            return res.status(200).json(stats);
+        } catch (error) {
+            logger.error({
+                endpoint: req.originalUrl,
+                error: error?.message ?? error,
+            });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
     router.get('/', middleware.authMiddleware.checkIfLogin, async (req, res, next) => {
         try {
             const list = await interviewServices.listInterview(req.session);
