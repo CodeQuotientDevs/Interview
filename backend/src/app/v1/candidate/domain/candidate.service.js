@@ -232,4 +232,151 @@ module.exports = class Candidates {
         });
         return redisPipeline.exec();
     }
+
+    /**
+     * @param {{ daysLimit?: number }} [options]
+     * @returns {Promise<{ date: string; label: string; scheduled: number; concluded: number }[]>}
+    */
+    async getMetrics(options) {
+        const MIN_DAYS_LIMIT = 1;
+        const MAX_DAYS_LIMIT = 400;
+        const daysLimit = Math.max(MIN_DAYS_LIMIT, Math.min(options?.daysLimit ?? 7, MAX_DAYS_LIMIT));
+        
+        // Calculate start date
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - daysLimit);
+        
+        // Create separate aggregations for scheduled and concluded interviews
+        let labelFormat;
+        if (daysLimit === 1) {
+            labelFormat = 'hour';
+        } else if (daysLimit <= 60) {
+            labelFormat = 'date';
+        } else {
+            labelFormat = 'month';
+        }
+
+        // Get scheduled interviews grouped by startTime
+        const scheduledMetrics = await this.#model.model.aggregate([
+            {
+                $match: {
+                    startTime: { $gte: startDate, $lte: endDate },
+                    isActive: true
+                }
+            },
+            {
+                $group: {
+                    _id: labelFormat === 'hour' ? {
+                        year: { $year: "$startTime" },
+                        month: { $month: "$startTime" },
+                        day: { $dayOfMonth: "$startTime" },
+                        hour: { $hour: "$startTime" }
+                    } : labelFormat === 'date' ? {
+                        year: { $year: "$startTime" },
+                        month: { $month: "$startTime" },
+                        day: { $dayOfMonth: "$startTime" }
+                    } : {
+                        year: { $year: "$startTime" },
+                        month: { $month: "$startTime" }
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Get concluded interviews grouped by completedAt
+        const concludedMetrics = await this.#model.model.aggregate([
+            {
+                $match: {
+                    completedAt: { $gte: startDate, $lte: endDate },
+                    isActive: true
+                }
+            },
+            {
+                $group: {
+                    _id: labelFormat === 'hour' ? {
+                        year: { $year: "$completedAt" },
+                        month: { $month: "$completedAt" },
+                        day: { $dayOfMonth: "$completedAt" },
+                        hour: { $hour: "$completedAt" }
+                    } : labelFormat === 'date' ? {
+                        year: { $year: "$completedAt" },
+                        month: { $month: "$completedAt" },
+                        day: { $dayOfMonth: "$completedAt" }
+                    } : {
+                        year: { $year: "$completedAt" },
+                        month: { $month: "$completedAt" }
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Merge the results
+        const metricsMap = new Map();
+        
+        // Add scheduled counts
+        scheduledMetrics.forEach(metric => {
+            const key = JSON.stringify(metric._id);
+            metricsMap.set(key, { 
+                _id: metric._id, 
+                scheduled: metric.count, 
+                concluded: 0 
+            });
+        });
+
+        // Add concluded counts
+        concludedMetrics.forEach(metric => {
+            const key = JSON.stringify(metric._id);
+            const existing = metricsMap.get(key);
+            if (existing) {
+                existing.concluded = metric.count;
+            } else {
+                metricsMap.set(key, { 
+                    _id: metric._id, 
+                    scheduled: 0, 
+                    concluded: metric.count 
+                });
+            }
+        });
+
+        const metrics = Array.from(metricsMap.values()).sort((a, b) => {
+            // Sort by year, month, day, hour
+            if (a._id.year !== b._id.year) return a._id.year - b._id.year;
+            if (a._id.month !== b._id.month) return a._id.month - b._id.month;
+            if (a._id.day !== undefined && b._id.day !== undefined && a._id.day !== b._id.day) return a._id.day - b._id.day;
+            if (a._id.hour !== undefined && b._id.hour !== undefined && a._id.hour !== b._id.hour) return a._id.hour - b._id.hour;
+            return 0;
+        });
+
+        // Format the results with proper labels and dates
+        const formattedMetrics = metrics.map(metric => {
+            let date, label;
+            
+            if (labelFormat === 'hour') {
+                const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day, metric._id.hour);
+                date = dateObj.toISOString();
+                label = `${metric._id.hour.toString().padStart(2, '0')}:00`;
+            } else if (labelFormat === 'date') {
+                const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day);
+                date = dateObj.toISOString();
+                label = `${metric._id.day}/${metric._id.month}`;
+            } else {
+                const dateObj = new Date(metric._id.year, metric._id.month - 1, 1);
+                date = dateObj.toISOString();
+                label = `${metric._id.month}/${metric._id.year}`;
+            }
+
+            return {
+                date,
+                label,
+                scheduled: metric.scheduled,
+                concluded: metric.concluded
+            };
+        });
+
+        return formattedMetrics;
+    }
+
 }

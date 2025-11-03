@@ -15,6 +15,21 @@ const dayjs = require('dayjs');
  */
 function createCandidateRoutes({ interviewServices, candidateServices, userServices, externalService, candidateResponseService }) {
     const router = require('express').Router();
+
+    router.get("/metrics", middleware.authMiddleware.checkIfLogin, async (req, res) => {
+        try {
+            const daysLimit = parseInt(req.query.daysLimit ?? 1);
+            const metrics = await candidateServices.getMetrics({ daysLimit });
+            return res.json(metrics);
+        } catch (error) {
+            logger.error({
+                endpoint: req.originalUrl,
+                error: error?.message ?? error,
+            });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
     router.get('/:id', middleware.authMiddleware.checkIfLogin, async (req, res, next) => {
         const { id } = req.params;
         try {
