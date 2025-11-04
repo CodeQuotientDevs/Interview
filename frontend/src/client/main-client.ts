@@ -4,6 +4,7 @@ import logger from '@/lib/logger';
 import Zod from 'zod';
 import type { Content } from '@google/generative-ai';
 import { candidateInviteSchema, interviewContentSchema } from '@/zod/candidate';
+import { DashboardGraphDataSchema, DashboardSchema } from '@/zod/dashboard';
 
 export default class MainClient {
     private url: string
@@ -154,5 +155,25 @@ export default class MainClient {
     async concludeInterview(interviewId: string, attemptIds?: Array<string>) {
         const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/conclude-interviews/${interviewId}`, { attemptIds }));
         return response.data;
+    }
+    async getDashboardStats() {
+        const response = await this.requestWrapper(this._mainAPI.get('/api/v1/interviews/stats'));
+        const obj = DashboardSchema.safeParse(response.data);
+        if (!obj.success) {
+            throw new Error('Something went wrong');
+        }
+        return obj.data;
+    }
+    async getDashboardGraphdata(daysLimit?: number) {
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/metrics`, {
+            params: {
+                daysLimit
+            }
+        }));
+        const obj = DashboardGraphDataSchema.safeParse(response.data);
+        if (!obj.success) {
+            throw new Error('Something went wrong');
+        }
+        return obj.data;
     }
 }

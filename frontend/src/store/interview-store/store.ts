@@ -11,6 +11,7 @@ import {
 import type { Content } from "@google/generative-ai";
 import { candidateInviteSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
+import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 
 interface MainStoreState {
     sendMessageAi: (id: string, message: string) => Promise<Array<Content>>;
@@ -25,6 +26,8 @@ interface MainStoreState {
     revaluate: (id: string) => Promise<string>
     getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateListSchema._type>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
+    getDashboardStats: () => Promise<typeof DashboardSchema._type>;
+    getDashboardGraphdata: (daysLimit?: number) => Promise<typeof DashboardGraphDataSchema._type>;
 }
 
 
@@ -78,6 +81,14 @@ export const createMainStore = (client: MainApi) => {
         async concludeInterview(interviewId, attemptId) {
             await client.concludeInterview(interviewId, attemptId?[attemptId]: undefined);
         },
+        async getDashboardStats() {
+            const res = await client.getDashboardStats();
+            return res;
+        },
+        async getDashboardGraphdata(daysLimit?: number) {
+            const res = await client.getDashboardGraphdata(daysLimit);
+            return  res;
+        }
 	};
 
 	return create<MainStoreState>()(

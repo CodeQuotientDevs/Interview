@@ -171,6 +171,7 @@ export const interviewCandidateListSchema = Zod.object({
 export const sessionSchema = Zod.object({
 	userId: Zod.string().nonempty().min(1),
 	displayname: Zod.string().nonempty(),
+	email: Zod.string().email(),
 });
 
 export const interviewItemSchema = interviewCreateSchema;

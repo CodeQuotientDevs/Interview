@@ -11,9 +11,12 @@ import { InterviewList } from "./screen/interview-list/interview-list";
 import { ProtectedRoute } from "./components/protected-route";
 import { ErrorPage } from "./screen/error-page";
 import { InterviewCandidateList } from "./screen/interview-candidate-list";
-import { MainScreen } from "./screen/main-screen";
+// import { MainScreen } from "./screen/main-screen";
 import { AppLoader } from "./components/app-loader";
 import { InterviewCreation } from "./screen/interview-creation";
+import { Dashboard } from "./screen/dashboard";
+import Mainlayout from "./components/layout/main-layout";
+import LoginPage from "./screen/login/login";
 
 const Interview = lazy(() => import("./screen/interview/lazy"));
 
@@ -39,46 +42,61 @@ export const Routes = createBrowserRouter(
     createRoutesFromElements(
         <Route
             path="/"
-            element={<MainScreen />}
             errorElement={<ErrorPage statusCode={404} errorMessage="Page not found." />}
         >
-            <Route path="candidates">
-                <Route path=":id" element={
-                    <>
-                        <Suspense fallback={<AppLoader loading={true} children={<></>} />}>
-                            <InterviewPageWrapper />
-                        </Suspense>
-                    </>
-                } />
-            </Route>
-            <Route path="interview" >
-                <Route path="" element= {
+            <Route path="login" element={<LoginPage />}/>
+            <Route path="" element={<Mainlayout />}>
+            <Route index element={ <>
+                        <ProtectedRoute>
+                            <Dashboard/>
+                        </ProtectedRoute>
+                    </> } />
+                <Route path="dashboard" element={
                     <>
                         <ProtectedRoute>
-                            <InterviewList />
+                            <Dashboard/>
                         </ProtectedRoute>
                     </>
-                } />
-                <Route path="candidates/:id" element={
-                    <>
-                        <ProtectedRoute>
-                            <InterviewListPageWrapper />
-                        </ProtectedRoute>
-                    </>
-                } />
-                <Route path="add">
-                    <Route path=":id" element={
+                }>
+                </Route>
+                <Route path="interview" >
+                    <Route path="" element= {
                         <>
                             <ProtectedRoute>
-                                <InterviewCreationPageWrapper />
+                                <InterviewList />
                             </ProtectedRoute>
                         </>
-                    }/>
-                    <Route path="" element={
+                    } />
+                    <Route path="candidates/:id" element={
                         <>
                             <ProtectedRoute>
-                                <InterviewCreationPageWrapper />
+                                <InterviewListPageWrapper />
                             </ProtectedRoute>
+                        </>
+                    } />
+                    <Route path="add">
+                        <Route path=":id" element={
+                            <>
+                                <ProtectedRoute>
+                                    <InterviewCreationPageWrapper />
+                                </ProtectedRoute>
+                            </>
+                        }/>
+                        <Route path="" element={
+                            <>
+                                <ProtectedRoute>
+                                    <InterviewCreationPageWrapper />
+                                </ProtectedRoute>
+                            </>
+                        } />
+                    </Route>
+                </Route>
+                <Route path="candidates">
+                    <Route path=":id" element={
+                        <>
+                            <Suspense fallback={<AppLoader loading={true} children={<></>} />}>
+                                <InterviewPageWrapper />
+                            </Suspense>
                         </>
                     } />
                 </Route>
