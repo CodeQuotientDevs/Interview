@@ -426,7 +426,8 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
             delete attempt.interviewId;
             attempt.interview = {
                 _id: interviewObj._id,
-                title: interviewObj.title
+                title: interviewObj.title,
+                duration: interviewObj.duration
             };
             // const userMap = await userServices.getUserMap(Array.from(usersToGet), {name: 1, email: 1 });
             // const userMapExternal = await externalService.getUsersInMap({_id: Array.from(usersToGetFromExternalService)}, { displayname: 1, email: 1});
