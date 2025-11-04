@@ -28,6 +28,18 @@ export function NavUser() {
   const logoutUser = useAppStore().logout;
   const session = useAppStore().session;
 
+  // Generate initials from display name
+  const getInitials = (name: string | undefined | null): string => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join("");
+  };
+
+  const userInitials = getInitials(session?.displayname);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -38,7 +50,7 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarFallback className="rounded-lg">CQ</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{session?.displayname}</span>
@@ -58,7 +70,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">CQ</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{session?.displayname}</span>

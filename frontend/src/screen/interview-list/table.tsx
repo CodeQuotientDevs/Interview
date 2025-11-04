@@ -11,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -279,16 +279,22 @@ export function InterviewDataTable(props: DataTableInterface) {
                                 }
                                 {!loading && table.getRowModel().rows.length === 0
                                     ? (
-                                        <>
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={columns.length}
-                                                    className="h-24 text-center"
-                                                >
-                                                    No results.
-                                                </TableCell>
-                                            </TableRow>
-                                        </>
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={columns.length}
+                                                className="h-40 text-center"
+                                            >
+                                                <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                                                    <div className="text-muted-foreground">
+                                                        <FileText className="w-8 h-8 mx-auto" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-medium">No interviews yet</p>
+                                                        <p className="text-xs text-muted-foreground">Create your first interview to get started</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
                                     ) : <></>
                                 }
                             </TableBody>

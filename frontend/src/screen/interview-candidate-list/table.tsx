@@ -11,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
+import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus, UsersIcon } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { formatDateTime } from "@/lib/utils";
@@ -503,17 +503,15 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                     <TableRow>
                                         <TableCell
                                             colSpan={columns.length}
-                                            className="h-32 text-center"
+                                            className="h-40 text-center"
                                         >
-                                            <div className="flex flex-col items-center justify-center space-y-3">
+                                            <div className="flex flex-col items-center justify-center space-y-4 py-8">
                                                 <div className="text-muted-foreground">
-                                                    <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.5v15m7.5-7.5h-15" />
-                                                    </svg>
+                                                    <UsersIcon className="w-8 h-8 mx-auto" />
                                                 </div>
-                                                <div>
+                                                <div className="space-y-1">
                                                     <p className="text-sm font-medium">No candidates yet</p>
-                                                    <p className="text-xs text-muted-foreground mt-1">Start by inviting candidates to this interview</p>
+                                                    <p className="text-xs text-muted-foreground">Start by inviting candidates to this interview</p>
                                                 </div>
                                             </div>
                                         </TableCell>

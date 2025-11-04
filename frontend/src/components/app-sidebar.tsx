@@ -1,9 +1,10 @@
 import * as React from "react"
 import {
-  ArrowUpCircleIcon,
+  Home,
+  FileText,
   LayoutDashboardIcon,
-  ListIcon,
 } from "lucide-react"
+import { CodeQuotientIcon, CodeQuotientText } from "@/components/logo"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -27,14 +28,14 @@ const data = {
     {
       title: "Interviews",
       url: "/interview",
-      icon: ListIcon,
+      icon: FileText,
     },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -43,8 +44,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <ArrowUpCircleIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">CodeQuotient</span>
+                <CodeQuotientIcon className="size-5" />
+                <CodeQuotientText className="!w-24" />
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
