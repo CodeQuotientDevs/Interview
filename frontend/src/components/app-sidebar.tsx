@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  Home,
   FileText,
   LayoutDashboardIcon,
 } from "lucide-react"

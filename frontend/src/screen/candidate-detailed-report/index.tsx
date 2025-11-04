@@ -25,21 +25,21 @@ type DetailedReport = {
     }>;
 };
 
-type ReportData = {
-    id: string;
-    name: string;
-    email: string;
-    startTime: Date;
-    endTime?: Date;
-    completedAt: Date;
-    score: number;
-    summaryReport: string;
-    detailedReport?: DetailedReport[];
-    interview?: {
-        id: string;
-        title: string;
-    };
-};
+// type ReportData = {
+//     id: string;
+//     name: string;
+//     email: string;
+//     startTime: Date;
+//     endTime?: Date;
+//     completedAt: Date;
+//     score: number;
+//     summaryReport: string;
+//     detailedReport?: DetailedReport[];
+//     interview?: {
+//         id: string;
+//         title: string;
+//     };
+// };
 
 export function CandidateDetailedReport() {
     const { interviewId, candidateId } = useParams();
