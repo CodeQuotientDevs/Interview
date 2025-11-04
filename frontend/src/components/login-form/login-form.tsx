@@ -58,7 +58,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 			<Form {...form}>
 				<form
 					onSubmit={form.handleSubmit(handleLogin)}
-					className={cn("flex flex-col gap-6", className)}
+					className={cn("flex flex-col gap-8 border border-gray-300 rounded-lg px-10 py-8", className)}
 					{...props}
 				>
 					<div className="flex flex-col items-center gap-2 text-center">
@@ -70,7 +70,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 					<div className="grid gap-6">
 						<div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
 							<span className="bg-background text-muted-foreground relative z-10 px-2">
-								Sign in with
+								continue with
 							</span>
 						</div>
 						<GoogleLogin
@@ -79,6 +79,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 									handleLoginWithGoogle.mutate(credentialResponse.credential);
 								}
 							}}
+							text="continue_with"
 						>
 						</GoogleLogin>
 					</div>
