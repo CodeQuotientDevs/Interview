@@ -11,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCircle, ChevronDown, Download, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
+import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { Button } from "@/components/ui/button"
@@ -211,9 +211,24 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </Button>
                 )
             },
-            cell: ({ row }) => (
-                <div className="font-medium">{row.getValue("name")}</div>
-            ),
+            cell: ({ row }) => {
+                const isCompleted = !!row.original.completedAt;
+                const name = row.getValue("name") as string;
+                
+                if (isCompleted) {
+                    return (
+                        <button
+                            onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
+                            className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left flex items-center gap-2"
+                        >
+                            {name}
+                            <FileText size={14} className="text-blue-500" />
+                        </button>
+                    );
+                }
+                
+                return <div className="font-medium">{name}</div>;
+            },
         },
         {
             accessorKey: "email",
