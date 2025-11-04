@@ -7,6 +7,7 @@ import {
     interviewUpdateSchema,
     interviewListItemSchema,
     interviewCandidateListSchema,
+    interviewCandidateReportSchema,
 }  from "@/zod/interview";
 import type { Content } from "@google/generative-ai";
 import { candidateInviteSchema } from "@/zod/candidate";
@@ -24,7 +25,7 @@ interface MainStoreState {
     getDataForInterview: (id: string) => Promise<{ completedAt?: Date, messages: Array<Content> }>;
     cloneInterview: (id: string) => Promise<string>
     revaluate: (id: string) => Promise<string>
-    getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateListSchema._type>;
+    getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
     getDashboardStats: () => Promise<typeof DashboardSchema._type>;
     getDashboardGraphdata: (daysLimit?: number) => Promise<typeof DashboardGraphDataSchema._type>;

@@ -71,9 +71,10 @@ module.exports =  class InterviewService {
      * 
      * @param { typeof interviewCreationSchema._type } interviewObj
      * @param {Session} sessionObj 
+     * @param {{ timestamps?: boolean }} [options]
      */
-    async createInterview(interviewObj, sessionObj) {
-        return this.#model.create(interviewObj, sessionObj);
+    async createInterview(interviewObj, sessionObj, options) {
+        return this.#model.create(interviewObj, sessionObj, options);
     }
 
     /**

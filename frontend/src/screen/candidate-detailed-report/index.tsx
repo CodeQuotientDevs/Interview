@@ -33,7 +33,7 @@ export function CandidateDetailedReport() {
 
     const getBreadcrumbs = (candidateName?: string) => {
         // TODO: Get interview title from API response when available
-        const interviewTitle = "[Interview Name]"; // Placeholder for now
+        const interviewTitle = reportQuery.data?.interview.title ?? "[Interview Name]"; // Placeholder for now
         return [
             { label: "Interviews", href: "/interview" },
             { label: interviewTitle, href: `/interview/candidates/${interviewId}` },

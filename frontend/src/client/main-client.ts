@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema } from '@/zod/interview';
+import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
 import type { Content } from '@google/generative-ai';
@@ -99,7 +99,7 @@ export default class MainClient {
 
     async getCandidateInterviewAttempt(interviewId: string, attemptId: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/${interviewId}/${attemptId}`));
-        const obj = await interviewCandidateListSchema.safeParse(response.data);
+        const obj = await interviewCandidateReportSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }

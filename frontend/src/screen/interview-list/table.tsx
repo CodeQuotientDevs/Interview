@@ -46,7 +46,12 @@ interface DataTableInterface {
 export function InterviewDataTable(props: DataTableInterface) {
     const alertModels = useAppStore().useAlertModel;
     const { data, loading, cloneInterview } = props;
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([
+        {
+            id: "updatedAt",
+            desc: true
+        }
+    ])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
         []
     )
