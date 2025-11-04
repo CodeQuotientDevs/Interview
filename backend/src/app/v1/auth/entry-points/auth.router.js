@@ -20,6 +20,7 @@ function createAuthRouter({ authService }) {
         }
         obj.displayname = user.name;
         obj.role = user.role;
+        obj.email = user.email;
         obj.loginType = user.loginType;
         obj.orgId = user.orgId;
     }
