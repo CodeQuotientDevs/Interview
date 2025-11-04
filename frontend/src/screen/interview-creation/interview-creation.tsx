@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TagInput, Tag } from "emblor"
 
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import MultiSelect, { Option } from "@/components/ui/multi-select";
 import { interviewCreateSchema, interviewGetSchema } from "@/zod/interview";
 import { useAppStore, useMainStore } from "@/store"
 import { useNavigate } from "react-router";
-import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, Form } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, Form } from "@/components/ui/form";
 import { useQuery } from "@tanstack/react-query";
 import { AlertType } from "@/constants";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
@@ -58,10 +57,8 @@ export function InterviewCreation(props: CandidatePageProps) {
 	});
 
 	const [loading, setLoading] = useState<boolean>(false);
-	const [keywords, setKeywords] = useState<Tag[]>([]);
 	const [selectedTopics, setSelectedTopics] = useState<Array<string>>([]);
 	const [selectedOptions, setSelectedOptions] = useState<Array<{ label: string, value: string }>>([])
-	const [activeKeyword, setActiveKeyword] = useState<number | null>(null);
 
 	const defaultOptions = useMemo(() => (
 		[
@@ -165,10 +162,6 @@ export function InterviewCreation(props: CandidatePageProps) {
 				});
 				setSelectedOptions(selectedOptions);
 			}
-			if (typedKey === 'keywords' && Array.isArray(value)) {
-				setValue('keywords', value);
-				setKeywords(value.map((value) => ({ id: crypto.randomUUID(), text: value })));
-			}
 			setValue(typedKey, value);
 		});
 	}, [defaultOptionsValueToNameObj, setValue]);
@@ -208,7 +201,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 			<Form
 				{...form}
 			>
-				<form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
+				<form onSubmit={handleSubmit(onSubmit)} className="mx-auto space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card>
 							<CardHeader className="border-b pb-4">
@@ -241,39 +234,6 @@ export function InterviewCreation(props: CandidatePageProps) {
 											<FormLabel>Duration</FormLabel>
 											<FormControl>
 												<Input type="number" placeholder="Title for the interview" {...register("duration", { valueAsNumber: true, required: true })} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</CardContent>
-							<CardContent>
-								<FormField
-									control={control}
-									name="keywords"
-									render={({ field }) => (
-										<FormItem className="flex flex-col items-start">
-											<FormLabel className="text-left">Keywords</FormLabel>
-											<FormDescription className="text-left">
-												The keywords for the interview.
-											</FormDescription>
-											<FormControl className="w-full">
-												<TagInput
-													{...field}
-													activeTagIndex={activeKeyword}
-													setActiveTagIndex={setActiveKeyword}
-													placeholder="Enter keywords (optional)"
-													tags={keywords}
-													className="sm:min-w-[450px]"
-													setTags={(newTags) => {
-														setKeywords(newTags);
-														const valueToSet: Array<string> = [];
-														for (const tag of (newTags as Array<Tag>)) {
-															valueToSet.push(tag.text);
-														}
-														setValue('keywords', valueToSet);
-													}}
-												/>
 											</FormControl>
 											<FormMessage />
 										</FormItem>

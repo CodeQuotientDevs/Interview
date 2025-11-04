@@ -151,14 +151,14 @@ export function ChartAreaInteractive({ data, onRangeChange } : { data: ChartData
 
             <Area
               dataKey="scheduled"
-              type="natural"
+              type="monotone"
               fill="url(#fillScheduled)"
               stroke="var(--color-scheduled)"
               stackId="a"
             />
             <Area
               dataKey="concluded"
-              type="natural"
+              type="monotone"
               fill="url(#fillConcluded)"
               stroke="var(--color-concluded)"
               stackId="a"
