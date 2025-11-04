@@ -163,7 +163,7 @@ export function CandidateDetailedReport() {
                                             </CardTitle>
                                             <CardDescription>
                                                 Interview: {reportData.interview?.title || 'N/A'} • 
-                                                Completed: {new Date(reportData.completedAt).toLocaleDateString()}
+                                                Completed: {reportData.completedAt ? new Date(reportData.completedAt).toLocaleDateString() : 'N/A'}
                                             </CardDescription>
                                         </div>
                                         <div className="text-right">
@@ -181,7 +181,7 @@ export function CandidateDetailedReport() {
                                                 <span className="text-sm font-medium">Performance</span>
                                                 <span className="text-sm text-muted-foreground">{reportData.score}%</span>
                                             </div>
-                                            <Progress value={reportData.score} fillColor={getProgressColor(reportData.score)} className="h-3" />
+                                            <Progress value={reportData.score} fillColor={getProgressColor(reportData.score ?? 0)} className="h-3" />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                                             <div className="text-center">
@@ -199,7 +199,7 @@ export function CandidateDetailedReport() {
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-2xl font-bold text-purple-600">
-                                                    {new Date(reportData.completedAt).toLocaleString()}
+                                                    {reportData.completedAt ? new Date(reportData.completedAt).toLocaleString() : 'N/A'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Completed At</div>
                                             </div>
