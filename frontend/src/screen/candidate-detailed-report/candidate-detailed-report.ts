@@ -1,0 +1,1 @@
+export { CandidateDetailedReport } from './index';

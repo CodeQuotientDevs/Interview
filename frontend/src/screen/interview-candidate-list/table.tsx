@@ -36,20 +36,19 @@ import {
 } from "@/components/ui/table"
 import { interviewCandidateListSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import { useAppStore } from "@/store";
 import { AlertType } from "@/constants";
 // import logger from "@/lib/logger";
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useNavigate } from "react-router";
 
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
     loading: boolean
-    activeReport?: typeof interviewCandidateListSchema._type
     interviewName?: string | "Interview"
-    interviewId?:string
+    interviewId?: string
 
     concludeInterview: (attemptId?: string) => Promise<void>,
     openCandidateDrawer: (value: boolean) => void
@@ -59,16 +58,17 @@ interface DataTableInterface {
 }
 export function InterviewCandidateTable(props: DataTableInterface) {
 
-    const { activeReport ,interviewId} = props;
+    const { interviewId } = props;
+    const navigate = useNavigate();
 
     const showAlert = useAppStore().showAlert;
     const alertModel = useAppStore().useAlertModel;
-    const { data, loading, openCandidateDrawer, openBulkUploadDrawer,interviewName } = props;
+    const { data, loading, openCandidateDrawer, openBulkUploadDrawer, interviewName } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({});
-    const [searchParams,setSearchParams] = useSearchParams();
+
    
     // const handleDeleteInvite = React.useCallback((id: string) => {
     //     showAlert({
@@ -316,7 +316,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                     && (
                                         <>
                                             <DropdownMenuItem
-                                                onClick={() => {setSearchParams({userid:row.original.id})}}
+                                                onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
                                             >
                                                 Detailed Report
                                             </DropdownMenuItem>
@@ -368,84 +368,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         },
     });
 
-    React.useEffect(() => {
-        window.addEventListener('click', () => {
-
-        });
-    }, [activeReport]);   
-
     return (
-        <div className={`w-full`}>
-            <Drawer open={!!activeReport} onClose={() => {
-                searchParams.delete('userid')
-                setSearchParams(searchParams)
-            }} >
-                <DrawerContent className="max-h-[80vh] flex flex-col">
-                    <DrawerHeader>
-                        <DrawerTitle>Detailed Report</DrawerTitle>
-                        <DrawerDescription>{activeReport?.name}'s Interview Report </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="w-full h-full max-h-[70vh] overflow-auto" >
-                        <div className="p-8 w-full h-full">
-                            <Accordion className="w-full" type="single" collapsible>
-                                <AccordionItem value={"Summary"}>
-                                    <AccordionTrigger>
-                                        <p>Summary</p>
-                                        <p className="ml-auto pr-2">
-                                            Score: {activeReport?.score}
-                                        </p>
-                                    </AccordionTrigger>
-
-                                    <AccordionContent className="pl-4">
-                                        {activeReport?.summaryReport}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                {(activeReport?.detailedReport ?? []).map((report) => {
-                                    return (
-                                        <>
-                                            <AccordionItem value={report.topic}>
-                                                <AccordionTrigger>
-                                                    <p>{report.topic}</p>
-                                                    <p className="ml-auto pr-2">
-                                                        Score: {report?.score}
-                                                    </p>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="pl-4">
-                                                    {report.detailedReport}
-                                                    <Accordion className="w-full" type="single" collapsible>
-                                                        {report.questionsAsked.map((question, index) => (
-                                                            <div>
-                                                                <AccordionItem value={question.question}>
-                                                                    <AccordionTrigger>{index + 1}. {question.question}
-                                                                        <br />
-                                                                        Score: {question.score}
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent>
-                                                                        <div className="pl-4">
-                                                                            <h4>User Answer:</h4>
-                                                                            <p>{question.userAnswer}</p>
-                                                                            <br />
-                                                                            <h4>Remark:</h4>
-                                                                            <p>{question.remarks}</p>
-                                                                        </div>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            </div>
-                                                        ))}
-                                                    </Accordion>
-
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </>
-                                    )
-                                })}
-                            </Accordion>
-                        </div>
-                    </div>
-
-                </DrawerContent>
-            </Drawer>
-            <div className={`${activeReport ? 'blur-sm' : ''}`}>
+        <div className="w-full">
                 <div className="flex items-center py-4">
                     <TooltipProvider>
                         <Tooltip>
@@ -614,7 +538,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Button>
                     </div>
                 </div>
-            </div>
         </div>
     )
 }

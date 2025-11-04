@@ -12,11 +12,10 @@ import { AlertType } from "@/constants";
 
 interface InterviewCandidateList {
     id: string,
-    activeReportId?: string,
 }
 
 export const InterviewCandidateList = (props: InterviewCandidateList) => {
-    const { id, activeReportId } = props;
+    const { id } = props;
 
     const navigatorR = useNavigate();
     const setAppLoader = useAppStore().setAppLoader;
@@ -25,7 +24,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
 	const showAlert = useAppStore().showAlert;
     const sendCandidateInvite = useMainStore().sendInterviewCandidate
     const getInterviewCandidate = useMainStore().getInterviewCandidateList;
-    const getCandidateAttempt = useMainStore().getCandidateAttempt;
+
     const concludeInterview = useMainStore().concludeInterview;
 
     const interviewObj = useQuery({
@@ -51,13 +50,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         },
     });
 
-    const activeReport = useQuery({
-        queryKey: ['interview-candidate-data', id, activeReportId],
-        queryFn: () => {
-            return getCandidateAttempt(id, activeReportId!);
-        },
-        enabled: (!!activeReportId && !!id),
-    });
+
 
     const revaluateQuery = useMutation({
         mutationKey: ['revaluate'],
@@ -143,7 +136,8 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
     }, [interviewObj.error, navigatorR, showAlert]);
 
     useEffect(() => {
-        logger.info('Data: ', candidateLists.data);
+        logger.info('Data: ');
+        logger.info(candidateLists.data);
     }, [candidateLists.data]);
 
     useEffect(() => {
@@ -152,21 +146,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         }
     }, [openBulkUpload]);
 
-    useEffect(() => {
-        if (activeReport.error) {
-            showAlert({
-                time: 5,
-                title: 'Unable to get user report',
-                type: AlertType.error,
-                message: activeReport.error?.message,
-            })
-        }
-    }, [activeReport.error, showAlert]);
 
-
-    useEffect(() => {
-        setAppLoader(activeReport.isLoading);
-    }, [activeReport.isLoading, setAppLoader]);
 
     const readBulkUpload = useCallback( async (files: Array<File> | File | null) => {
         const file = Array.isArray(files)?files[0]:files;
@@ -222,7 +202,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                     openCandidateDrawer={setOpenDrawable}
                     data={candidateLists.data ?? []}
                     loading={candidateLists.isLoading}
-                    activeReport={activeReport.data}
+
                     interviewName={interviewObj?.data?.title || "Interview"}
                     interviewId={interviewObj.data?.id}
                     concludeInterview={concludeInterviewMutation.mutateAsync}
