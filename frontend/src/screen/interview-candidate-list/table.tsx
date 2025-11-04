@@ -14,8 +14,8 @@ import {
 import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
+import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -66,7 +66,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({});
 
    
     // const handleDeleteInvite = React.useCallback((id: string) => {
@@ -177,28 +176,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     const columns: ColumnDef<typeof interviewCandidateListSchema._type>[] = React.useMemo(() => [
         {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
-            enableHiding: false,
-        },
-        {
             accessorKey: "name",
             header: ({ column }) => {
                 return (
@@ -219,7 +196,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     return (
                         <button
                             onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
-                            className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left flex items-center gap-2"
+                            className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left flex items-center gap-2 px-4 py-2"
                         >
                             {name}
                             <FileText size={14} className="text-blue-500" />
@@ -227,7 +204,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     );
                 }
                 
-                return <div className="font-medium">{name}</div>;
+                return <div className="px-4 py-2">{name}</div>;
             },
         },
         {
@@ -244,7 +221,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => (
-                <div className="lowercase">{row.getValue("email")}</div>
+                <div className="lowercase px-4 py-2">{row.getValue("email")}</div>
             ),
         },
         {
@@ -262,8 +239,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => {
-                const startTimeString = dayjs(row.original.startTime).format(`YYYY-MM-DD HH:mm:ss`)
-                return <div className="text-center font-medium">{startTimeString}</div>
+                return <div className="text-center">{formatDateTime(row.original.startTime)}</div>
             },
         },
         {
@@ -281,12 +257,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => {
-                const endTime = row.original.endTime;
-                if (!endTime) {
-                    return <></>
-                }
-                const formattedEndTime = dayjs(endTime).format('YYYY-MM-DD HH:mm:ss');
-                return <div className="text-center font-medium">{formattedEndTime}</div>
+                return <div className="text-center">{formatDateTime(row.original.endTime)}</div>
             }
         },
         {
@@ -306,14 +277,14 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             cell: ({ row }) => {
                 const isCompleted = !!row.original.completedAt;
                 if (!isCompleted) {
-                    return <div className="text-center font-medium">Not Completed Yet</div>
+                    return <div className="text-center">Not Completed Yet</div>
                 }
-                return <div className="text-center font-medium">{row.original.score}</div>
+                return <div className="text-center">{row.original.score}</div>
             }
         },
         {
             id: "actions",
-            header: () => <div className="text-center" >Actions</div>,
+            header: () => <div className="text-center"></div>,
             enableHiding: false,
             cell: ({ row }) => {
                 return (
@@ -390,12 +361,10 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
-            rowSelection,
         },
     });
 
@@ -479,8 +448,9 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="rounded-md border mx-4 lg:mx-6">
-                    <Table>
+                <div className="px-4 lg:px-6">
+                    <div className="rounded-md border">
+                        <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
@@ -552,11 +522,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             }
                         </TableBody>
                     </Table>
+                    </div>
                 </div>
                 <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
                     <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                        {table.getFilteredRowModel().rows.length} row(s) selected.
+                        {table.getFilteredRowModel().rows.length} row(s) total.
                     </div>
                     <div className="space-x-2">
                         <Button

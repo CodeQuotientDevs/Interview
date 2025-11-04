@@ -209,7 +209,9 @@ export function InterviewCreation(props: CandidatePageProps) {
 				backTo="/interview"
 			/>
 			<div className="flex flex-1 flex-col">
-				<div className="min-h-screen bg-background text-foreground p-6">
+				<div className="@container/main flex flex-1 flex-col">
+					<div className="flex flex-col py-2">
+						<div className="min-h-screen bg-background text-foreground px-4 lg:px-6">
 					<Form
 				{...form}
 			>
@@ -362,7 +364,8 @@ export function InterviewCreation(props: CandidatePageProps) {
 					</div>
 				</form>
 				</Form>
-
+						</div>
+					</div>
 				</div>
 			</div>
 		</>

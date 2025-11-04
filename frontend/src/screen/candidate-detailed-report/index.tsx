@@ -70,9 +70,13 @@ export function CandidateDetailedReport() {
                     backTo={`/interview/candidates/${interviewId}`}
                 />
                 <div className="flex flex-1 flex-col">
-                    <div className="container mx-auto py-8">
-                        <div className="text-center py-8">
-                            <p>No report data found for this candidate.</p>
+                    <div className="@container/main flex flex-1 flex-col">
+                        <div className="flex flex-col py-2">
+                            <div className="px-4 lg:px-6">
+                                <div className="text-center py-8">
+                                    <p>No report data found for this candidate.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -90,8 +94,8 @@ export function CandidateDetailedReport() {
                 backTo={`/interview/candidates/${interviewId}`}
             />
             <div className="flex flex-1 flex-col">
-                <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                <div className="@container/main flex flex-1 flex-col">
+                    <div className="flex flex-col py-2">
                         <div className="px-4 lg:px-6">
                             <div className="bg-white rounded-lg border p-6">
                 <Accordion className="w-full" type="single" collapsible>

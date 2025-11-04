@@ -14,7 +14,6 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -35,8 +34,7 @@ import {
 import { useNavigate } from "react-router"
 import { interviewListItemSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
-import { ScrollArea } from "@radix-ui/react-scroll-area"
-import dayjs from "dayjs"
+import { formatDateTime } from "@/lib/utils"
 import { useAppStore } from "@/store"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -54,7 +52,6 @@ export function InterviewDataTable(props: DataTableInterface) {
     )
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({});
 
     const navigation = useNavigate();
 
@@ -73,28 +70,6 @@ export function InterviewDataTable(props: DataTableInterface) {
 
     const columns: ColumnDef<typeof interviewListItemSchema._type>[] = React.useMemo(() => [
         {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
-            enableHiding: false,
-        },
-        {
             accessorKey: "title",
             header: ({ column }) => {
                 return (
@@ -111,28 +86,13 @@ export function InterviewDataTable(props: DataTableInterface) {
                 const { id } = row.original;
                 const title = row.getValue("title") as string;
                 return (
-                    <div className="lowercase">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="link"
-                                        onClick={() => {
-                                            navigation(`/interview/candidates/${id}`);
-                                        }}
-                                    >
-                                        {title}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Go to {title}'s candidate list</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                )
-                return <Button variant="link">Link</Button>
-                return <div className="lowercase">{row.getValue("title")}</div>;
+                    <button
+                        onClick={() => navigation(`/interview/candidates/${id}`)}
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left px-4 py-2"
+                    >
+                        {title}
+                    </button>
+                );
             },
         },
         {
@@ -140,7 +100,7 @@ export function InterviewDataTable(props: DataTableInterface) {
             header: () => <div className="text-center">Duration</div>,
             cell: ({ row }) => {
                 const duration = parseFloat(row.getValue("duration"));
-                return <div className="text-center font-medium">{duration} minutes</div>
+                return <div className="text-center">{duration} minutes</div>
             },
         },
         {
@@ -162,21 +122,12 @@ export function InterviewDataTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => {
-                const updatedAtString = dayjs(row.original.updatedAt).format('DD MMM YYYY, hh:mm A');
-                return <div className="text-center font-medium">{updatedAtString}</div>
-            }
-        },
-        {
-            accessorKey: "keywords",
-            header: () => <div className="text-center">Keywords</div>,
-            cell: ({ row }) => {
-                const keywords = (row.original.keywords ?? []).join(', ');
-                return <div className="text-ellipsis">{keywords}</div>
+                return <div className="text-center">{formatDateTime(row.original.updatedAt)}</div>
             }
         },
         {
             id: "actions",
-            header: () => <div className="text-center" >Actions</div>,
+            header: () => <div className="text-center"></div>,
             enableHiding: false,
             cell: ({ row }) => {
                 const interview = row.original
@@ -219,28 +170,25 @@ export function InterviewDataTable(props: DataTableInterface) {
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
-            rowSelection,
         },
     })
 
     return (
-        <div className={`w-full`}>
-            <div>
-                <div className="flex items-center py-4">
+        <div className="w-full">
+                <div className="flex items-center py-4 px-4 lg:px-6">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => navigation("/interview/add")} variant="outline" className="mr-2">
-                                    <Plus size={20} />
+                                <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
+                                    <Plus size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Send invite</p>
+                                <p>Create new interview</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -279,10 +227,10 @@ export function InterviewDataTable(props: DataTableInterface) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="rounded-md border">
-                    <ScrollArea className="w-full max-h-[65vh] overflow-y-scroll">
+                <div className="px-4 lg:px-6">
+                    <div className="rounded-md border">
                         <Table>
-                            <TableHeader className="bg-background z-10 shadow-sm">
+                            <TableHeader>
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
                                         {headerGroup.headers.map((header) => {
@@ -346,13 +294,11 @@ export function InterviewDataTable(props: DataTableInterface) {
                             </TableBody>
 
                         </Table>
-                    </ScrollArea>
-
+                    </div>
                 </div>
-                <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
                     <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                        {table.getFilteredRowModel().rows.length} row(s) selected.
+                        {table.getFilteredRowModel().rows.length} row(s) total.
                     </div>
                     <div className="space-x-2">
                         <Button
@@ -373,7 +319,6 @@ export function InterviewDataTable(props: DataTableInterface) {
                         </Button>
                     </div>
                 </div>
-            </div>
         </div>
     )
 }

@@ -45,13 +45,15 @@ export const InterviewList = () => {
         <>
             <SiteHeader title="Interviews" />
             <div className="flex flex-1 flex-col">
-                <div className="container mx-auto p-4 w-full h-full">
-                    <div className=" p-6 w-full h-fit">
-                <InterviewDataTable
-                    data={interviewListFetchResult.data ?? []}
-                    loading={interviewListFetchResult.isLoading}
-                    cloneInterview={cloneHandler}
-                />
+                <div className="@container/main flex flex-1 flex-col">
+                    <div className="flex flex-col py-2">
+                        <div>
+                            <InterviewDataTable
+                                data={interviewListFetchResult.data ?? []}
+                                loading={interviewListFetchResult.isLoading}
+                                cloneInterview={cloneHandler}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
