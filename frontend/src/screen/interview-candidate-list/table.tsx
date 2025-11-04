@@ -11,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus, UsersIcon } from "lucide-react"
+import { UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon, Download, FileText, MailPlus, MoreHorizontal, Upload } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { formatDateTime } from "@/lib/utils";
@@ -42,6 +42,7 @@ import { AlertType } from "@/constants";
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
@@ -66,8 +67,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-
-   
+    const [copyLinkModalOpen, setCopyLinkModalOpen] = React.useState(false);
+    const [copyLinkId, setCopyLinkId] = React.useState("");
     // const handleDeleteInvite = React.useCallback((id: string) => {
     //     showAlert({
     //         time: 10,
@@ -104,6 +105,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         }
 
     }, [showAlert]);
+
+    const handleCopyInterview= (id: string) => {
+        setCopyLinkModalOpen(true);
+        setCopyLinkId(id);
+    } 
 
     const concludeUserInterview = React.useCallback( async (id?: string) => {
         let title = "Are you sure you want to conclude this interview?";
@@ -310,7 +316,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                     Info
                                 </DropdownMenuItem> */}
                                 <DropdownMenuItem
-                                    onClick={() => handleCopyInterviewLink(row.original.id)}
+                                    onClick={() => handleCopyInterview(row.original.id)}
                                 >
                                     Interview Link
                                 </DropdownMenuItem>
@@ -370,6 +376,26 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     return (
         <div className="w-full">
+                <Dialog open={copyLinkModalOpen} onOpenChange={setCopyLinkModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Copy Link</DialogTitle>
+                            <DialogDescription>Copy interview link</DialogDescription>
+                        </DialogHeader>
+                        <div className="flex items-center gap-2">
+                                <div className="grid flex-1 gap-2">
+                                <Input readOnly defaultValue={`${window.location.origin}/candidates/${copyLinkId}`}/>
+                                </div>
+                        </div>
+                        <DialogFooter className="sm:justify-start">
+                            <Button variant="outline" onClick={() => handleCopyInterviewLink(copyLinkId)}> <CopyIcon/> Copy</Button>
+                            <Button variant="outline" onClick={() => {window.open(`${window.location.origin}/candidates/${copyLinkId}`, "_blank", "noopener,noreferrer")}}>
+                                <ArrowUpRightFromSquareIcon/>
+                                Open
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
                 <div className="flex items-center py-4 px-4 lg:px-6">
                     <TooltipProvider>
                         <Tooltip>

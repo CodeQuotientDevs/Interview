@@ -79,7 +79,7 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
 
     return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-auto">
+        <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-auto">
             <DialogHeader>
             <DialogTitle>Invite Candidate</DialogTitle>
             <DialogDescription>Enter candidate details below.</DialogDescription>

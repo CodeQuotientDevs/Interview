@@ -36,6 +36,7 @@ return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
       <DialogContent
         className="max-h-[80vh] flex flex-col sm:max-w-[500px]"
+        onInteractOutside={(event) => event.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>Bulk Upload Candidates</DialogTitle>
