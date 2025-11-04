@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useSearchParams } from "react-router";
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -12,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCheck, ChevronDown, MoreHorizontal, Plus, Save, UploadCloud } from "lucide-react"
+import { ArrowUpDown, CheckCircle, ChevronDown, Download, FileText, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { Button } from "@/components/ui/button"
@@ -36,20 +35,19 @@ import {
 } from "@/components/ui/table"
 import { interviewCandidateListSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import { useAppStore } from "@/store";
 import { AlertType } from "@/constants";
 // import logger from "@/lib/logger";
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useNavigate } from "react-router";
 
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
     loading: boolean
-    activeReport?: typeof interviewCandidateListSchema._type
     interviewName?: string | "Interview"
-    interviewId?:string
+    interviewId?: string
 
     concludeInterview: (attemptId?: string) => Promise<void>,
     openCandidateDrawer: (value: boolean) => void
@@ -59,16 +57,17 @@ interface DataTableInterface {
 }
 export function InterviewCandidateTable(props: DataTableInterface) {
 
-    const { activeReport ,interviewId} = props;
+    const { interviewId } = props;
+    const navigate = useNavigate();
 
     const showAlert = useAppStore().showAlert;
     const alertModel = useAppStore().useAlertModel;
-    const { data, loading, openCandidateDrawer, openBulkUploadDrawer,interviewName } = props;
+    const { data, loading, openCandidateDrawer, openBulkUploadDrawer, interviewName } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({});
-    const [searchParams,setSearchParams] = useSearchParams();
+
    
     // const handleDeleteInvite = React.useCallback((id: string) => {
     //     showAlert({
@@ -200,6 +199,38 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             enableHiding: false,
         },
         {
+            accessorKey: "name",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Name
+                        <ArrowUpDown />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => {
+                const isCompleted = !!row.original.completedAt;
+                const name = row.getValue("name") as string;
+                
+                if (isCompleted) {
+                    return (
+                        <button
+                            onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
+                            className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left flex items-center gap-2"
+                        >
+                            {name}
+                            <FileText size={14} className="text-blue-500" />
+                        </button>
+                    );
+                }
+                
+                return <div className="font-medium">{name}</div>;
+            },
+        },
+        {
             accessorKey: "email",
             header: ({ column }) => {
                 return (
@@ -316,7 +347,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                     && (
                                         <>
                                             <DropdownMenuItem
-                                                onClick={() => {setSearchParams({userid:row.original.id})}}
+                                                onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
                                             >
                                                 Detailed Report
                                             </DropdownMenuItem>
@@ -368,90 +399,14 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         },
     });
 
-    React.useEffect(() => {
-        window.addEventListener('click', () => {
-
-        });
-    }, [activeReport]);   
-
     return (
-        <div className={`w-full`}>
-            <Drawer open={!!activeReport} onClose={() => {
-                searchParams.delete('userid')
-                setSearchParams(searchParams)
-            }} >
-                <DrawerContent className="max-h-[80vh] flex flex-col">
-                    <DrawerHeader>
-                        <DrawerTitle>Detailed Report</DrawerTitle>
-                        <DrawerDescription>{activeReport?.name}'s Interview Report </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="w-full h-full max-h-[70vh] overflow-auto" >
-                        <div className="p-8 w-full h-full">
-                            <Accordion className="w-full" type="single" collapsible>
-                                <AccordionItem value={"Summary"}>
-                                    <AccordionTrigger>
-                                        <p>Summary</p>
-                                        <p className="ml-auto pr-2">
-                                            Score: {activeReport?.score}
-                                        </p>
-                                    </AccordionTrigger>
-
-                                    <AccordionContent className="pl-4">
-                                        {activeReport?.summaryReport}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                {(activeReport?.detailedReport ?? []).map((report) => {
-                                    return (
-                                        <>
-                                            <AccordionItem value={report.topic}>
-                                                <AccordionTrigger>
-                                                    <p>{report.topic}</p>
-                                                    <p className="ml-auto pr-2">
-                                                        Score: {report?.score}
-                                                    </p>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="pl-4">
-                                                    {report.detailedReport}
-                                                    <Accordion className="w-full" type="single" collapsible>
-                                                        {report.questionsAsked.map((question, index) => (
-                                                            <div>
-                                                                <AccordionItem value={question.question}>
-                                                                    <AccordionTrigger>{index + 1}. {question.question}
-                                                                        <br />
-                                                                        Score: {question.score}
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent>
-                                                                        <div className="pl-4">
-                                                                            <h4>User Answer:</h4>
-                                                                            <p>{question.userAnswer}</p>
-                                                                            <br />
-                                                                            <h4>Remark:</h4>
-                                                                            <p>{question.remarks}</p>
-                                                                        </div>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            </div>
-                                                        ))}
-                                                    </Accordion>
-
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </>
-                                    )
-                                })}
-                            </Accordion>
-                        </div>
-                    </div>
-
-                </DrawerContent>
-            </Drawer>
-            <div className={`${activeReport ? 'blur-sm' : ''}`}>
-                <div className="flex items-center py-4">
+        <div className="w-full">
+                <div className="flex items-center py-4 px-4 lg:px-6">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => openCandidateDrawer(true)} variant="outline" className="mr-2">
-                                    <Plus size={20} />
+                                <Button onClick={() => openCandidateDrawer(true)} variant="default" className="mr-2">
+                                    <MailPlus size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -460,8 +415,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => openBulkUploadDrawer(true)} className="mr-2">
-                                    <UploadCloud />
+                                <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
+                                    <Upload size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -470,8 +425,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => concludeUserInterview()} className="mr-2">
-                                    <CheckCheck />
+                                <Button onClick={() => concludeUserInterview()} variant="outline" className="mr-2">
+                                    <CheckCircle size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -480,7 +435,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button className="mr-2" onClick={handleDownload}><Save /></Button>
+                                <Button className="mr-2" variant="outline" onClick={handleDownload}><Download size={16} /></Button>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Download user report</p>
@@ -524,7 +479,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="rounded-md border">
+                <div className="rounded-md border mx-4 lg:mx-6">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -575,22 +530,30 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             }
                             {!loading && table.getRowModel().rows.length === 0
                                 ? (
-                                    <>
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-24 text-center"
-                                            >
-                                                No results.
-                                            </TableCell>
-                                        </TableRow>
-                                    </>
-                                ) : <></>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-32 text-center"
+                                        >
+                                            <div className="flex flex-col items-center justify-center space-y-3">
+                                                <div className="text-muted-foreground">
+                                                    <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.5v15m7.5-7.5h-15" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium">No candidates yet</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">Start by inviting candidates to this interview</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null
                             }
                         </TableBody>
                     </Table>
                 </div>
-                <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
                     <div className="flex-1 text-sm text-muted-foreground">
                         {table.getFilteredSelectedRowModel().rows.length} of{" "}
                         {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -614,7 +577,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Button>
                     </div>
                 </div>
-            </div>
         </div>
     )
 }

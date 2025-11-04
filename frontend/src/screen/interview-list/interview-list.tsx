@@ -4,6 +4,7 @@ import { InterviewDataTable } from './table';
 import { useCallback, useEffect } from 'react';
 import { AlertType } from '@/constants';
 import logger from '@/lib/logger';
+import { SiteHeader } from "@/components/site-header";
 
 export const InterviewList = () => {
     const getListItems = useMainStore().interviewList;
@@ -41,14 +42,19 @@ export const InterviewList = () => {
     }, [interviewListFetchResult.error, showAlert]);
 
     return (
-        <div className="container mx-auto p-4 w-full h-full">
-            <div className=" p-6 w-full h-fit">
+        <>
+            <SiteHeader title="Interviews" />
+            <div className="flex flex-1 flex-col">
+                <div className="container mx-auto p-4 w-full h-full">
+                    <div className=" p-6 w-full h-fit">
                 <InterviewDataTable
                     data={interviewListFetchResult.data ?? []}
                     loading={interviewListFetchResult.isLoading}
                     cloneInterview={cloneHandler}
                 />
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     );
 };

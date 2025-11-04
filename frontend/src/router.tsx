@@ -4,7 +4,6 @@ import {
     Route,
     useParams,
     Navigate,
-    useSearchParams,
 } from "react-router";
 import { lazy, Suspense } from "react";
 import { InterviewList } from "./screen/interview-list/interview-list";
@@ -17,6 +16,7 @@ import { InterviewCreation } from "./screen/interview-creation";
 import { Dashboard } from "./screen/dashboard";
 import Mainlayout from "./components/layout/main-layout";
 import LoginPage from "./screen/login/login";
+import { CandidateDetailedReport } from "./screen/candidate-detailed-report";
 
 const Interview = lazy(() => import("./screen/interview/lazy"));
 
@@ -28,9 +28,7 @@ const InterviewPageWrapper = () => {
 
 const InterviewListPageWrapper = () => {
     const { id } = useParams();
-    const [searchParams] = useSearchParams();
-    const attemptId = searchParams.get('userid') || undefined;
-    return <InterviewCandidateList id={id!} activeReportId={attemptId} />
+    return <InterviewCandidateList id={id!} />
 }
 
 const InterviewCreationPageWrapper = () => {
@@ -71,6 +69,13 @@ export const Routes = createBrowserRouter(
                         <>
                             <ProtectedRoute>
                                 <InterviewListPageWrapper />
+                            </ProtectedRoute>
+                        </>
+                    } />
+                    <Route path="candidates/:interviewId/report/:candidateId" element={
+                        <>
+                            <ProtectedRoute>
+                                <CandidateDetailedReport />
                             </ProtectedRoute>
                         </>
                     } />

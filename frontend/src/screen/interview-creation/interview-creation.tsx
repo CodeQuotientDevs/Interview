@@ -19,6 +19,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectL
 import logger from "@/lib/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SiteHeader } from "@/components/site-header";
 // import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 
 interface CandidatePageProps {
@@ -27,7 +28,7 @@ interface CandidatePageProps {
 
 export function InterviewCreation(props: CandidatePageProps) {
 	const { id } = props;
-	const form = useForm<Zod.infer<typeof interviewCreateSchema>>({
+	const form = useForm<typeof interviewCreateSchema._type>({
 		resolver: zodResolver(interviewCreateSchema),
 		defaultValues: {
 			difficulty: {},
@@ -94,7 +95,8 @@ export function InterviewCreation(props: CandidatePageProps) {
 	}, []);
 
 	const onSubmit = useCallback(async (data: unknown) => {
-		logger.info("Data", data);
+		logger.info("Data");
+		logger.info(data);
 		const parsedData = interviewCreateSchema.safeParse(data);
 		if (parsedData.data?.difficulty) {
 			const totalWeight = Object.values(parsedData.data?.difficulty).reduce((result, current) => result += current.weight, 0);
@@ -197,8 +199,18 @@ export function InterviewCreation(props: CandidatePageProps) {
 	}, [selectedTopics, form]);
 
 	return (
-		<div className="min-h-screen bg-background text-foreground p-6">
-			<Form
+		<>
+			<SiteHeader 
+				breadcrumbs={[
+					{ label: "Interviews", href: "/interview" },
+					{ label: id ? "Edit Interview" : "Create Interview" }
+				]}
+				showBack={true}
+				backTo="/interview"
+			/>
+			<div className="flex flex-1 flex-col">
+				<div className="min-h-screen bg-background text-foreground p-6">
+					<Form
 				{...form}
 			>
 				<form onSubmit={handleSubmit(onSubmit)} className="mx-auto space-y-6">
@@ -349,8 +361,10 @@ export function InterviewCreation(props: CandidatePageProps) {
 						</Button>
 					</div>
 				</form>
-			</Form>
+				</Form>
 
-		</div >
+				</div>
+			</div>
+		</>
 	);
 }
