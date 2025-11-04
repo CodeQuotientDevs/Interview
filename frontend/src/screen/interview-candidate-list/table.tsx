@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useSearchParams } from "react-router";
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -12,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCheck, ChevronDown, MoreHorizontal, Plus, Save, UploadCloud } from "lucide-react"
+import { ArrowUpDown, CheckCircle, ChevronDown, Download, MailPlus, MoreHorizontal, Upload, UserPlus } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { Button } from "@/components/ui/button"
@@ -200,6 +199,23 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             enableHiding: false,
         },
         {
+            accessorKey: "name",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Name
+                        <ArrowUpDown />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => (
+                <div className="font-medium">{row.getValue("name")}</div>
+            ),
+        },
+        {
             accessorKey: "email",
             header: ({ column }) => {
                 return (
@@ -370,12 +386,12 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     return (
         <div className="w-full">
-                <div className="flex items-center py-4">
+                <div className="flex items-center py-4 px-4 lg:px-6">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => openCandidateDrawer(true)} variant="outline" className="mr-2">
-                                    <Plus size={20} />
+                                <Button onClick={() => openCandidateDrawer(true)} variant="default" className="mr-2">
+                                    <MailPlus size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -384,8 +400,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => openBulkUploadDrawer(true)} className="mr-2">
-                                    <UploadCloud />
+                                <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
+                                    <Upload size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -394,8 +410,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={() => concludeUserInterview()} className="mr-2">
-                                    <CheckCheck />
+                                <Button onClick={() => concludeUserInterview()} variant="outline" className="mr-2">
+                                    <CheckCircle size={16} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -404,7 +420,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button className="mr-2" onClick={handleDownload}><Save /></Button>
+                                <Button className="mr-2" variant="outline" onClick={handleDownload}><Download size={16} /></Button>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Download user report</p>
@@ -448,7 +464,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="rounded-md border">
+                <div className="rounded-md border mx-4 lg:mx-6">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -499,22 +515,30 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             }
                             {!loading && table.getRowModel().rows.length === 0
                                 ? (
-                                    <>
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-24 text-center"
-                                            >
-                                                No results.
-                                            </TableCell>
-                                        </TableRow>
-                                    </>
-                                ) : <></>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-32 text-center"
+                                        >
+                                            <div className="flex flex-col items-center justify-center space-y-3">
+                                                <div className="text-muted-foreground">
+                                                    <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.5v15m7.5-7.5h-15" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium">No candidates yet</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">Start by inviting candidates to this interview</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null
                             }
                         </TableBody>
                     </Table>
                 </div>
-                <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
                     <div className="flex-1 text-sm text-muted-foreground">
                         {table.getFilteredSelectedRowModel().rows.length} of{" "}
                         {table.getFilteredRowModel().rows.length} row(s) selected.

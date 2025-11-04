@@ -9,6 +9,7 @@ import logger from "@/lib/logger";
 import { readExcel } from "@/lib/xlsx-reader";
 import { candidateInviteSchema } from "@/zod/candidate";
 import { AlertType } from "@/constants";
+import { SiteHeader } from "@/components/site-header";
 
 interface InterviewCandidateList {
     id: string,
@@ -177,8 +178,19 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
     }, [showAlert]);
 
     return (
-        <div className="container mx-auto p-4 w-full h-full">
-            <CandidateDrawer
+        <>
+            <SiteHeader 
+                breadcrumbs={[
+                    { label: "Interviews", href: "/interview" },
+                    { label: interviewObj?.data?.title || "Interview" },
+                    { label: "Candidates" }
+                ]}
+            />
+            <div className="flex flex-1 flex-col">
+                <div className="@container/main flex flex-1 flex-col gap-2">
+                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        <div>
+                            <CandidateDrawer
                 open={openDrawable}
                 handleSaveData={handleCandidateInvite}
                 setOpenDrawer={setOpenDrawable}
@@ -195,19 +207,20 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                 otherText="Add excel file"
                 onFilesUploaded={readBulkUpload}
             />
-            <div className=" p-6 w-full h-fit">
-                <InterviewCandidateTable
-                    revaluationFunction={revaluateQuery.mutateAsync}
-                    openBulkUploadDrawer={setOpenBulkUpload}
-                    openCandidateDrawer={setOpenDrawable}
-                    data={candidateLists.data ?? []}
-                    loading={candidateLists.isLoading}
-
-                    interviewName={interviewObj?.data?.title || "Interview"}
-                    interviewId={interviewObj.data?.id}
-                    concludeInterview={concludeInterviewMutation.mutateAsync}
-                />
+                            <InterviewCandidateTable
+                                revaluationFunction={revaluateQuery.mutateAsync}
+                                openBulkUploadDrawer={setOpenBulkUpload}
+                                openCandidateDrawer={setOpenDrawable}
+                                data={candidateLists.data ?? []}
+                                loading={candidateLists.isLoading}
+                                interviewName={interviewObj?.data?.title || "Interview"}
+                                interviewId={interviewObj.data?.id}
+                                concludeInterview={concludeInterviewMutation.mutateAsync}
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     )
 }

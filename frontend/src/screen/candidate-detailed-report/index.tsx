@@ -5,6 +5,7 @@ import { Loader } from "@/components/ui/loader";
 import { useAppStore, useMainStore } from "@/store";
 import { AlertType } from "@/constants";
 import { useQuery } from "@tanstack/react-query";
+import { SiteHeader } from "@/components/site-header";
 
 export function CandidateDetailedReport() {
     const { interviewId, candidateId } = useParams();
@@ -30,36 +31,69 @@ export function CandidateDetailedReport() {
         });
     }
 
+    const getBreadcrumbs = (candidateName?: string) => {
+        // TODO: Get interview title from API response when available
+        const interviewTitle = "[Interview Name]"; // Placeholder for now
+        return [
+            { label: "Interviews", href: "/interview" },
+            { label: interviewTitle, href: `/interview/candidates/${interviewId}` },
+            { label: "Candidates", href: `/interview/candidates/${interviewId}` },
+            { label: candidateName ? `${candidateName}'s Report` : "Report" }
+        ];
+    };
+
 
 
     if (reportQuery.isLoading) {
         return (
-            <div className="flex justify-center items-center h-64">
-                <Loader />
-            </div>
+            <>
+                <SiteHeader 
+                    breadcrumbs={getBreadcrumbs()}
+                    showBack={true}
+                    backTo={`/interview/candidates/${interviewId}`}
+                />
+                <div className="flex flex-1 flex-col">
+                    <div className="flex justify-center items-center h-64">
+                        <Loader />
+                    </div>
+                </div>
+            </>
         );
     }
 
     if (!reportQuery.data) {
         return (
-            <div className="container mx-auto py-8">
-                <div className="text-center py-8">
-                    <p>No report data found for this candidate.</p>
+            <>
+                <SiteHeader 
+                    breadcrumbs={getBreadcrumbs()}
+                    showBack={true}
+                    backTo={`/interview/candidates/${interviewId}`}
+                />
+                <div className="flex flex-1 flex-col">
+                    <div className="container mx-auto py-8">
+                        <div className="text-center py-8">
+                            <p>No report data found for this candidate.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     const reportData = reportQuery.data;
 
     return (
-        <div className="container mx-auto py-8">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">Detailed Report</h1>
-                <p className="text-muted-foreground">{reportData.name}'s Interview Report</p>
-            </div>
-
-            <div className="bg-white rounded-lg border p-6">
+        <>
+            <SiteHeader 
+                breadcrumbs={getBreadcrumbs(reportData.name)}
+                showBack={true}
+                backTo={`/interview/candidates/${interviewId}`}
+            />
+            <div className="flex flex-1 flex-col">
+                <div className="@container/main flex flex-1 flex-col gap-2">
+                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        <div className="px-4 lg:px-6">
+                            <div className="bg-white rounded-lg border p-6">
                 <Accordion className="w-full" type="single" collapsible>
                     <AccordionItem value="Summary">
                         <AccordionTrigger>
@@ -115,8 +149,12 @@ export function CandidateDetailedReport() {
                             </AccordionContent>
                         </AccordionItem>
                     ))}
-                </Accordion>
+                                </Accordion>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
