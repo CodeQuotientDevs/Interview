@@ -31,12 +31,12 @@ export default function LoginPage() {
     <div className="grid min-h-[calc(100vh-60px)]">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <a href="https://codequotient.com" className="flex items-center gap-2 font-medium">
+          {/* <a href="https://codequotient.com" className="flex items-center gap-2 font-medium">
             <img
               className="h-[24px]"
               src={CQLogo}
             />
-          </a>
+          </a> */}
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-md flex flex-col gap-8 items-center">

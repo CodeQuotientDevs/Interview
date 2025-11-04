@@ -149,7 +149,7 @@ export const interviewCandidateReportSchema = Zod.intersection(
 	interviewCandidateListSchema,
 	Zod.object({
 		interview: Zod.object({
-			id: Zod.string().nonempty(),
+			_id: Zod.string().nonempty(),
 			title: Zod.string().nonempty(),
 			duration: Zod.number().nonnegative().min(1),
 		})
