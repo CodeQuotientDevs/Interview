@@ -11,6 +11,7 @@ import { useAppStore, useMainStore } from "@/store";
 import { AlertType } from "@/constants";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
 // Type definitions based on Zod schema
 type DetailedReport = {
@@ -218,9 +219,8 @@ export function CandidateDetailedReport() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="prose prose-sm max-w-none">
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            {reportData.summaryReport}
-                                        </p>
+                                        {/* Render summary as Markdown preview so any formatting in AI response shows properly */}
+                                        <MarkdownRenderer type="light">{reportData.summaryReport || ''}</MarkdownRenderer>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -292,11 +292,13 @@ export function CandidateDetailedReport() {
                                                                                     <CheckCircle className="w-3 h-3" />
                                                                                     Candidate's Answer
                                                                                 </h5>
-                                                                                <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                                                                                    <p className="text-sm text-green-800">
-                                                                                        {question.userAnswer || "No answer provided"}
-                                                                                    </p>
-                                                                                </div>
+                                                                                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                                                                                        {question.userAnswer ? (
+                                                                                            <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
+                                                                                        ) : (
+                                                                                            <p className="text-sm text-green-800">No answer provided</p>
+                                                                                        )}
+                                                                                    </div>
                                                                             </div>
                                                                             <div>
                                                                                 <h5 className="text-sm font-medium text-blue-700 mb-2 flex items-center gap-1">
@@ -304,9 +306,11 @@ export function CandidateDetailedReport() {
                                                                                     AI Evaluation & Remarks
                                                                                 </h5>
                                                                                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                                                                                    <p className="text-sm text-blue-800">
-                                                                                        {question.remarks || "No remarks provided"}
-                                                                                    </p>
+                                                                                    {question.remarks ? (
+                                                                                        <MarkdownRenderer type="light">{question.remarks}</MarkdownRenderer>
+                                                                                    ) : (
+                                                                                        <p className="text-sm text-blue-800">No remarks provided</p>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         </div>

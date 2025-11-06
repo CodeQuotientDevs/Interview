@@ -28,7 +28,7 @@ const userReportSchema = {
         },
         summaryReport: {
             type: SchemaType.STRING,
-            description: "Provide brief summery of user report.",
+            description: "Provide brief summery of user report in markdown format.",
             nullable: false,
         },
         detailsDescription: {
