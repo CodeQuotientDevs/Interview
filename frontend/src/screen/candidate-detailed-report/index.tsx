@@ -123,21 +123,21 @@ export function CandidateDetailedReport() {
     // Helper function to get score color
     const getScoreColor = (score: number) => {
         if (score >= 80) return "text-green-600 bg-green-50 border-green-200";
-        if (score >= 60) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+        if (score >= 40) return "text-yellow-600 bg-yellow-50 border-yellow-200";
         return "text-red-600 bg-red-50 border-red-200";
     };
 
     // Helper function to get progress bar color
     const getProgressColor = (score: number) => {
         if (score >= 80) return "bg-green-500";
-        if (score >= 60) return "bg-yellow-500";
+        if (score >= 40) return "bg-yellow-500";
         return "bg-red-500";
     };
 
     // Helper function to get score icon
     const getScoreIcon = (score: number) => {
         if (score >= 80) return <CheckCircle className="w-4 h-4" />;
-        if (score >= 60) return <AlertCircle className="w-4 h-4" />;
+        if (score >= 40) return <AlertCircle className="w-4 h-4" />;
         return <XCircle className="w-4 h-4" />;
     };
 
@@ -280,7 +280,7 @@ export function CandidateDetailedReport() {
                                                                                     {question.question}
                                                                                 </p>
                                                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                                                    Score: {question.score}/100
+                                                                                    Score: {question.score}/10
                                                                                 </p>
                                                                             </div>
                                                                         </div>
