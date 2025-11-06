@@ -235,9 +235,10 @@ module.exports = class Candidates {
 
     /**
      * @param {{ daysLimit?: number }} [options]
+     * @param {string[]} [interviewIds] - Array of accessible interview IDs to filter by
      * @returns {Promise<{ date: string; label: string; scheduled: number; concluded: number }[]>}
     */
-    async getMetrics(options) {
+    async getMetrics(options, interviewIds = []) {
         const MIN_DAYS_LIMIT = 1;
         const MAX_DAYS_LIMIT = 400;
         const daysLimit = Math.max(MIN_DAYS_LIMIT, Math.min(options?.daysLimit ?? 7, MAX_DAYS_LIMIT));
@@ -257,13 +258,21 @@ module.exports = class Candidates {
             labelFormat = 'month';
         }
 
+        // Build match conditions
+        const baseMatch = {
+            startTime: { $gte: startDate, $lte: endDate },
+            isActive: true
+        };
+        
+        // Add interview filter if provided
+        if (interviewIds.length > 0) {
+            baseMatch.interviewId = { $in: interviewIds };
+        }
+
         // Get scheduled interviews grouped by startTime
         const scheduledMetrics = await this.#model.model.aggregate([
             {
-                $match: {
-                    startTime: { $gte: startDate, $lte: endDate },
-                    isActive: true
-                }
+                $match: baseMatch
             },
             {
                 $group: {
@@ -285,13 +294,21 @@ module.exports = class Candidates {
             }
         ]);
 
+        // Build match conditions for concluded interviews
+        const concludedMatch = {
+            completedAt: { $gte: startDate, $lte: endDate },
+            isActive: true
+        };
+        
+        // Add interview filter if provided
+        if (interviewIds.length > 0) {
+            concludedMatch.interviewId = { $in: interviewIds };
+        }
+
         // Get concluded interviews grouped by completedAt
         const concludedMetrics = await this.#model.model.aggregate([
             {
-                $match: {
-                    completedAt: { $gte: startDate, $lte: endDate },
-                    isActive: true
-                }
+                $match: concludedMatch
             },
             {
                 $group: {

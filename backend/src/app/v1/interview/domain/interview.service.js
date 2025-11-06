@@ -87,17 +87,43 @@ module.exports =  class InterviewService {
         return this.#model.update(interviewId, updateObj, sessionObj);
     }
 
-    /** @returns {Promise<{ interviews: { created: { today: number } }; interviewSessions: { scheduled: number; upcoming: number; concluded: { today: number; overall: number }; recent: Record<string, any>[] } }>} */
-    async getStats() {
+    /**
+     * @param {{ userId: string; orgId: string; role: number }} session
+     * @returns {Promise<{ interviews: { created: { today: number } }; interviewSessions: { scheduled: number; upcoming: number; concluded: { today: number; overall: number }; recent: Record<string, any>[] } }>}
+     */
+    async getStats(session) {
        const todayStart = new Date();
        todayStart.setHours(0, 0, 0, 0);
        const todayEnd = new Date();
        todayEnd.setHours(23, 59, 59, 999);
 
+       // Build filter object based on user role
+       const interviewFilter = {
+           isActive: true,
+           $or: [
+               {deletedAt: { $exists: false }},
+               {deletedAt: null}
+           ]
+       };
+       switch(session.role) {
+           case constants.roleNumberFromString.admin: {
+               break;
+           }
+           case constants.roleNumberFromString.subAdmin: {
+               interviewFilter.orgId = session.orgId;
+               break;
+           }
+           default: {
+               interviewFilter.orgId = session.orgId;
+               interviewFilter.createdBy = session.userId;
+           }
+       }
+
        // Count only original interview creations (first version of each interview)
        const createdTodayResult = await this.#model.model.aggregate([
            {
                $match: {
+                   ...interviewFilter,
                    createdAt: { $gte: todayStart, $lt: todayEnd }
                }
            },
@@ -121,22 +147,33 @@ module.exports =  class InterviewService {
        ]);
        const createdToday = createdTodayResult.length > 0 ? createdTodayResult[0].total : 0;
 
+       // Get interview IDs that match the filter for candidate queries
+       const accessibleInterviews = await this.#model.find(interviewFilter, { id: 1 });
+       const interviewIds = accessibleInterviews.map(interview => interview.id);
+
        const scheduledToday = await candidateModel.countDocuments({
+           interviewId: { $in: interviewIds },
            startTime: { $gte: todayStart, $lt: todayEnd }
        });
        const concludedToday = await candidateModel.countDocuments({
+           interviewId: { $in: interviewIds },
            completedAt: { $gte: todayStart, $lt: todayEnd }
        });
-       const concluded = await candidateModel.countDocuments({ 
-           completedAt: { $exists: true, $ne: null } 
+       const concluded = await candidateModel.countDocuments({
+           interviewId: { $in: interviewIds },
+           completedAt: { $exists: true, $ne: null }
        });
-       const upcoming = await candidateModel.countDocuments({ 
-           startTime: { $gt: todayEnd } 
+       const upcoming = await candidateModel.countDocuments({
+           interviewId: { $in: interviewIds },
+           startTime: { $gt: todayEnd }
        });
 
        // Get recent active interviews (only the latest version of each)
        const recentSessions = await candidateModel.find(
-           { isActive: true }, 
+           {
+               interviewId: { $in: interviewIds },
+               isActive: true
+           },
            { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1, score: 1 },
        )
        .populate({

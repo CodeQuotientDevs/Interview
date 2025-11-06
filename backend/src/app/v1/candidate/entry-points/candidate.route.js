@@ -19,7 +19,12 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
     router.get("/metrics", middleware.authMiddleware.checkIfLogin, async (req, res) => {
         try {
             const daysLimit = parseInt(req.query.daysLimit ?? 1);
-            const metrics = await candidateServices.getMetrics({ daysLimit });
+            
+            // Get accessible interviews for the current user
+            const accessibleInterviews = await interviewServices.listInterview(req.session);
+            const interviewIds = accessibleInterviews.map(interview => interview.id);
+            
+            const metrics = await candidateServices.getMetrics({ daysLimit }, interviewIds);
             return res.json(metrics);
         } catch (error) {
             logger.error({
