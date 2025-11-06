@@ -75,7 +75,7 @@ const userReportSchema = {
                                 },
                                 userAnswer: {
                                     type: SchemaType.STRING,
-                                    description: "User answer",
+                                    description: "User answer in markdown format, if plain text then also provide in markdown format",
                                     nullable: false,
                                 },
                                 remarks: {
