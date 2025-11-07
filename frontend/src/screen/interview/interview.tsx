@@ -69,12 +69,11 @@ export const Interview = (props: InterviewProps) => {
     if (interview.error) {
         return (
             <>
-                < Alert className="fixed top-[50%] w-[300px] left-[50%] translate-x-[-50%] translate-y-[-50%] z-10" >
-                    <ShieldCloseIcon className="h-6 w-6" color='red' />
-                    <AlertTitle>Error while getting interview</AlertTitle>
-                    <AlertDescription>
+                <Alert className="fixed top-[50%] left-[50%] w-[300px] -translate-x-1/2 -translate-y-1/2 z-10 flex items-center gap-2">
+                    <ShieldCloseIcon className="h-6 w-6" color="red" />
+                    <AlertTitle className="h-6 content-center mt-1">
                         {interview.error.message}
-                    </AlertDescription>
+                    </AlertTitle>
                 </Alert>
                 <main className={`h-full bg-background text-foreground blur-md pointer-events-none`}>
                     <AiChat

@@ -16,7 +16,7 @@ const candidateCreateSchema = Zod.object({
         }
         return arg;
     }, Zod.date().optional()),
-    yearOfExperience: Zod.number().nonnegative(),
+    yearOfExperience: Zod.number().nonnegative().optional(),
     userSpecificDescription: Zod.string().nonempty(),
 });
 

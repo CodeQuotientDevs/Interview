@@ -17,6 +17,7 @@ import { Dashboard } from "./screen/dashboard";
 import Mainlayout from "./components/layout/main-layout";
 import LoginPage from "./screen/login/login";
 import { CandidateDetailedReport } from "./screen/candidate-detailed-report";
+import { MainScreen } from "./screen/main-screen";
 
 const Interview = lazy(() => import("./screen/interview/lazy"));
 
@@ -42,7 +43,7 @@ export const Routes = createBrowserRouter(
             path="/"
             errorElement={<ErrorPage statusCode={404} errorMessage="Page not found." />}
         >
-            <Route path="candidates">
+            <Route path="candidates" element={<MainScreen/>}>
                 <Route path=":id" element={
                     <>
                         <Suspense fallback={<AppLoader loading={true} children={<></>} />}>

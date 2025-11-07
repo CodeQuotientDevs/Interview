@@ -33,7 +33,6 @@ const schema = Schema({
     },
     yearOfExperience: {
         type: Number,
-        required: true,
     },
     isActive: {
         type: Boolean,

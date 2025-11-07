@@ -24,7 +24,7 @@ export interface CandidateInvite {
     name: string;
     email: string;
     phone?: string;
-    yearOfExperience: number,
+    yearOfExperience?: number,
     startTime: Date,
     endTime?: Date,
     userSpecificDescription: string,
@@ -79,7 +79,7 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
 
     return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
-        <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-auto">
+        <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-[600px]">
             <DialogHeader>
             <DialogTitle>Invite Candidate</DialogTitle>
             <DialogDescription>Enter candidate details below.</DialogDescription>
@@ -144,7 +144,6 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                         type="number"
                         placeholder="Candidate year of experience"
                         {...register("yearOfExperience", {
-                            required: true,
                             max: 50,
                             valueAsNumber: true,
                             min: 0,
@@ -168,18 +167,19 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                             date={field.value}
                             placeHolder="Start Time"
                             setDate={(date) => {
-                            if (date < new Date()) {
-                                showAlert({
-                                time: 4,
-                                title: "Invalid Start Date",
-                                type: AlertType.error,
-                                message:
-                                    "Start Date should be greater than or equal to current time",
-                                });
-                                field.onChange(new Date());
-                                return;
-                            }
-                            field.onChange(date);
+                                const clean = removeSeconds(date);
+                                if (clean && clean < new Date()){
+                                    showAlert({
+                                    time: 4,
+                                    title: "Invalid Start Date",
+                                    type: AlertType.error,
+                                    message:
+                                        "Start Date should be greater than or equal to current time",
+                                    });
+                                    field.onChange(new Date());
+                                    return;
+                                }
+                                field.onChange(clean);
                             }}
                         />
                         </FormControl>
@@ -253,4 +253,12 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     </Dialog>
 
     );
+}
+
+function removeSeconds(date?: Date | string | null) {
+  if (!date) return undefined;
+  const d = new Date(date);
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d;
 }

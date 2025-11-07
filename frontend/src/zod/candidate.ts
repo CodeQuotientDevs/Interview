@@ -4,7 +4,15 @@ const types = {
     name: Zod.string().nonempty(),
     email: Zod.string().nonempty(),
     phone: Zod.string().nonempty(),
-    yearOfExperience: Zod.number().nonnegative(),
+    yearOfExperience: Zod.preprocess(
+    (v) => {
+        if (v === "" || v === null || v === undefined) return undefined;
+        const n = Number(v);
+        if (Number.isNaN(n)) return undefined;
+        return n;
+    },
+    Zod.number().nonnegative().optional()
+),
     startTime: Zod.date(),
     endTime: Zod.date(),
     userSpecificDescription: Zod.string().nonempty(),
@@ -14,7 +22,7 @@ export const candidateInviteSchema = Zod.object({
     name: types.name,
     email: types.email,
     phone: types.phone.optional(),
-    yearOfExperience: types.yearOfExperience,
+    yearOfExperience: types.yearOfExperience.optional(),
     startTime: types.startTime,
     endTime: types.endTime.optional(),
     userSpecificDescription: types.userSpecificDescription,
