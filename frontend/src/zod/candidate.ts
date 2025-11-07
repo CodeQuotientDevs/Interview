@@ -24,7 +24,7 @@ export const candidateInviteSchema = Zod.object({
     phone: types.phone.optional(),
     yearOfExperience: types.yearOfExperience.optional(),
     startTime: types.startTime,
-    endTime: types.endTime.optional(),
+    endTime: Zod.union([types.endTime.optional(), Zod.null()]),
     userSpecificDescription: types.userSpecificDescription,
 });
 

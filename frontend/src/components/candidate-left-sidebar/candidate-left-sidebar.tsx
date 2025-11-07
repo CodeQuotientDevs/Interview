@@ -26,7 +26,7 @@ export interface CandidateInvite {
     phone?: string;
     yearOfExperience?: number,
     startTime: Date,
-    endTime?: Date,
+    endTime?: Date | null,
     userSpecificDescription: string,
 }
 
@@ -45,7 +45,6 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     const showAlert = useAppStore().showAlert;
     const formRef = useRef<HTMLFormElement>(null);
     const form = useForm<CandidateInvite>({
-        defaultValues: defaultValues ?? {},
         resolver: zodResolver(candidateInviteSchema),
     });
 
@@ -65,8 +64,15 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     };
 
     const onClose = useCallback(() => {
-        form.reset();
-        formRef.current?.reset();
+        form.reset({
+            name: "",
+            email: "",
+            phone: "",
+            yearOfExperience: "" as unknown as undefined,
+            startTime: new Date(),
+            endTime: null,
+            userSpecificDescription: "",
+        });
         setOpenDrawer(false);
     }, [setOpenDrawer, form]);
 
@@ -77,10 +83,13 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     }, [onClose, open]);
 
     useEffect(() => {
+        if(!open) {
+            return;
+        }
         if (defaultValues) {
             form.reset(defaultValues);
         }
-    }, [defaultValues, form]);
+    }, [defaultValues, form, open]);
 
     return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
@@ -140,9 +149,9 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                 name="phone"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>Phone (optional)</FormLabel>
                     <FormControl>
-                        <Input type="text" placeholder="Candidate phone (optional)" {...field} />
+                        <Input type="text" placeholder="Candidate phone" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -154,7 +163,7 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                 name="yearOfExperience"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Year of Experience</FormLabel>
+                    <FormLabel>Year of Experience (optional)</FormLabel>
                     <FormControl>
                         <Input
                         type="number"
@@ -209,7 +218,7 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                         <FormLabel>End Time</FormLabel>
                         <FormControl>
                         <DateTimePicker
-                            date={field.value}
+                            date={field.value ?? undefined}
                             placeHolder="End Time (optional)"
                             setDate={(date) => {
                             if (date < new Date()) {

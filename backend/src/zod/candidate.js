@@ -3,18 +3,21 @@ const Zod = require('zod');
 const candidateCreateSchema = Zod.object({
     name: Zod.string().nonempty(),
     email: Zod.string().nonempty(),
-    phone: Zod.string().nonempty().optional(),
+    phone: Zod.string().optional(),
     startTime: Zod.preprocess((arg) => {
         if (typeof arg === 'string' || arg instanceof Date) {
             return new Date(arg);
         }
         return arg;
     }, Zod.date()),
-    endTime: Zod.preprocess((arg) => {
-        if (typeof arg === 'string' || arg instanceof Date) {
-            return new Date(arg);
+    endTime: Zod.preprocess(args => {
+        if (args === null || args === undefined || args === '') {
+            return undefined;
         }
-        return arg;
+        if(typeof args === 'string') {
+            return new Date(args);
+        }
+        return args;
     }, Zod.date().optional()),
     yearOfExperience: Zod.number().nonnegative().optional(),
     userSpecificDescription: Zod.string().nonempty(),
@@ -24,7 +27,15 @@ const candidateUpdateSchema = Zod.object({
     name: Zod.string().nonempty().optional(),
     phone: Zod.string().optional(),
     startTime: Zod.union([Zod.string(), Zod.date()]).optional(),
-    endTime: Zod.union([Zod.string(), Zod.date()]).optional(),
+    endTime: Zod.preprocess(args => {
+        if (args === null || args === undefined || args === '') {
+            return undefined;
+        }
+        if(typeof args === 'string') {
+            return new Date(args);
+        }
+        return args;
+    }, Zod.date().optional()),
     yearOfExperience: Zod.number().nonnegative().optional(),
     userSpecificDescription: Zod.string().nonempty().optional(),
 });

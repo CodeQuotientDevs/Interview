@@ -53,7 +53,7 @@ export default class MainClient {
         }
         const validResponse = interviewGetSchema.safeParse(rowResponse);
         if (!validResponse.success) {
-            logger.error(`Invalid response by the server when getting interview details : `, response.data, validResponse.error);
+            logger.error(`Invalid response by the server when getting interview details : `, response.data as undefined, validResponse.error);
             throw new Error('');
         }
         return validResponse.data;
@@ -82,7 +82,7 @@ export default class MainClient {
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
-        logger.info('Actual Data: ',obj.data);
+        logger.info('Actual Data: ', obj.data);
         return obj.data;
     }
 
