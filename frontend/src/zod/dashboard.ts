@@ -16,8 +16,17 @@ export const DashboardSchema = z.object({
   }),
 });
 
-export const DashboardGraphDataSchema = z.array(z.object({
-  date: z.string(),
-  scheduled: z.number(),
-  concluded: z.number(),
-}));
+export const DashboardGraphDataSchema = z.object({
+  labelFormat: z.object({
+    type: z.enum([ "hour", "date", "month" ]),
+    intlOptions: z.record(z.any()),
+  }),
+  metrics: z.array(
+    z.object({
+      date: z.string(),
+      label: z.string(),
+      scheduled: z.number(),
+      concluded: z.number(),
+    })
+  )
+});

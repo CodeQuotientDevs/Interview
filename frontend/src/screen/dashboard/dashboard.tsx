@@ -11,7 +11,7 @@ import { useState } from "react";
 import { DashboardGraphDataSchema } from "@/zod/dashboard";
 
 type TableData = z.infer<typeof RecentInterviewSchema>;
-type GraphData = z.infer<typeof DashboardGraphDataSchema>;
+type GraphMetricData = z.infer<typeof DashboardGraphDataSchema>["metrics"];
 
 export interface CardData {
     scheduledToday: number;
@@ -45,7 +45,7 @@ export const Dashboard = () => {
   const graphData = useQuery({
     queryFn: async () => {
       const data =  await getDashboardGraphdata(timeRange);
-      const formattedData = generateEmptyGraphData(data, timeRange)
+      const formattedData = fillGraphData(data.labelFormat, data.metrics, timeRange)
       return formattedData;
     },
     queryKey: ['dashboard-graph-data', timeRange],
@@ -88,27 +88,49 @@ export const Dashboard = () => {
   )
 }
 
-const generateEmptyGraphData = (data: GraphData = [], range = 7): GraphData => {
+const formatLabelDate = (labelFormat: { type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, date: Date): string => {
+  try {
+    switch (labelFormat.type) {
+      case "hour":
+      case "date":
+      case "month":
+        return date.toLocaleString(undefined, labelFormat.intlOptions);
+      default:
+        return date.toLocaleString();
+    }
+  } catch {
+    return date.toLocaleDateString();
+  }
+};
+
+const fillGraphData = (labelFormat: { type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, data: GraphMetricData = [], range = 7): GraphMetricData => {
   const today = new Date();
 
-  const normalizedData = data.map(item => ({
-    ...item,
-    date: new Date(item.date).toISOString().slice(0, 10),
-  }));
+  const dateSet = new Set(data.map(item => item.label));
+  const fullData: GraphMetricData = [...data];
 
-  const dateSet = new Set(normalizedData.map(item => item.date));
-  const fullData: GraphData = [...normalizedData];
-
-  for (let i = 0; i < range; i++) {
+  for (let i = 0; i <= range; i++) {
     const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    const dateStr = date.toISOString().slice(0, 10);
+    switch (labelFormat.type) {
+      case "hour":
+        date.setHours(today.getHours() - i);
+        break;
+      case "date":
+        date.setDate(today.getDate() - i);
+        break;
+      case "month":
+        date.setMonth(today.getMonth() - i);
+        break;
+    }
+    console.log({labelFormat, date, formatLabelDate})
+    const label = formatLabelDate(labelFormat, date);
 
-    if (!dateSet.has(dateStr)) {
+    if (!dateSet.has(label)) {
       fullData.push({
-        date: dateStr,
+        date: date.toISOString(),
         scheduled: 0,
         concluded: 0,
+        label,
       });
     }
   }
