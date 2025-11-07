@@ -34,4 +34,13 @@ module.exports = class UserService{
     async getUserById(id) {
         return this.#model.findUserById(id, {});
     }
+
+    /**
+     * 
+     * @param {string} id 
+     * @param {object} updateData 
+     */
+    async updateUserById(id, updateData) {
+        return this.#model.updateUserById(id, updateData);
+    }
 }

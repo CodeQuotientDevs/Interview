@@ -159,8 +159,6 @@ function createInterviewRoutes ({ interviewServices }) {
                     error: 'Not Authorized',
                 });
             }
-            console.log("Previous created at:", interviewObj.createdAt);
-            console.log("Previous updated at:", interviewObj.updatedAt);
             const objToSave = {
                 ...interviewObj,
             }
@@ -168,11 +166,10 @@ function createInterviewRoutes ({ interviewServices }) {
             delete objToSave._id;
             delete objToSave.createdBy;
             delete objToSave.orgId;
-            objToSave.updatedAt = new Date();
+            delete objToSave.createdAt;
+
             objToSave.title = `${interviewObj.title}-clone-${Date.now()}`
-            const clone = await interviewServices.createInterview(objToSave, req.session, { timestamps: false });
-            console.log("New created at:", clone.createdAt);
-            console.log("New updated at:", clone.updatedAt);
+            const clone = await interviewServices.createInterview(objToSave, req.session);
             return res.json({
                 id: clone.id,
             });

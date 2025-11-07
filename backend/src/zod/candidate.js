@@ -20,6 +20,15 @@ const candidateCreateSchema = Zod.object({
     userSpecificDescription: Zod.string().nonempty(),
 });
 
+const candidateUpdateSchema = Zod.object({
+    name: Zod.string().nonempty().optional(),
+    phone: Zod.string().optional(),
+    startTime: Zod.union([Zod.string(), Zod.date()]).optional(),
+    endTime: Zod.union([Zod.string(), Zod.date()]).optional(),
+    yearOfExperience: Zod.number().nonnegative().optional(),
+    userSpecificDescription: Zod.string().nonempty().optional(),
+});
+
 const userReportSchema = Zod.object({
     result: Zod.boolean(),
     summaryReport: Zod.string(),
@@ -57,5 +66,6 @@ const createCandidateFromBackendSchema = Zod.object({
 module.exports = {
     createCandidateFromBackendSchema,
     candidateCreateSchema,
+    candidateUpdateSchema,
     userReportSchema,
 }

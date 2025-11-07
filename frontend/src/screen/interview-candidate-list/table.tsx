@@ -11,7 +11,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon, Download, FileText, MailPlus, MoreHorizontal, Upload } from "lucide-react"
+import { UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon, Download, FileText, MailPlus, MoreHorizontal, Upload, Edit } from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { formatDateTime } from "@/lib/utils";
@@ -54,11 +54,11 @@ interface DataTableInterface {
     openCandidateDrawer: (value: boolean) => void
     openBulkUploadDrawer: (value: boolean) => void,
     revaluationFunction: (id: string) => Promise<void>,
-
+    onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
 }
 export function InterviewCandidateTable(props: DataTableInterface) {
 
-    const { interviewId } = props;
+    const { interviewId, onEditCandidate } = props;
     const navigate = useNavigate();
 
     const showAlert = useAppStore().showAlert;
@@ -304,17 +304,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                {/* <DropdownMenuItem
-                                    onClick={() => handleDeleteInvite(interview.id)}
+                                <DropdownMenuItem
+                                    onClick={() => onEditCandidate?.(row.original)}
                                 >
-                                    Delete
+                                    Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator /> */}
-                                {/* <DropdownMenuItem
-                                    onClick={() => navigation(`/interview/add/${interview.id}`)}
-                                >
-                                    Info
-                                </DropdownMenuItem> */}
                                 <DropdownMenuItem
                                     onClick={() => handleCopyInterview(row.original.id)}
                                 >
@@ -355,7 +349,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
         },
-    ], [concludeUserInterview, handleCopyInterviewLink, handleReEvaluate])
+    ], [concludeUserInterview, handleReEvaluate, interviewId, navigate, onEditCandidate])
 
     const table = useReactTable({
         data,

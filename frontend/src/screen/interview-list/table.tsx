@@ -108,6 +108,22 @@ export function InterviewDataTable(props: DataTableInterface) {
                 return <div className="text-center">{duration} minutes</div>
             },
         },
+        // {
+        //     accessorKey: "firstCreatedAt",
+        //     header: ({ column }) => {
+        //         return (
+        //             <div className="text-center">
+        //                 <Button
+        //                     variant="ghost"
+        //                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        //                 >
+        //                     Created At
+        //                     <ArrowUpDown />
+        //                 </Button>
+        //             </div>
+        //         )
+        //     },
+        // },
         {
             accessorKey: "updatedAt",
             header: ({ column }) => {

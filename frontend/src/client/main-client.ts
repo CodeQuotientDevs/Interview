@@ -115,6 +115,15 @@ export default class MainClient {
         return obj.data;
     }
 
+    async updateInterviewCandidate(interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) {
+        const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/${interviewId}/${candidateId}`, data));
+        const obj = await Zod.object({ id: Zod.string()}).safeParseAsync(response.data);
+        if (!obj.success) {
+            throw new Error('Something went wrong');
+        }
+        return obj.data;
+    }
+
     async cloneInterview(id: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews/clone/${id}`));
         const obj = await Zod.object({ id: Zod.string() }).safeParseAsync(response.data);

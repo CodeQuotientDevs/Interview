@@ -56,12 +56,12 @@ export const interviewListItemSchema = Zod.object({
 	title: Zod.string().nonempty(),
 	keywords: types.keywords.optional(),
 	duration: types.duration,
-	createdAt: Zod.preprocess((arg) => {
+	firstCreatedAt: Zod.preprocess((arg) => {
 		if (typeof arg === 'string' || typeof arg === 'number') {
 			return new Date(arg)
 		}
 		return arg;
-	}, Zod.date()),
+	}, Zod.date()).optional(),
 	updatedAt: Zod.preprocess((arg) => {
 		if (typeof arg === 'string' || typeof arg === 'number') {
 			return new Date(arg)
@@ -152,7 +152,9 @@ export const interviewCandidateReportSchema = Zod.intersection(
 			_id: Zod.string().nonempty(),
 			title: Zod.string().nonempty(),
 			duration: Zod.number().nonnegative().min(1),
-		})
+		}),
+		phone: Zod.string().optional(),
+		yearOfExperience: Zod.number().nonnegative().optional(),
 	})
 );
 

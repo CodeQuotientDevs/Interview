@@ -10,6 +10,7 @@ type Interview = {
     generalDescriptionForAi: string,
     deletedBy: mongoose.Types.ObjectId,
     deletedAt: Date,
+    firstCreatedAt: Date,
     createdBy: string,
     keywords: Array<string>,
     difficulty: Array<{

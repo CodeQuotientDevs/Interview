@@ -35,10 +35,11 @@ interface CandidateSidebarProps {
     defaultValues?: CandidateInvite,
     setOpenDrawer: (value: boolean) => void
     handleSaveData: (data: CandidateInvite) => Promise<void>
+    isEditing?: boolean;
 }
 
 export default function CandidateSidebar(props: CandidateSidebarProps) {
-    const { open, defaultValues, setOpenDrawer, handleSaveData } = props;
+    const { open, defaultValues, setOpenDrawer, handleSaveData, isEditing = false } = props;
     const [loading, setLoading] = useState<boolean>(false);
 
     const showAlert = useAppStore().showAlert;
@@ -48,17 +49,15 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
         resolver: zodResolver(candidateInviteSchema),
     });
 
-    const {
-        register,
-    } = form;
+    // const {
+    //     register,
+    // } = form;
 
     const onSubmit = async (data: CandidateInvite) => {
         try {
             setLoading(true);
             await handleSaveData(data);
-            formRef.current?.reset();
-            form.reset();
-            onClose();
+            // Modal closing is now handled by the parent component
         } catch (error) {
             logger.error(error);
         }
@@ -77,12 +76,18 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
         }
     }, [onClose, open]);
 
+    useEffect(() => {
+        if (defaultValues) {
+            form.reset(defaultValues);
+        }
+    }, [defaultValues, form]);
+
     return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
         <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-[600px]">
             <DialogHeader>
-            <DialogTitle>Invite Candidate</DialogTitle>
-            <DialogDescription>Enter candidate details below.</DialogDescription>
+            <DialogTitle>{isEditing ? 'Edit Candidate' : 'Invite Candidate'}</DialogTitle>
+            <DialogDescription>{isEditing ? 'Update candidate details to create a new invitation.' : 'Enter candidate details below.'}</DialogDescription>
             </DialogHeader>
 
             <Form {...form}>
@@ -112,8 +117,19 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                     <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                        <Input type="email" placeholder="Candidate email" {...field} />
+                        <Input 
+                            type="email" 
+                            placeholder="Candidate email" 
+                            {...field} 
+                            readOnly={isEditing}
+                            className={isEditing ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""}
+                        />
                     </FormControl>
+                    {isEditing && (
+                        <p className="text-sm text-muted-foreground">
+                            Email cannot be changed. To invite a different candidate, add a new candidate instead.
+                        </p>
+                    )}
                     <FormMessage />
                     </FormItem>
                 )}
@@ -136,18 +152,15 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                 <FormField
                 control={form.control}
                 name="yearOfExperience"
-                render={() => (
+                render={({ field }) => (
                     <FormItem>
                     <FormLabel>Year of Experience</FormLabel>
                     <FormControl>
                         <Input
                         type="number"
                         placeholder="Candidate year of experience"
-                        {...register("yearOfExperience", {
-                            max: 50,
-                            valueAsNumber: true,
-                            min: 0,
-                        })}
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                         />
                     </FormControl>
                     <FormMessage />

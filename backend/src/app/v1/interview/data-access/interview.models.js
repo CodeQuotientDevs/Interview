@@ -37,6 +37,10 @@ const schema = Schema({
         type: Number,
         required: true,
     },
+    firstCreatedAt: {
+        type: Date,
+        default: () => new Date(),
+    },
     deletedAt: Date,
     generalDescriptionForAi: String,
     difficulty: {

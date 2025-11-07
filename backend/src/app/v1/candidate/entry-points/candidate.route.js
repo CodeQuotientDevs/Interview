@@ -3,7 +3,7 @@ const middleware = require('@/middleware');
 const redisConstant = require('@/constants/redis');
 const { logger } = require('@libs');
 const { checkPermissionForContentModification } = require('@/libs/utils');
-const { candidateCreateSchema, createCandidateFromBackendSchema } = require('@/zod/candidate');
+const { candidateCreateSchema, createCandidateFromBackendSchema, candidateUpdateSchema } = require('@/zod/candidate');
 const { sendInvite } = require('@/libs/mailer');
 const redis = require('@/libs/redis');
 const InterviewAiModel = require('@/model/interviewModel');
@@ -445,6 +445,7 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
                 const userObj = await userServices.getUserById(attempt.userId);
                 attempt.email = userObj.email;
                 attempt.name = userObj.name;
+                attempt.phone = userObj.phone;
             }
             return res.json(attempt);
         } catch (error) {
@@ -455,6 +456,141 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
             });
             return res.status(500).json({
                 error: 'Internal server error',
+            });
+        }
+    });
+
+    router.patch('/:interviewId/:id', middleware.authMiddleware.checkIfLogin, async (req, res) => {
+        const { interviewId, id } = req.params;
+        try {
+            logger.info(`PATCH request body:`, JSON.stringify(req.body));
+            const payload = await candidateUpdateSchema.safeParseAsync(req.body);
+            if (!payload.success) {
+                logger.error(`Validation failed:`, payload.error);
+                return res.status(400).json({
+                    error: 'Invalid payload',
+                    details: payload.error,
+                });
+            }
+            logger.info(`Validated payload:`, JSON.stringify(payload.data));
+            
+            // Debug: check each field
+            logger.info(`name: ${payload.data.name}, phone: ${payload.data.phone}, yearOfExperience: ${payload.data.yearOfExperience}`);
+
+            const interviewObj = await interviewServices.getInterviewById(interviewId);
+            if (!interviewObj) {
+                return res.status(404).json({
+                    error: 'Interview not found',
+                });
+            }
+
+            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+                return res.status(403).json({
+                    error: 'Not authorized',
+                });
+            }
+
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) {
+                return res.status(404).json({
+                    error: 'Candidate attempt not found',
+                });
+            }
+
+            if (candidateObj.interviewId.toString() !== interviewId) {
+                return res.status(400).json({
+                    error: 'Candidate does not belong to this interview',
+                });
+            }
+
+            // Update user fields (name, phone) in user document
+            if (payload.data.name !== undefined || payload.data.phone !== undefined) {
+                if (candidateObj.externalUser) {
+                    // TODO: Implement external user update if needed
+                    logger.warn(`Attempted to update external user ${candidateObj.userId} - not implemented`);
+                } else {
+                    // Update regular user
+                    const userUpdateData = {};
+                    if (payload.data.name !== undefined) {
+                        userUpdateData.name = payload.data.name;
+                        logger.info(`Setting user name to: ${payload.data.name}`);
+                    }
+                    if (payload.data.phone !== undefined) {
+                        userUpdateData.phone = payload.data.phone;
+                        logger.info(`Setting user phone to: ${payload.data.phone}`);
+                    }
+                    
+                    logger.info(`Checking if user exists: ${candidateObj.userId}`);
+                    const existingUser = await userServices.getUserById(candidateObj.userId);
+                    logger.info(`User exists:`, existingUser ? 'yes' : 'no');
+                    
+                    logger.info(`Updating user ${candidateObj.userId} with data:`, userUpdateData);
+                    const updatedUser = await userServices.updateUserById(candidateObj.userId, { $set: userUpdateData });
+                    logger.info(`User update result:`, updatedUser);
+                }
+            } else {
+                logger.info(`No user fields to update`);
+            }
+
+            // Update candidate fields (yearOfExperience, userSpecificDescription, startTime, endTime) in candidate document
+            const candidateUpdateData = {};
+            if (payload.data.startTime !== undefined) {
+                candidateUpdateData.startTime = typeof payload.data.startTime === 'string' ? new Date(payload.data.startTime) : payload.data.startTime;
+            }
+            if (payload.data.endTime !== undefined) {
+                candidateUpdateData.endTime = typeof payload.data.endTime === 'string' ? new Date(payload.data.endTime) : payload.data.endTime;
+            }
+            if (payload.data.yearOfExperience !== undefined) {
+                candidateUpdateData.yearOfExperience = payload.data.yearOfExperience;
+            }
+            if (payload.data.userSpecificDescription !== undefined) {
+                candidateUpdateData.userSpecificDescription = payload.data.userSpecificDescription;
+            }
+
+            logger.info(`Updating candidate ${id} with data:`, candidateUpdateData);
+            if (Object.keys(candidateUpdateData).length > 0) {
+                const updateResult = await candidateServices.updateOne({ id }, { $set: candidateUpdateData });
+                logger.info(`Candidate update result:`, updateResult);
+            } else {
+                logger.info(`No candidate fields to update`);
+            }
+
+            // Get updated user information for email
+            let userObj;
+            if (candidateObj.externalUser) {
+                userObj = (await externalService.getUsers({ _id: candidateObj.userId.toString() }, { email: 1, displayname: 1 }, {}))?.[0];
+                if (userObj) {
+                    userObj.name = userObj.displayname;
+                }
+            } else {
+                userObj = await userServices.getUserById(candidateObj.userId);
+            }
+
+            // Resend invitation email with updated information
+            if (userObj) {
+                await sendInvite({ 
+                    id: candidateObj.id,
+                    name: userObj.name,
+                    email: userObj.email,
+                    duration: interviewObj.duration,
+                    startDate: candidateUpdateData.startTime || candidateObj.startTime,
+                    endDate: candidateUpdateData.endTime || candidateObj.endTime,
+                });
+                logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);
+            }
+
+            return res.status(200).json({
+                id: candidateObj.id,
+                message: 'Candidate updated successfully'
+            });
+        } catch (error) {
+            logger.error({
+                endpoint: `candidate PATCH /${interviewId}/${id}`,
+                error: error?.message,
+                trace: error?.stack,
+            });
+            return res.status(500).json({
+                error: 'Internal Server Error',
             });
         }
     });

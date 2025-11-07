@@ -7,9 +7,10 @@ import CandidateDrawer, { CandidateInvite } from "@/components/candidate-left-si
 import { FileUploadDrawer } from "@/components/file-upload-drawer"
 import logger from "@/lib/logger";
 import { readExcel } from "@/lib/xlsx-reader";
-import { candidateInviteSchema } from "@/zod/candidate";
+import { interviewCandidateListSchema, interviewCandidateReportSchema } from "@/zod/interview";
 import { AlertType } from "@/constants";
 import { SiteHeader } from "@/components/site-header";
+import { candidateInviteSchema } from "@/zod/candidate";
 
 interface InterviewCandidateList {
     id: string,
@@ -24,7 +25,10 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
     const revaluate = useMainStore().revaluate
 	const showAlert = useAppStore().showAlert;
     const sendCandidateInvite = useMainStore().sendInterviewCandidate
+    const updateCandidateInvite = useMainStore().updateInterviewCandidate
     const getInterviewCandidate = useMainStore().getInterviewCandidateList;
+
+    const getCandidateAttempt = useMainStore().getCandidateAttempt;
 
     const concludeInterview = useMainStore().concludeInterview;
 
@@ -89,12 +93,31 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                 message: error.message,
             });
         }
-    })
+    });
+
+    const getCandidateAttemptQuery = useMutation({
+        mutationFn: (data: { interviewId: string, attemptId: string }) => {
+            return getCandidateAttempt(data.interviewId, data.attemptId);
+        },
+        onSuccess: (data) => {
+            setEditingCandidate(data);
+            setOpenDrawable(true);
+        },
+        onError: (error) => {
+            showAlert({
+                time: 5,
+                title: 'Unable to fetch candidate details',
+                type: AlertType.error,
+                message: error.message,
+            });
+        }
+    });
 
     const [fileUploadData, setFileUploadData] = useState<{ data: Array<typeof candidateInviteSchema._type>, error:  Array<{ index: number, error: string }>} | null>(null);
 
     const [openDrawable, setOpenDrawable] = useState<boolean>(false);
     const [openBulkUpload, setOpenBulkUpload] = useState<boolean>(false);
+    const [editingCandidate, setEditingCandidate] = useState<typeof interviewCandidateReportSchema._type | null>(null);
 
     const handleUpload = useCallback(async () => {
         const promiseArray: Array<Promise<string>> = [];
@@ -109,16 +132,54 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         logger.info(fileUploadData?.data);
     }, [fileUploadData?.data, candidateLists, saveCandidate]);
 
-    const handleCandidateInvite = useCallback(async (data: CandidateInvite) => {
+    const handleCandidateInvite = useCallback(async (data: CandidateInvite, candidateId?: string) => {
         try {
-            const response = await saveCandidate.mutateAsync(data);
-            if (response) {
-                candidateLists.refetch();
+            if (candidateId) {
+                // Update existing candidate
+                const response = await updateCandidateInvite(id, candidateId, data);
+                if (response) {
+                    candidateLists.refetch();
+                    setOpenDrawable(false);
+                    setEditingCandidate(null);
+                    showAlert({
+                        time: 5,
+                        title: 'Candidate updated successfully',
+                        type: AlertType.success,
+                    });
+                }
+            } else {
+                // Create new candidate
+                const response = await saveCandidate.mutateAsync(data);
+                if (response) {
+                    candidateLists.refetch();
+                    setOpenDrawable(false);
+                    showAlert({
+                        time: 5,
+                        title: 'Candidate invited successfully',
+                        type: AlertType.success,
+                    });
+                }
             }
         } catch (error) {
             logger.error(error);
+            showAlert({
+                time: 5,
+                title: 'Unable to save candidate',
+                type: AlertType.error,
+                message: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
+            // Modal stays open on error - no setOpenDrawable(false) or setEditingCandidate(null)
         }
-    }, [candidateLists, saveCandidate]);
+    }, [candidateLists, saveCandidate, updateCandidateInvite, id, showAlert]);
+
+    const handleEditCandidate = useCallback((candidate: typeof interviewCandidateListSchema._type) => {
+        if (interviewObj.data?.id) {
+            getCandidateAttemptQuery.mutate({
+                interviewId: interviewObj.data.id,
+                attemptId: candidate.id
+            });
+        }
+    }, [interviewObj.data?.id, getCandidateAttemptQuery]);
 
     useEffect(() => {
         setAppLoader(interviewObj.isLoading)
@@ -146,6 +207,12 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
             setFileUploadData(null);
         }
     }, [openBulkUpload]);
+
+    useEffect(() => {
+        if (!openDrawable) {
+            setEditingCandidate(null);
+        }
+    }, [openDrawable]);
 
 
 
@@ -192,8 +259,18 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                         <div>
                             <CandidateDrawer
                 open={openDrawable}
-                handleSaveData={handleCandidateInvite}
+                handleSaveData={(data) => handleCandidateInvite(data, editingCandidate?.id)}
                 setOpenDrawer={setOpenDrawable}
+                defaultValues={editingCandidate ? {
+                    name: editingCandidate.name,
+                    email: editingCandidate.email,
+                    phone: editingCandidate.phone,
+                    yearOfExperience: editingCandidate.yearOfExperience,
+                    startTime: new Date(editingCandidate.startTime),
+                    endTime: editingCandidate.endTime ? new Date(editingCandidate.endTime) : undefined,
+                    userSpecificDescription: editingCandidate.userSpecificDescription || ""
+                } : undefined}
+                isEditing={!!editingCandidate}
             />
             <FileUploadDrawer
                 open={openBulkUpload}
@@ -216,6 +293,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                                 interviewName={interviewObj?.data?.title || "Interview"}
                                 interviewId={interviewObj.data?.id}
                                 concludeInterview={concludeInterviewMutation.mutateAsync}
+                                onEditCandidate={handleEditCandidate}
                             />
                         </div>
                     </div>

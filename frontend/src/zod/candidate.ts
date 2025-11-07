@@ -3,7 +3,7 @@ import Zod from "zod";
 const types = {
     name: Zod.string().nonempty(),
     email: Zod.string().nonempty(),
-    phone: Zod.string().nonempty(),
+    phone: Zod.string(),
     yearOfExperience: Zod.preprocess(
     (v) => {
         if (v === "" || v === null || v === undefined) return undefined;

@@ -21,6 +21,7 @@ interface MainStoreState {
     addInterview: (data: typeof interviewItemSchema._type) => Promise<string>;
     updateInterview: (data: typeof interviewUpdateSchema._type) => Promise<string>;
     sendInterviewCandidate: (id: string, date: typeof candidateInviteSchema._type) => Promise<string>;
+    updateInterviewCandidate: (interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) => Promise<string>;
     getInterviewCandidateList: (id: string) => Promise<Array<typeof interviewCandidateListSchema._type>>;
     getDataForInterview: (id: string) => Promise<{ completedAt?: Date, messages: Array<Content> }>;
     cloneInterview: (id: string) => Promise<string>
@@ -61,6 +62,10 @@ export const createMainStore = (client: MainApi) => {
         async sendInterviewCandidate(id, data) {
             logger.info(`Data: `, data);
             const res = await client.sendInterviewCandidate(id, data);
+            return res.id;
+        },
+        async updateInterviewCandidate(interviewId, candidateId, data) {
+            const res = await client.updateInterviewCandidate(interviewId, candidateId, data);
             return res.id;
         },
         async getDataForInterview(id) {

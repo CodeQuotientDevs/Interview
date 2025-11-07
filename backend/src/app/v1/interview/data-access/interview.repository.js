@@ -41,12 +41,11 @@ module.exports = class InterviewRepository {
      * 
      * @param { Partial<import("./interview.model").Interview> } objToSave 
      * @param {{ userId: string, orgId: string }} session 
-     * @param {{ timestamps?: boolean }} options
      */
-    async create(objToSave, session, options = {}) {
+    async create(objToSave, session) {
         objToSave.createdBy = session.userId;
         objToSave.orgId = session.orgId;
-        return new this.model(objToSave).save({ timestamps: options.timestamps ?? true });
+        return new this.model(objToSave).save();
     }
 
     /**
