@@ -34,7 +34,7 @@ export const Dashboard = () => {
             completedToday: data.interviewSessions.concluded.today,
             scheduledToday: data.interviewSessions.scheduled,
             upcoming: data.interviewSessions.upcoming,
-            totalInterviews: data.interviewSessions.concluded.overall,
+            totalInterviews: data.interviews.created.overall,
           },
           tableData: data.interviewSessions.recent as TableData[],
         }

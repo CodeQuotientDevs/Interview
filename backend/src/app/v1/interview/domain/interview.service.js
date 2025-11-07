@@ -1,6 +1,7 @@
 const constants = require('@/constants');
 const { interviewCreationSchema } = require('@/zod/interview');
 const candidateModel = require('@/app/v1/candidate/data-access/candidate.models');
+const { default: mongoose } = require('mongoose');
 
 
 module.exports =  class InterviewService {
@@ -45,7 +46,7 @@ module.exports =  class InterviewService {
     async listInterview(session) {
         const findObj = {
             isActive: true,
-            createdBy: session.userId
+            createdBy: new mongoose.Types.ObjectId(session.userId)
         };
         const data = await this.#model.find(findObj, {});
         return data;
@@ -73,7 +74,7 @@ module.exports =  class InterviewService {
 
     /**
      * @param {{ userId: string; orgId: string; role: number }} session
-     * @returns {Promise<{ interviews: { created: { today: number } }; interviewSessions: { scheduled: number; upcoming: number; concluded: { today: number; overall: number }; recent: Record<string, any>[] } }>}
+     * @returns {Promise<{ interviews: { created: { today: number; overall: number } }; interviewSessions: { scheduled: number; upcoming: number; concluded: { today: number; overall: number }; recent: Record<string, any>[] } }>}
      */
     async getStats(session) {
        const todayStart = new Date();
@@ -84,26 +85,26 @@ module.exports =  class InterviewService {
        // Build filter object based on user role
        const interviewFilter = {
            isActive: true,
-           $or: [
-               {deletedAt: { $exists: false }},
-               {deletedAt: null}
-           ]
+           createdBy: new mongoose.Types.ObjectId(session.userId)
        };
-       switch(session.role) {
-           case constants.roleNumberFromString.admin: {
-               break;
-           }
-           case constants.roleNumberFromString.subAdmin: {
-               interviewFilter.orgId = session.orgId;
-               break;
-           }
-           default: {
-               interviewFilter.orgId = session.orgId;
-               interviewFilter.createdBy = session.userId;
-           }
-       }
 
-       // Count only original interview creations (first version of each interview)
+       // Count total unique interviews created by user (only latest version of each)
+       const createdTotalResult = await this.#model.model.aggregate([
+           {
+               $match: interviewFilter
+           },
+           {
+               $group: {
+                   _id: "$id"
+               }
+           },
+           {
+               $count: "total"
+           }
+       ]);
+       const createdTotal = createdTotalResult.length > 0 ? createdTotalResult[0].total : 0;
+
+       // Count interviews created today (only first version of each interview)
        const createdTodayResult = await this.#model.model.aggregate([
            {
                $match: {
@@ -173,7 +174,7 @@ module.exports =  class InterviewService {
 
        return {
             interviews: {
-                created: { today: createdToday }
+                created: { today: createdToday, overall: createdTotal }
             },
             interviewSessions: {
                 concluded: { today: concludedToday, overall: concluded },

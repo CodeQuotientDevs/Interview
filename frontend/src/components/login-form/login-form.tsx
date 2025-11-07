@@ -63,23 +63,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 				>
 					<div className="flex flex-col items-center gap-2 text-center">
 						<h1 className="text-2xl font-bold">Login to your account</h1>
-						<p className="text-balance text-sm text-muted-foreground">
-							Use one of the options below to sign in
-						</p>
 					</div>
 					<div className="grid gap-6">
-						<div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-							<span className="bg-background text-muted-foreground relative z-10 px-2">
-								continue with
-							</span>
-						</div>
 						<GoogleLogin
 							onSuccess={credentialResponse => {
 								if (credentialResponse.credential) {
 									handleLoginWithGoogle.mutate(credentialResponse.credential);
 								}
 							}}
-							text="continue_with"
 						>
 						</GoogleLogin>
 					</div>

@@ -3,6 +3,7 @@ export const DashboardSchema = z.object({
   interviews: z.object({
     created: z.object({
       today: z.number(),
+      overall: z.number()
     }),
   }),
   interviewSessions: z.object({
