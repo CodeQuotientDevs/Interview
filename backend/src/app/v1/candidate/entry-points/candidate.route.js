@@ -185,6 +185,7 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
             if (!chatHistoryFromRedis.length) {
                 const aiModel = new InterviewAiModel('gemini-2.5-flash-lite', {
                     history: [],
+                    systemInstructions: 'Your first question should always be asking about their experience and getting to know you directly.'
                 });
                 const previouslyAskedQuestions = await candidateServices.previouslyAskedQuestions(interviewObj.id);
                 const chat = InterviewAiModel.generateStartingMessageForInterview(
