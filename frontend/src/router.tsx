@@ -42,6 +42,15 @@ export const Routes = createBrowserRouter(
             path="/"
             errorElement={<ErrorPage statusCode={404} errorMessage="Page not found." />}
         >
+            <Route path="candidates">
+                <Route path=":id" element={
+                    <>
+                        <Suspense fallback={<AppLoader loading={true} children={<></>} />}>
+                            <InterviewPageWrapper />
+                        </Suspense>
+                    </>
+                } />
+            </Route>
             <Route path="login" element={<LoginPage />}/>
             <Route path="" element={<Mainlayout />}>
             <Route index element={ <>
@@ -95,15 +104,6 @@ export const Routes = createBrowserRouter(
                             </>
                         } />
                     </Route>
-                </Route>
-                <Route path="candidates">
-                    <Route path=":id" element={
-                        <>
-                            <Suspense fallback={<AppLoader loading={true} children={<></>} />}>
-                                <InterviewPageWrapper />
-                            </Suspense>
-                        </>
-                    } />
                 </Route>
             </Route>
             <Route path="/" element={<Navigate to={"/interview"} replace />} />
