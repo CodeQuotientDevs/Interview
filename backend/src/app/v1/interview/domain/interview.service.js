@@ -50,19 +50,8 @@ module.exports =  class InterviewService {
                 {deletedAt: null}
             ]
         };
-        switch(session.role) {
-            case constants.roleNumberFromString.admin: {
-                break;
-            }
-            case constants.roleNumberFromString.subAdmin: {
-                findObj.orgId = session.orgId;
-                break;
-            }
-            default: {
-                findObj.orgId = session.orgId;
-                findObj.createdBy = session.userId;
-            }
-        }
+        // findObj.orgId = session.orgId;
+        findObj.createdBy = session.userId;
         const data = await this.#model.find(findObj, {});
         return data;
     }
