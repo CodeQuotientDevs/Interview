@@ -265,9 +265,7 @@ module.exports = class Candidates {
         };
         
         // Add interview filter if provided
-        if (interviewIds.length > 0) {
-            baseMatch.interviewId = { $in: interviewIds };
-        }
+        baseMatch.interviewId = { $in: interviewIds };
 
         // Get scheduled interviews grouped by startTime
         const scheduledMetrics = await this.#model.model.aggregate([
@@ -301,9 +299,7 @@ module.exports = class Candidates {
         };
         
         // Add interview filter if provided
-        if (interviewIds.length > 0) {
-            concludedMatch.interviewId = { $in: interviewIds };
-        }
+        concludedMatch.interviewId = { $in: interviewIds };
 
         // Get concluded interviews grouped by completedAt
         const concludedMetrics = await this.#model.model.aggregate([

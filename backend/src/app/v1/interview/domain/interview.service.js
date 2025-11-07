@@ -45,13 +45,8 @@ module.exports =  class InterviewService {
     async listInterview(session) {
         const findObj = {
             isActive: true,
-            $or: [
-                {deletedAt: { $exists: false }},
-                {deletedAt: null}
-            ]
+            createdBy: session.userId
         };
-        // findObj.orgId = session.orgId;
-        findObj.createdBy = session.userId;
         const data = await this.#model.find(findObj, {});
         return data;
     }
