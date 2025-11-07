@@ -236,7 +236,7 @@ module.exports = class Candidates {
     /**
      * @param {{ daysLimit?: number }} [options]
      * @param {string[]} [interviewIds] - Array of accessible interview IDs to filter by
-     * @returns {Promise<{ date: string; label: string; scheduled: number; concluded: number }[]>}
+     * @returns {Promise<{ labelFormat: "hour" | "date" | "month"; metrics: { date: string; label: string; scheduled: number; concluded: number }[] }>}
     */
     async getMetrics(options, interviewIds = []) {
         const MIN_DAYS_LIMIT = 1;
@@ -252,7 +252,7 @@ module.exports = class Candidates {
         let labelFormat;
         if (daysLimit === 1) {
             labelFormat = 'hour';
-        } else if (daysLimit <= 60) {
+        } else if (daysLimit <= 180) {
             labelFormat = 'date';
         } else {
             labelFormat = 'month';
@@ -367,22 +367,27 @@ module.exports = class Candidates {
             return 0;
         });
 
-        // Format the results with proper labels and dates
+        // Define Intl options for each format type
+        const intlOptions = labelFormat === 'hour' ? { hour: '2-digit', hour12: false } :
+            labelFormat === 'date' ? { month: 'short', day: 'numeric' } :
+            { month: 'short', year: 'numeric' };
+        
+        // Format the results using Intl.DateTimeFormat for consistent internationalization
         const formattedMetrics = metrics.map(metric => {
             let date, label;
             
             if (labelFormat === 'hour') {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day, metric._id.hour);
                 date = dateObj.toISOString();
-                label = `${metric._id.hour.toString().padStart(2, '0')}:00`;
+                label = dateObj.toLocaleString(undefined, intlOptions);
             } else if (labelFormat === 'date') {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day);
                 date = dateObj.toISOString();
-                label = `${metric._id.day}/${metric._id.month}`;
+                label = dateObj.toLocaleString(undefined, intlOptions);
             } else {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, 1);
                 date = dateObj.toISOString();
-                label = `${metric._id.month}/${metric._id.year}`;
+                label = dateObj.toLocaleString(undefined, intlOptions);
             }
 
             return {
@@ -393,7 +398,7 @@ module.exports = class Candidates {
             };
         });
 
-        return formattedMetrics;
+        return { labelFormat: { type: labelFormat, intlOptions }, metrics: formattedMetrics };
     }
 
 }

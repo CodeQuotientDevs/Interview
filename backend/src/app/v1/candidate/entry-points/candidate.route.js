@@ -24,8 +24,8 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
             const accessibleInterviews = await interviewServices.listInterview(req.session);
             const interviewIds = accessibleInterviews.map(interview => interview.id);
             
-            const metrics = await candidateServices.getMetrics({ daysLimit }, interviewIds);
-            return res.json(metrics);
+            const metricsData = await candidateServices.getMetrics({ daysLimit }, interviewIds);
+            return res.json(metricsData);
         } catch (error) {
             logger.error({
                 endpoint: req.originalUrl,

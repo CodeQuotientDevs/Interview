@@ -35,7 +35,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-type ChartData = z.infer<typeof DashboardGraphDataSchema>;
+type ChartData = z.infer<typeof DashboardGraphDataSchema>["metrics"];
 
 export function ChartAreaInteractive({ data, onRangeChange } : { data: ChartData, onRangeChange: (value: number) => void}) {
   const isMobile = useIsMobile();
@@ -49,12 +49,7 @@ export function ChartAreaInteractive({ data, onRangeChange } : { data: ChartData
   console.log("graphhhhh", data)
 
   const transformedData = React.useMemo(() => {
-    if (!data?.length) return [];
-    return data.map((item) => ({
-      date: item.date,
-      scheduled: item.scheduled,
-      concluded: item.concluded,
-    }));
+    return data ?? [];
   }, [data]);
 
   const filteredData = React.useMemo(() => {
@@ -121,7 +116,7 @@ export function ChartAreaInteractive({ data, onRangeChange } : { data: ChartData
 
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="date"
+              dataKey="label"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
