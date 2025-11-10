@@ -1,21 +1,27 @@
 import { useAppStore, useMainStore } from '@/store';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { InterviewDataTable } from './table';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertType } from '@/constants';
 import logger from '@/lib/logger';
 import { SiteHeader } from "@/components/site-header";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const InterviewList = () => {
     const getListItems = useMainStore().interviewList;
     const showAlert = useAppStore().showAlert;
     const cloneInterview = useMainStore().cloneInterview;
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(10); // Fixed page size for now
+
     const interviewListFetchResult = useQuery({
-        queryKey: ['interview-list'],
-        queryFn: getListItems,
+        queryKey: ['interview-list', currentPage, pageSize],
+        queryFn: () => getListItems(currentPage, pageSize),
     });
 
-    const cloneMutation  = useMutation({
+    const cloneMutation = useMutation({
         mutationFn: (id: string) => {
             return cloneInterview(id);
         },
@@ -24,11 +30,15 @@ export const InterviewList = () => {
         }
     });
 
-    const cloneHandler = useCallback( async (id: string) => {
+    const cloneHandler = useCallback(async (id: string) => {
         const response = await cloneMutation.mutateAsync(id);
         logger.info(`Interview cloned: ${response}`);
         await interviewListFetchResult.refetch();
     }, [cloneMutation, interviewListFetchResult]);
+
+    const handlePageChange = useCallback((page: number) => {
+        setCurrentPage(page);
+    }, []);
 
     useEffect(() => {
         if (interviewListFetchResult.error) {
@@ -41,6 +51,8 @@ export const InterviewList = () => {
         }
     }, [interviewListFetchResult.error, showAlert]);
 
+    const pagination = interviewListFetchResult.data?.pagination;
+
     return (
         <>
             <SiteHeader title="Interviews" />
@@ -49,10 +61,42 @@ export const InterviewList = () => {
                     <div className="flex flex-col py-2">
                         <div>
                             <InterviewDataTable
-                                data={interviewListFetchResult.data ?? []}
+                                data={interviewListFetchResult.data?.data ?? []}
                                 loading={interviewListFetchResult.isLoading}
                                 cloneInterview={cloneHandler}
                             />
+
+                            {/* Pagination Controls */}
+                            {pagination && pagination.totalPages > 1 && (
+                                <div className="flex items-center justify-between px-4 lg:px-6 py-4">
+                                    <div className="text-sm text-muted-foreground">
+                                        Page {pagination.page} of {pagination.totalPages}
+                                        ({pagination.total} total interviews)
+                                    </div>
+
+                                    <div className="flex items-center space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={!pagination.hasPrev || interviewListFetchResult.isLoading}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                            Previous
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={!pagination.hasNext || interviewListFetchResult.isLoading}
+                                        >
+                                            Next
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ import {
     interviewListItemSchema,
     interviewCandidateListSchema,
     interviewCandidateReportSchema,
-}  from "@/zod/interview";
+} from "@/zod/interview";
 import type { Content } from "@google/generative-ai";
 import { candidateInviteSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
@@ -16,7 +16,17 @@ import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 
 interface MainStoreState {
     sendMessageAi: (id: string, message: string) => Promise<Array<Content>>;
-    interviewList: () => Promise<Array<typeof interviewListItemSchema._type>>;
+    interviewList: (page?: number, limit?: number) => Promise<{
+        data: Array<typeof interviewListItemSchema._type>;
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    }>;
     getInterview: (id: string) => Promise<typeof interviewGetSchema._type>;
     addInterview: (data: typeof interviewItemSchema._type) => Promise<string>;
     updateInterview: (data: typeof interviewUpdateSchema._type) => Promise<string>;
@@ -34,7 +44,7 @@ interface MainStoreState {
 
 
 export const createMainStore = (client: MainApi) => {
-	const initialValues: MainStoreState = {
+    const initialValues: MainStoreState = {
         async getInterview(id: string) {
             const res = await client.getInterview(id);
             return res;
@@ -43,8 +53,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.addInterview(data);
             return res;
         },
-        async interviewList() {
-            const res = await client.interviewList();
+        async interviewList(page?: number, limit?: number) {
+            const res = await client.interviewList(page, limit);
             return res;
         },
         async updateInterview(data) {
@@ -85,7 +95,7 @@ export const createMainStore = (client: MainApi) => {
             return res;
         },
         async concludeInterview(interviewId, attemptId) {
-            await client.concludeInterview(interviewId, attemptId?[attemptId]: undefined);
+            await client.concludeInterview(interviewId, attemptId ? [attemptId] : undefined);
         },
         async getDashboardStats() {
             const res = await client.getDashboardStats();
@@ -93,13 +103,13 @@ export const createMainStore = (client: MainApi) => {
         },
         async getDashboardGraphdata(daysLimit?: number) {
             const res = await client.getDashboardGraphdata(daysLimit);
-            return  res;
+            return res;
         }
-	};
+    };
 
-	return create<MainStoreState>()(
-		immer(() => ({
-			...initialValues,
-		}))
-	);
+    return create<MainStoreState>()(
+        immer(() => ({
+            ...initialValues,
+        }))
+    );
 };

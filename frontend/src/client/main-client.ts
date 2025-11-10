@@ -37,9 +37,9 @@ export default class MainClient {
     }
 
     async getInterview(id: string) {
-        const response  = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews/${id}`));
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews/${id}`));
         const rowResponse = response?.data;
-        if ( rowResponse && typeof rowResponse === 'object' && 'difficulty' in rowResponse && Array.isArray(rowResponse.difficulty)) {
+        if (rowResponse && typeof rowResponse === 'object' && 'difficulty' in rowResponse && Array.isArray(rowResponse.difficulty)) {
             const difficulty: Record<string, unknown> = {};
             rowResponse.difficulty.map((ele: unknown) => {
                 if (typeof ele === 'object'
@@ -60,7 +60,7 @@ export default class MainClient {
     }
     async addInterview(data: typeof interviewItemSchema._type) {
         const response = await this.requestWrapper(this._mainAPI.post('/api/v1/interviews', data));
-        const obj = Zod.object({id: Zod.string()}).safeParse(response.data);
+        const obj = Zod.object({ id: Zod.string() }).safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -76,9 +76,23 @@ export default class MainClient {
         return obj.data.id;
     }
 
-    async interviewList() {
-        const response = await this.requestWrapper(this._mainAPI.get('/api/v1/interviews'));
-        const obj = await Zod.array(interviewListItemSchema).safeParseAsync(response.data);
+    async interviewList(page?: number, limit?: number) {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews?${params.toString()}`));
+        const obj = await Zod.object({
+            data: Zod.array(interviewListItemSchema),
+            pagination: Zod.object({
+                page: Zod.number(),
+                limit: Zod.number(),
+                total: Zod.number(),
+                totalPages: Zod.number(),
+                hasNext: Zod.boolean(),
+                hasPrev: Zod.boolean()
+            })
+        }).safeParseAsync(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -108,7 +122,7 @@ export default class MainClient {
 
     async sendInterviewCandidate(id: string, data: typeof candidateInviteSchema._type) {
         const response = await this.requestWrapper(this._mainAPI.post(`/api/v1/candidates/${id}`, data));
-        const obj = await Zod.object({ id: Zod.string()}).safeParseAsync(response.data);
+        const obj = await Zod.object({ id: Zod.string() }).safeParseAsync(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -117,7 +131,7 @@ export default class MainClient {
 
     async updateInterviewCandidate(interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) {
         const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/${interviewId}/${candidateId}`, data));
-        const obj = await Zod.object({ id: Zod.string()}).safeParseAsync(response.data);
+        const obj = await Zod.object({ id: Zod.string() }).safeParseAsync(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }

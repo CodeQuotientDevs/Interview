@@ -7,7 +7,6 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
@@ -93,7 +92,8 @@ export function InterviewDataTable(props: DataTableInterface) {
                 return (
                     <button
                         onClick={() => navigation(`/interview/candidates/${id}`)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left px-4 py-2"
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left px-4 py-2 max-w-[600px] truncate"
+                        title={title}
                     >
                         {title}
                     </button>
@@ -105,7 +105,7 @@ export function InterviewDataTable(props: DataTableInterface) {
             header: () => <div className="text-center">Duration</div>,
             cell: ({ row }) => {
                 const duration = parseFloat(row.getValue("duration"));
-                return <div className="text-center">{duration} minutes</div>
+                return <div className="text-center min-w-24">{duration} minutes</div>
             },
         },
         // {
@@ -143,17 +143,17 @@ export function InterviewDataTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => {
-                return <div className="text-center">{formatDateTime(row.original.updatedAt)}</div>
+                return <div className="text-center min-w-32">{formatDateTime(row.original.updatedAt)}</div>
             }
         },
         {
             id: "actions",
-            header: () => <div className="text-center"></div>,
+            header: () => <div className="text-center w-12"></div>,
             enableHiding: false,
             cell: ({ row }) => {
                 const interview = row.original
                 return (
-                    <div className="text-center">
+                    <div className="text-center w-12">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -179,7 +179,7 @@ export function InterviewDataTable(props: DataTableInterface) {
                 )
             },
         },
-    ], [navigation])
+    ], [navigation, handleClone])
 
     const table = useReactTable({
         data,
@@ -187,7 +187,6 @@ export function InterviewDataTable(props: DataTableInterface) {
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
@@ -200,152 +199,129 @@ export function InterviewDataTable(props: DataTableInterface) {
 
     return (
         <div className="w-full">
-                <div className="flex items-center py-4 px-4 lg:px-6">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
-                                    <Plus size={16} />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Create new interview</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <Input
-                        placeholder="Filter interview..."
-                        value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) =>
-                            table.getColumn("title")?.setFilterValue(event.target.value)
-                        }
-                        className="max-w-sm"
-                    />
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto">
-                                Columns <ChevronDown />
+            <div className="flex items-center py-4 px-4 lg:px-6">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
+                                <Plus size={16} />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => {
-                                    return (
-                                        <DropdownMenuCheckboxItem
-                                            key={column.id}
-                                            className="capitalize"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) =>
-                                                column.toggleVisibility(!!value)
-                                            }
-                                        >
-                                            {column.id}
-                                        </DropdownMenuCheckboxItem>
-                                    )
-                                })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <div className="px-4 lg:px-6">
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => {
-                                            return (
-                                                <TableHead key={header.id}>
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                </TableHead>
-                                            )
-                                        })}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Create new interview</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <Input
+                    placeholder="Filter interview..."
+                    value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+                    onChange={(event) =>
+                        table.getColumn("title")?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            Columns <ChevronDown />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => {
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={column.id}
+                                        className="capitalize"
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(!!value)
+                                        }
+                                    >
+                                        {column.id}
+                                    </DropdownMenuCheckboxItem>
+                                )
+                            })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <div className="px-4 lg:px-6">
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                        return (
+                                            <TableHead key={header.id}>
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
+                                                    )}
+                                            </TableHead>
+                                        )
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody className="w-full">
+                            {loading &&
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        <Loader />
+                                    </TableCell>
+                                </TableRow>
+                            }
+                            {!loading && table.getRowModel().rows?.length
+                                ? table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
                                     </TableRow>
-                                ))}
-                            </TableHeader>
-                            <TableBody className="w-full">
-                                {loading &&
+                                ))
+                                : <></>
+                            }
+                            {!loading && table.getRowModel().rows.length === 0
+                                ? (
                                     <TableRow>
                                         <TableCell
                                             colSpan={columns.length}
-                                            className="h-24 text-center"
+                                            className="h-40 text-center"
                                         >
-                                            <Loader />
+                                            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                                                <div className="text-muted-foreground">
+                                                    <FileText className="w-8 h-8 mx-auto" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium">No interviews yet</p>
+                                                    <p className="text-xs text-muted-foreground">Create your first interview to get started</p>
+                                                </div>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
-                                }
-                                {!loading && table.getRowModel().rows?.length
-                                    ? table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={row.getIsSelected() && "selected"}
-                                        >
-                                            {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
-                                                    {flexRender(
-                                                        cell.column.columnDef.cell,
-                                                        cell.getContext()
-                                                    )}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))
-                                    : <></>
-                                }
-                                {!loading && table.getRowModel().rows.length === 0
-                                    ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-40 text-center"
-                                            >
-                                                <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                                                    <div className="text-muted-foreground">
-                                                        <FileText className="w-8 h-8 mx-auto" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-sm font-medium">No interviews yet</p>
-                                                        <p className="text-xs text-muted-foreground">Create your first interview to get started</p>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : <></>
-                                }
-                            </TableBody>
+                                ) : <></>
+                            }
+                        </TableBody>
 
-                        </Table>
-                    </div>
+                    </Table>
                 </div>
-                <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
-                    <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredRowModel().rows.length} row(s) total.
-                    </div>
-                    <div className="space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
+            </div>
         </div>
     )
 }

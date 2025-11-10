@@ -2,14 +2,14 @@ const router = require('express').Router();
 const middleware = require('@/middleware');
 const constants = require('@/constants');
 const { logger } = require('@libs');
-const { checkPermissionForContentModification } = require('@/libs/utils'); 
+const { checkPermissionForContentModification } = require('@/libs/utils');
 const { interviewCreationSchema } = require('@/zod/interview');
 
 /**
  * 
  * @param {{ interviewServices:  import('../domain/interview.service') }} param0 
  */
-function createInterviewRoutes ({ interviewServices }) {
+function createInterviewRoutes({ interviewServices }) {
 
     router.get('/stats', middleware.authMiddleware.checkIfLogin, async (req, res) => {
         try {
@@ -26,8 +26,19 @@ function createInterviewRoutes ({ interviewServices }) {
 
     router.get('/', middleware.authMiddleware.checkIfLogin, async (req, res, next) => {
         try {
-            const list = await interviewServices.listInterview(req.session);
-            return res.status(200).json(list);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+
+            // Validate pagination parameters
+            if (page < 1 || limit < 1 || limit > 100) {
+                return res.status(400).json({
+                    error: 'Invalid pagination parameters',
+                    details: 'Page must be >= 1, limit must be between 1 and 100'
+                });
+            }
+
+            const result = await interviewServices.listInterviewPaginated({ page, limit }, req.session);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error({
                 endpoint: 'interview GET /',
@@ -141,7 +152,7 @@ function createInterviewRoutes ({ interviewServices }) {
                 error,
                 data: req.body,
             });
-            return res.status(500).json({error: 'Internal Server Error'});
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
 
