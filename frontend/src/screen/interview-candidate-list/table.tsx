@@ -11,7 +11,9 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon, Download, FileText, MailPlus, MoreHorizontal, Upload } from "lucide-react"
+import { UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
+     Download, FileText, MailPlus, MoreHorizontal, Upload, Clock, 
+     Calendar} from "lucide-react"
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { formatDateTime } from "@/lib/utils";
@@ -33,7 +35,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { interviewCandidateListSchema } from "@/zod/interview";
+import { interviewCandidateListSchema, interviewGetSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
 
 import { useAppStore } from "@/store";
@@ -43,13 +45,15 @@ import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
     loading: boolean
     interviewName?: string | "Interview"
     interviewId?: string
-
+    interviewObj?: typeof interviewGetSchema._type
     concludeInterview: (attemptId?: string) => Promise<void>,
     openCandidateDrawer: (value: boolean) => void
     openBulkUploadDrawer: (value: boolean) => void,
@@ -63,7 +67,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     const showAlert = useAppStore().showAlert;
     const alertModel = useAppStore().useAlertModel;
-    const { data, loading, openCandidateDrawer, openBulkUploadDrawer, interviewName } = props;
+    const { data, loading, openCandidateDrawer, openBulkUploadDrawer, interviewName, interviewObj } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -304,6 +308,17 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                {/* <DropdownMenuItem
+                                    onClick={() => handleDeleteInvite(interview.id)}
+                                >
+                                    Delete
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator /> */}
+                                {/* <DropdownMenuItem
+                                    onClick={() => navigation(`/interview/add/${interview.id}`)}
+                                >
+                                    Info
+                                </DropdownMenuItem> */}
                                 <DropdownMenuItem
                                     onClick={() => onEditCandidate?.(row.original)}
                                 >
@@ -367,7 +382,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             columnVisibility,
         },
     });
-
     return (
         <div className="w-full">
                 <Dialog open={copyLinkModalOpen} onOpenChange={setCopyLinkModalOpen}>
@@ -468,7 +482,57 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="px-4 lg:px-6">
+                <div className="flex flex-col px-4 lg:px-6 gap-4">
+                    <Card className="w-full rounded-2xl p-6 space-y-4">
+                        <div>
+                            <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-semibold">{interviewObj?.title}</h1>
+                            <Badge className="bg-green-100 text-green-600">Active</Badge>
+                            </div>
+                            <p className="text-gray-600 text-sm mt-1 line-clamp-1">{interviewObj?.generalDescriptionForAi}</p>
+                        </div>
+
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b pb-4">
+                            <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
+                                <Clock className="w-5 h-5" />
+                                <div>
+                                <p className="text-xs text-gray-500">Duration</p>
+                                <p className="font-medium">{interviewObj?.duration} minutes</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-red-50 rounded-xl">
+                            <Calendar className="w-5 h-5" />
+                            <div>
+                            <p className="text-xs text-gray-500">Created</p>
+                            <p className="font-medium">{new Date(interviewObj?.createdAt || "-NA-").toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-xl">
+                        <div className="w-5 h-5 flex items-center justify-center font-bold">↔</div>
+                        <div>
+                            <p className="text-xs text-gray-500">Skills</p>
+                            <p className="font-medium">{Object.entries(interviewObj?.difficulty || {}).length} skill(s)</p>
+                        </div>
+                        </div>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium">Skill Breakdown</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {Object.entries(interviewObj?.difficulty || {}).map(([skill, d]) => (
+                                    <div key={skill} className="flex items-center gap-4 p-3 border rounded-xl w-auto">
+                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <p className="font-medium">{skill}</p>
+                                        <Badge className="bg-gray-100 text-gray-700">{d.difficulty}</Badge>
+                                        <p className="text-sm text-gray-600">{d.weight}%</p>
+                                        <p className="text-sm text-gray-600">• {d.duration}m</p>
+                                    </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </Card>
                     <div className="rounded-md border">
                         <Table>
                         <TableHeader>

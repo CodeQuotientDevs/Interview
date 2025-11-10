@@ -292,6 +292,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                                 loading={candidateLists.isLoading}
                                 interviewName={interviewObj?.data?.title || "Interview"}
                                 interviewId={interviewObj.data?.id}
+                                interviewObj={interviewObj.data}
                                 concludeInterview={concludeInterviewMutation.mutateAsync}
                                 onEditCandidate={handleEditCandidate}
                             />

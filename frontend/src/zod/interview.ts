@@ -77,6 +77,12 @@ export const interviewGetSchema = Zod.object({
 	keywords: types.keywords.optional(),
 	difficulty: types.difficulty.optional(),
 	generalDescriptionForAi: types.generalDescriptionForAi,
+	createdAt: Zod.preprocess((arg) => {
+		if (typeof arg === 'string' || typeof arg === 'number') {
+			return new Date(arg)
+		}
+		return arg;
+	}, Zod.date()).optional()
 });
 
 const interviewCandidate = {
