@@ -19,6 +19,7 @@ export const DashboardSchema = z.object({
 
 export const DashboardGraphDataSchema = z.object({
   labelFormat: z.object({
+    locales: z.string().optional(),
     type: z.enum([ "hour", "date", "month" ]),
     intlOptions: z.record(z.any()),
   }),

@@ -239,6 +239,7 @@ module.exports = class Candidates {
      * @returns {Promise<{ labelFormat: "hour" | "date" | "month"; metrics: { date: string; label: string; scheduled: number; concluded: number }[] }>}
     */
     async getMetrics(options, interviewIds = []) {
+        const locales = "en-US";
         const MIN_DAYS_LIMIT = 1;
         const MAX_DAYS_LIMIT = 400;
         const daysLimit = Math.max(MIN_DAYS_LIMIT, Math.min(options?.daysLimit ?? 7, MAX_DAYS_LIMIT));
@@ -375,15 +376,15 @@ module.exports = class Candidates {
             if (labelFormat === 'hour') {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day, metric._id.hour);
                 date = dateObj.toISOString();
-                label = dateObj.toLocaleString(undefined, intlOptions);
+                label = dateObj.toLocaleString(locales, intlOptions);
             } else if (labelFormat === 'date') {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day);
                 date = dateObj.toISOString();
-                label = dateObj.toLocaleString(undefined, intlOptions);
+                label = dateObj.toLocaleString(locales, intlOptions);
             } else {
                 const dateObj = new Date(metric._id.year, metric._id.month - 1, 1);
                 date = dateObj.toISOString();
-                label = dateObj.toLocaleString(undefined, intlOptions);
+                label = dateObj.toLocaleString(locales, intlOptions);
             }
 
             return {
@@ -394,7 +395,7 @@ module.exports = class Candidates {
             };
         });
 
-        return { labelFormat: { type: labelFormat, intlOptions }, metrics: formattedMetrics };
+        return {labelFormat: {locales, type: labelFormat, intlOptions }, metrics: formattedMetrics };
     }
 
 }

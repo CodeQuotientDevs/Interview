@@ -88,22 +88,22 @@ export const Dashboard = () => {
   )
 }
 
-const formatLabelDate = (labelFormat: { type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, date: Date): string => {
+const formatLabelDate = (labelFormat: {locales?: string, type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, date: Date): string => {
   try {
     switch (labelFormat.type) {
       case "hour":
       case "date":
       case "month":
-        return date.toLocaleString(undefined, labelFormat.intlOptions);
+        return date.toLocaleString(labelFormat.locales, labelFormat.intlOptions);
       default:
-        return date.toLocaleString();
+        return date.toLocaleString(labelFormat.locales);
     }
   } catch {
     return date.toLocaleDateString();
   }
 };
 
-const fillGraphData = (labelFormat: { type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, data: GraphMetricData = [], range = 7): GraphMetricData => {
+const fillGraphData = (labelFormat: {locales?: string, type: "hour" | "date" | "month", intlOptions: Intl.DateTimeFormatOptions }, data: GraphMetricData = [], range = 7): GraphMetricData => {
   const today = new Date();
 
   const dateSet = new Set(data.map(item => item.label));
