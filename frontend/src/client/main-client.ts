@@ -5,6 +5,7 @@ import Zod from 'zod';
 import type { Content } from '@google/generative-ai';
 import { candidateInviteSchema, interviewContentSchema } from '@/zod/candidate';
 import { DashboardGraphDataSchema, DashboardSchema } from '@/zod/dashboard';
+import { RecentInterviewSchema } from '@/components/data-table';
 
 export default class MainClient {
     private url: string
@@ -187,16 +188,46 @@ export default class MainClient {
         }
         return obj.data;
     }
-    async getDashboardGraphdata(daysLimit?: number) {
+    async getDashboardGraphdata(startDate?: Date, endDate?: Date) {
+        const params: { startDate?: string; endDate?: string } = {};
+
+        if (startDate) {
+            const utcStart = new Date(Date.UTC(
+                startDate.getFullYear(),
+                startDate.getMonth(),
+                startDate.getDate(),
+                0, 0, 0, 0
+            ));
+            params.startDate = utcStart.toISOString();
+        }
+        if (endDate) {
+            // Normalize to UTC end of day to include the entire day
+            const utcEnd = new Date(Date.UTC(
+                endDate.getFullYear(),
+                endDate.getMonth(),
+                endDate.getDate(),
+                23, 59, 59, 999
+            ));
+            params.endDate = utcEnd.toISOString();
+        }
+
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/metrics`, {
-            params: {
-                daysLimit
-            }
+            params
         }));
         const obj = DashboardGraphDataSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
         return obj.data;
+    }
+
+    async getInterviewsByDate(date: Date, type: 'hour' | 'date' | 'month'): Promise<Array<Zod.infer<typeof RecentInterviewSchema>>> {
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/metrics/date-details`, {
+            params: {
+                date: date.toISOString(),
+                type
+            }
+        }));
+        return response.data as Array<Zod.infer<typeof RecentInterviewSchema>>;
     }
 }

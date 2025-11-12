@@ -13,6 +13,7 @@ import type { Content } from "@google/generative-ai";
 import { candidateInviteSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
 import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
+import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
     sendMessageAi: (id: string, message: string) => Promise<Array<Content>>;
@@ -39,7 +40,8 @@ interface MainStoreState {
     getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
     getDashboardStats: () => Promise<typeof DashboardSchema._type>;
-    getDashboardGraphdata: (daysLimit?: number) => Promise<typeof DashboardGraphDataSchema._type>;
+    getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
+    getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
 }
 
 
@@ -101,8 +103,12 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.getDashboardStats();
             return res;
         },
-        async getDashboardGraphdata(daysLimit?: number) {
-            const res = await client.getDashboardGraphdata(daysLimit);
+        async getDashboardGraphdata(startDate?: Date, endDate?: Date) {
+            const res = await client.getDashboardGraphdata(startDate, endDate);
+            return res;
+        },
+        async getInterviewsByDate(date: Date, type: 'hour' | 'date' | 'month') {
+            const res = await client.getInterviewsByDate(date, type);
             return res;
         }
     };
