@@ -218,6 +218,48 @@ export class InterviewService {
             },
         };
     }
+    async getSessionsOfDay(session: Session, date: Date) {
+        const interviewFilter = {
+            isActive: true,
+            createdBy: new mongoose.Types.ObjectId(session.userId),
+        };
+
+        const startDate = date;
+        const endDate = startDate;
+        endDate.setHours(23, 59, 59, 999);
+
+        const accessibleInterviews = await this.model.find(interviewFilter, { id: 1 });
+        const interviewIds = accessibleInterviews.map((i: any) => i.id);
+        const sessions = await candidateModel
+        .find(
+            {
+                interviewId: { $in: interviewIds },
+                isActive: true,
+                completedAt: {
+                    $gte: startDate,
+                    $lte: endDate,
+                },
+            },
+            {
+                interviewId: 1,
+                userId: 1,
+                startTime: 1,
+                createdAt: 1,
+                completedAt: 1,
+                score: 1,
+            }
+        )
+        .populate({
+            path: "interview",
+            select: "_id id title duration",
+        })
+        .populate({
+            path: "user",
+            select: "_id name email",
+        })
+        .sort({ completedAt: -1 });
+        return sessions;
+    }
 }
 
 

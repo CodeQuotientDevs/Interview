@@ -141,6 +141,33 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
             return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
+    router.get("/recent-sessions/date", async (req: Request & { session?: Session }, res: Response) => {
+        try {
+            const { date } = req.query;
+
+            if (!date || typeof date !== "string") {
+                return res.status(400).json({
+                    error: "Please provide ?date=YYYY-MM-DD",
+                });
+            }
+
+            const startDate = new Date(date);
+            if (isNaN(startDate.getTime())) {
+                return res.status(400).json({ error: "Invalid date format" });
+            }
+
+            const sessions = await interviewServices.getSessionsOfDay(req.session, startDate)
+
+            return res.status(200).json({
+                date: startDate,
+                count: sessions.length,
+                data: sessions,
+            });
+        } catch (err) {
+            console.error("Error fetching sessions by date:", err);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    });
 
     return router;
 }
