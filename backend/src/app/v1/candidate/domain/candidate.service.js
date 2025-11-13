@@ -234,38 +234,76 @@ module.exports = class Candidates {
     }
 
     /**
-     * @param {{ daysLimit?: number }} [options]
+     * @param {{ startDate?: Date, endDate?: Date }} [options]
      * @param {string[]} [interviewIds] - Array of accessible interview IDs to filter by
      * @returns {Promise<{ labelFormat: "hour" | "date" | "month"; metrics: { date: string; label: string; scheduled: number; concluded: number }[] }>}
     */
     async getMetrics(options, interviewIds = []) {
         const locales = "en-US";
-        const MIN_DAYS_LIMIT = 1;
-        const MAX_DAYS_LIMIT = 400;
-        const daysLimit = Math.max(MIN_DAYS_LIMIT, Math.min(options?.daysLimit ?? 7, MAX_DAYS_LIMIT));
-        
-        // Calculate start date
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - daysLimit);
-        
-        // Create separate aggregations for scheduled and concluded interviews
-        let labelFormat;
-        if (daysLimit === 1) {
-            labelFormat = 'hour';
-        } else if (daysLimit <= 180) {
-            labelFormat = 'date';
-        } else {
-            labelFormat = 'month';
+        const MAX_DATE_RANGE_DAYS = 400;
+
+        const now = new Date();
+
+        let endDate = options?.endDate || now;
+        let startDate = options?.startDate;
+
+        if (!startDate) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 7);
         }
 
-        // Build match conditions
+        if (endDate > now) {
+            endDate = now;
+        }
+
+        console.log('Before adjustments:', {
+            startDate: startDate?.toISOString(),
+            endDate: endDate?.toISOString()
+        });
+
+        if (startDate > endDate) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 7);
+            console.log('Adjusted startDate because it was after endDate');
+        }
+
+        // Calculate the difference in days
+        let diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        console.log('Initial diffDays:', diffDays);
+
+        if (diffDays > MAX_DATE_RANGE_DAYS) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - MAX_DATE_RANGE_DAYS);
+            // Recalculate after adjustment
+            diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+            diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            console.log('Adjusted to MAX_DATE_RANGE_DAYS, new diffDays:', diffDays);
+        }
+
+        console.log('After adjustments:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            diffDays
+        });
+
+        let labelFormat = 'date';
+        // if (diffDays <= 1) {
+        //     labelFormat = 'hour';
+        // } else if (diffDays <= 180) {
+        //     labelFormat = 'date';
+        // } else {
+        //     labelFormat = 'month';
+        // }
+
+        console.log('Selected labelFormat:', labelFormat);
+
         const baseMatch = {
             startTime: { $gte: startDate, $lte: endDate },
             isActive: true
         };
-        
-        // Add interview filter if provided
+
         baseMatch.interviewId = { $in: interviewIds };
 
         // Get scheduled interviews grouped by startTime
@@ -293,16 +331,13 @@ module.exports = class Candidates {
             }
         ]);
 
-        // Build match conditions for concluded interviews
         const concludedMatch = {
             completedAt: { $gte: startDate, $lte: endDate },
             isActive: true
         };
         
-        // Add interview filter if provided
         concludedMatch.interviewId = { $in: interviewIds };
 
-        // Get concluded interviews grouped by completedAt
         const concludedMetrics = await this.#model.model.aggregate([
             {
                 $match: concludedMatch
@@ -327,10 +362,15 @@ module.exports = class Candidates {
             }
         ]);
 
-        // Merge the results
+        console.log('Aggregation Results:', {
+            scheduledCount: scheduledMetrics.length,
+            concludedCount: concludedMetrics.length,
+            scheduledSample: scheduledMetrics.slice(0, 3),
+            concludedSample: concludedMetrics.slice(0, 3)
+        });
+
         const metricsMap = new Map();
-        
-        // Add scheduled counts
+
         scheduledMetrics.forEach(metric => {
             const key = JSON.stringify(metric._id);
             metricsMap.set(key, { 
@@ -356,7 +396,6 @@ module.exports = class Candidates {
         });
 
         const metrics = Array.from(metricsMap.values()).sort((a, b) => {
-            // Sort by year, month, day, hour
             if (a._id.year !== b._id.year) return a._id.year - b._id.year;
             if (a._id.month !== b._id.month) return a._id.month - b._id.month;
             if (a._id.day !== undefined && b._id.day !== undefined && a._id.day !== b._id.day) return a._id.day - b._id.day;
@@ -364,12 +403,10 @@ module.exports = class Candidates {
             return 0;
         });
 
-        // Define Intl options for each format type
         const intlOptions = labelFormat === 'hour' ? { hour: '2-digit', hour12: false } :
             labelFormat === 'date' ? { month: 'short', day: 'numeric' } :
             { month: 'short', year: 'numeric' };
         
-        // Format the results using Intl.DateTimeFormat for consistent internationalization
         const formattedMetrics = metrics.map(metric => {
             let date, label;
             
@@ -396,6 +433,57 @@ module.exports = class Candidates {
         });
 
         return {labelFormat: {locales, type: labelFormat, intlOptions }, metrics: formattedMetrics };
+    }
+
+    /**
+     * Get interviews for a specific date
+     * @param {Date} date - The date to query
+     * @param {'hour' | 'date' | 'month'} type - The granularity type
+     * @param {string[]} interviewIds - Array of accessible interview IDs
+     * @returns {Promise<Array>}
+     */
+    async getInterviewsByDate(date, type, interviewIds = []) {
+        let startDate, endDate;
+
+        // Set date range based on type
+        if (type === 'hour') {
+            startDate = new Date(date);
+            startDate.setMinutes(0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setHours(startDate.getHours() + 1);
+        } else if (type === 'date') {
+            startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 1);
+        } else if (type === 'month') {
+            startDate = new Date(date);
+            startDate.setDate(1);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setMonth(startDate.getMonth() + 1);
+        }
+
+        // Query for interviews in the date range using populate (same as recent interviews)
+        const interviews = await this.#model.model.find(
+            {
+                interviewId: { $in: interviewIds },
+                startTime: { $gte: startDate, $lt: endDate },
+                isActive: true
+            },
+            { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1 }
+        )
+        .populate({
+            path: 'interview',
+            select: '_id id title duration'
+        })
+        .populate({
+            path: 'user',
+            select: '_id id name email'
+        })
+        .sort({ startTime: -1 });
+
+        return interviews;
     }
 
 }

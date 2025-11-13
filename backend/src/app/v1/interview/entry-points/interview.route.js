@@ -194,6 +194,67 @@ function createInterviewRoutes({ interviewServices }) {
             })
         }
     });
+    router.get("/recent-sessions/date", async (req, res) => {
+        try {
+            const { date } = req.query;
+
+            if (!date) {
+            return res.status(400).json({
+                error: "Please provide ?date=YYYY-MM-DD",
+            });
+            }
+
+            const startDate = new Date(date);
+            if (isNaN(startDate.getTime())) {
+                return res.status(400).json({ error: "Invalid date format" });
+            }
+
+            const endDate = new Date(startDate);
+            endDate.setHours(23, 59, 59, 999);
+
+            const interviewIds = (
+                await interviewModel.find({ isActive: true }).select("_id")
+            ).map((i) => i._id);
+
+            const sessions = await candidateModel
+            .find(
+                {
+                    interviewId: { $in: interviewIds },
+                    isActive: true,
+                    completedAt: {
+                        $gte: startDate,
+                        $lte: endDate,
+                    },
+                },
+                {
+                    interviewId: 1,
+                    userId: 1,
+                    startTime: 1,
+                    createdAt: 1,
+                    completedAt: 1,
+                    score: 1,
+                }
+            )
+            .populate({
+                path: "interview",
+                select: "_id id title duration",
+            })
+            .populate({
+                path: "user",
+                select: "_id name email",
+            })
+            .sort({ completedAt: -1 });
+
+            return res.status(200).json({
+                date: startDate,
+                count: sessions.length,
+                data: sessions,
+            });
+        } catch (err) {
+            console.error("Error fetching sessions by date:", err);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    });
     return router;
 }
 

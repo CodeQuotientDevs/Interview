@@ -327,7 +327,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 															placeholder="Select relevant topics"
 														/>
 													</div>
-													{selectedTopics.map((topic) => {
+													{selectedTopics.map((topic, topicIndex) => {
 														const title = defaultOptionsValueToNameObj[topic] ?? topic;
 														return (
 															<>
@@ -346,7 +346,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 																		<TableBody>
 																			<TableRow>
 																				<TableCell className="w-[100px]">
-																					<Input type="number" placeholder="Weight" {...register(`difficulty.${topic}.weight`, { required: true, valueAsNumber: true })} />
+																					<Input type="number" placeholder="Weight" {...register(`difficulty.${topic}.weight`, { required: true, valueAsNumber: true })} defaultValue={topicIndex === 0 ? 100 : undefined} />
 																				</TableCell>
 																				<TableCell className="w-[100px]">
 																					<Input type="number" placeholder="Duration (min)" {...register(`difficulty.${topic}.duration`, { required: true, valueAsNumber: true })} />

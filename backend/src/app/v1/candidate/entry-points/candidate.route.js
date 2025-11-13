@@ -18,14 +18,53 @@ function createCandidateRoutes({ interviewServices, candidateServices, userServi
 
     router.get("/metrics", middleware.authMiddleware.checkIfLogin, async (req, res) => {
         try {
-            const daysLimit = parseInt(req.query.daysLimit ?? 1);
-            
+            // Parse date range from query parameters
+            const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+            const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date();
+
+            // Validate dates
+            if (startDate && isNaN(startDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid startDate format' });
+            }
+            if (endDate && isNaN(endDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid endDate format' });
+            }
+            if (startDate && endDate && startDate > endDate) {
+                return res.status(400).json({ error: 'startDate must be before or equal to endDate' });
+            }
+
             // Get accessible interviews for the current user
             const accessibleInterviews = await interviewServices.listInterview(req.session);
             const interviewIds = accessibleInterviews.map(interview => interview.id);
-            
-            const metricsData = await candidateServices.getMetrics({ daysLimit }, interviewIds);
+
+            const metricsData = await candidateServices.getMetrics({ startDate, endDate }, interviewIds);
+
             return res.json(metricsData);
+        } catch (error) {
+            logger.error({
+                endpoint: req.originalUrl,
+                error: error?.message ?? error,
+            });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.get("/metrics/date-details", middleware.authMiddleware.checkIfLogin, async (req, res) => {
+        try {
+            const date = req.query.date ? new Date(req.query.date) : null;
+            const type = req.query.type || 'date'; // 'hour', 'date', or 'month'
+
+            if (!date || isNaN(date.getTime())) {
+                return res.status(400).json({ error: 'Invalid or missing date parameter' });
+            }
+
+            // Get accessible interviews for the current user
+            const accessibleInterviews = await interviewServices.listInterview(req.session);
+            const interviewIds = accessibleInterviews.map(interview => interview.id);
+
+            const interviews = await candidateServices.getInterviewsByDate(date, type, interviewIds);
+
+            return res.json(interviews);
         } catch (error) {
             logger.error({
                 endpoint: req.originalUrl,
