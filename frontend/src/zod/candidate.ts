@@ -28,10 +28,40 @@ export const candidateInviteSchema = Zod.object({
     userSpecificDescription: types.userSpecificDescription,
 });
 
-export const messagesSchema = Zod.object({
+export const messageSchema = Zod.object({
+    id: Zod.string(),
+    createdAt: Zod.preprocess((args) => {
+        if (typeof args === 'string' || args instanceof Date) {
+            return new Date(args);
+        }
+        return args;
+    }, Zod.date()),
     role: Zod.string(),
-    parts: Zod.any(),
-})
+    rowText: Zod.string(),
+    parsedResponse: Zod.object({
+        confidence: Zod.number().min(0).max(1),
+        intent: Zod.string(),
+        editorType: Zod.enum(['editor', 'inputBox']),
+        isInterviewGoingOn: Zod.boolean(),
+        languagesAllowed: Zod.array(Zod.object({
+            label: Zod.string(),
+            value: Zod.string(),
+        })).default([{
+            label: "Javascript",
+            value: "javascript",
+        }]),
+        shortSummary: Zod.string(),
+        timestamp: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date()),
+    }).optional(),
+    toolCalls: Zod.array(Zod.any()).optional(),
+});
+
+export const messagesSchema = Zod.array(messageSchema);
 
 export const interviewContentSchema = Zod.object({
     completedAt: Zod.preprocess((args) => {
@@ -40,5 +70,5 @@ export const interviewContentSchema = Zod.object({
         }
         return args;
     }, Zod.date().optional()),
-    messages: Zod.array(messagesSchema),
+    messages: messagesSchema,
 });

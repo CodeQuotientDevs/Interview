@@ -2,8 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
-import type { Content } from '@google/generative-ai';
-import { candidateInviteSchema, interviewContentSchema } from '@/zod/candidate';
+import { candidateInviteSchema, interviewContentSchema, messagesSchema } from '@/zod/candidate';
 import { DashboardGraphDataSchema, DashboardSchema } from '@/zod/dashboard';
 import { RecentInterviewSchema } from '@/components/data-table';
 
@@ -152,7 +151,11 @@ export default class MainClient {
         const response = await this.requestWrapper(this._mainAPI.post(`/api/v1/candidates/messages/${id}`, {
             userInput: message,
         }));
-        return response.data as Array<Content>;
+        const obj = messagesSchema.safeParse(response.data);
+        if (!obj.success) {
+            throw new Error('Something went wrong');
+        }
+        return obj.data;
     }
 
     async getDataForInterview(id: string) {
@@ -161,10 +164,7 @@ export default class MainClient {
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
-        return {
-            completedAt: obj.data.completedAt,
-            messages: obj.data.messages
-        } as { completedAt?: Date, messages: Array<Content> }
+        return obj.data;
     }
 
     async revaluateInterviewAttempt(id: string) {

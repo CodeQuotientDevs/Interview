@@ -9,14 +9,13 @@ import {
     interviewCandidateListSchema,
     interviewCandidateReportSchema,
 } from "@/zod/interview";
-import type { Content } from "@google/generative-ai";
-import { candidateInviteSchema } from "@/zod/candidate";
+import { candidateInviteSchema, interviewContentSchema, messagesSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
 import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
-    sendMessageAi: (id: string, message: string) => Promise<Array<Content>>;
+    sendMessageAi: (id: string, message: string) => Promise<typeof messagesSchema._type>;
     interviewList: (page?: number, limit?: number) => Promise<{
         data: Array<typeof interviewListItemSchema._type>;
         pagination: {
@@ -34,7 +33,7 @@ interface MainStoreState {
     sendInterviewCandidate: (id: string, date: typeof candidateInviteSchema._type) => Promise<string>;
     updateInterviewCandidate: (interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) => Promise<string>;
     getInterviewCandidateList: (id: string) => Promise<Array<typeof interviewCandidateListSchema._type>>;
-    getDataForInterview: (id: string) => Promise<{ completedAt?: Date, messages: Array<Content> }>;
+    getDataForInterview: (id: string) => Promise<typeof interviewContentSchema._type>;
     cloneInterview: (id: string) => Promise<string>
     revaluate: (id: string) => Promise<string>
     getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
@@ -72,7 +71,7 @@ export const createMainStore = (client: MainApi) => {
             return res;
         },
         async sendInterviewCandidate(id, data) {
-            logger.info(`Data: `, data);
+            logger.info(`Data: `, data as unknown as undefined);
             const res = await client.sendInterviewCandidate(id, data);
             return res.id;
         },

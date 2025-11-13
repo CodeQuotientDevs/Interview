@@ -365,7 +365,7 @@ module.exports = class InterviewAiModel {
     async getHistory() {
         const history = await this.#chat.getHistory();
         history.map((ele) => {
-            if (ele.role === 'model') {
+            if (ele.role === 'ai' || ele.role === 'model') {
                 ele.parts = ele.parts.map((txt) => {
                     let payload = txt;
                     try {
