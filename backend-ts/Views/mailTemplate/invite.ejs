@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Invitation</title>
+</head>
+<body>
+    <h2>Invitation for Coding Interview</h2>
+    <p>Dear <%= locals.name %>,</p>
+    
+    <p>
+        We are pleased to invite you to participate in our coding interview. Please use the link provided to start your test.
+    </p>
+    <% if (locals.startTime) {%>
+    <p><strong>Start Date:</strong> <%= locals.startTime %></p>
+    <% } %>
+    <% if (locals.endTime) {%>
+    <p><strong>End Date:</strong> <%= locals.endDate %></p>
+    <% } %>
+    <p>If you have any questions, feel free to reach out.</p>
+    <p>Please use this <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" >link</a>. To start your interview</p>
+    <p>Best regards,</p>
+    <p>Team CodeQuotient</p>
+</body>
+</html>

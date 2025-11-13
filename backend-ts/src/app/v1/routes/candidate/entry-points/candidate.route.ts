@@ -1,0 +1,353 @@
+import Zod from "zod";
+import { Router, Request, Response } from 'express';
+
+import redisConstant from "@root/constants/redis";
+import { logger } from '@libs/logger';
+
+import middleware from "@app/v1/middleware";
+import { checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
+
+
+import { candidateCreateSchema, createCandidateFromBackendSchema, candidateUpdateSchema } from '@app/v1/zod/candidate';
+import { sendInvite } from '@services/mailer';
+import redis from '@services/redis';
+import InterviewAiModel from '@app/v1/agents/InterviewAgentGraph';
+import { userMessage } from '@app/v1/zod/interview';
+
+
+import type InterviewService from "../../interview/domain/interview.service";
+import type CandidateService from "../../candidate/domain/candidate.service";
+import type UserService from "../../user/domain/user.service";
+import type CandidateResponseService from "../../candidate-responses/domain/candidate-response.service";
+import { HumanMessage } from "langchain";
+interface createCandidateRoutesProps {
+    candidateResponseService: CandidateResponseService,
+    interviewServices: InterviewService,
+    candidateServices: CandidateService,
+    userServices: UserService,
+    externalService: null,
+}
+
+export function createCandidateRoutes({ interviewServices, candidateServices, userServices, externalService, candidateResponseService }: createCandidateRoutesProps) {
+    const router = Router();
+
+    router.get('/metrics', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        try {
+            const daysLimit = parseInt((req.query as any).daysLimit ?? '1');
+            const accessibleInterviews = await interviewServices.listInterview(req.session);
+            const interviewIds = accessibleInterviews.map((interview: any) => interview.id);
+            const metricsData = await candidateServices.getMetrics({ daysLimit }, interviewIds);
+            return res.json(metricsData);
+        } catch (error: any) {
+            logger.error({ endpoint: req.originalUrl, error: error?.message ?? error });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.get('/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        const { id } = req.params;
+        try {
+            const interviewObj = await interviewServices.getInterviewById(id);
+            if (!interviewObj) {
+                return res.status(404).json({ error: 'Interview Not Found' });
+            }
+            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+                return res.status(403).json({ error: 'Not Authorized' });
+            }
+
+            const list = await candidateServices.listInterviewCandidate(id);
+            const usersToGet: Set<string> = new Set();
+            const usersToGetFromExternalService = new Set();
+            list.forEach((ele) => {
+                if (ele.externalUser) {
+                    return usersToGetFromExternalService.add(ele.userId);
+                }
+                return usersToGet.add(ele.userId);
+            });
+            const userMap = await userServices.getUserMap(Array.from(usersToGet), {name: 1, email: 1 });
+            let userMapExternal = new Map();
+            if (usersToGetFromExternalService.size) {
+                userMapExternal = new Map();
+            }
+            list.forEach((ele) => {
+                if (ele.externalUser) {
+                    const userObj = userMapExternal.get(ele.userId.toString());
+                    ele.name = userObj.displayname;
+                    ele.email = userObj.email;
+                    return;
+                }
+                const userObj = userMap.get(ele.userId.toString());
+                if (!userObj) {
+                    return;
+                }
+                ele.name = userObj.name;
+                ele.email = userObj.email;
+            });
+            return res.json(list);
+        } catch (error: any) {
+            logger.error({ endpoint: `candidate GET /${id}`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    router.post('/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        const { id } = req.params;
+        try {
+            const payload = await candidateCreateSchema.safeParseAsync(req.body);
+            if (!payload.success) {
+                return res.status(400).json({ error: 'Invalid payload', details: payload.error });
+            }
+
+            const interviewObj = await interviewServices.getInterviewById(id);
+            if (!interviewObj) {
+                return res.status(404).json({ error: 'Interview Not Found' });
+            }
+
+            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+                return res.status(403).json({ error: 'Not authorized' });
+            }
+
+            const data = payload.data as any;
+            const userObj = await userServices.createOrFindUser({ email: data.email, name: data.name, phone: data.phone });
+            if (!userObj) {
+                throw new Error("Something went wrong");
+            }
+            data.externalUser = false;
+            data.userId = userObj.id;
+            const candidateObj = await candidateServices.createCandidateInterview(interviewObj, data);
+
+            await sendInvite({
+                id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateObj.startTime, endDate: candidateObj.endTime,
+            });
+
+            return res.status(200).json({ id: candidateObj.id });
+        } catch (error: any) {
+            logger.error({ endpoint: `candidate POST /${id}`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.get('/interview/:id', async (req: Request, res: Response) => {
+        const { id } = req.params;
+        try {
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) {
+                return res.status(404).json({ error: 'Interview attempt link not found' });
+            }
+            if (candidateObj.startTime.getTime() > Date.now()) {
+                return res.status(409).json({ error: 'Interview has not started yet.' });
+            }
+            if (candidateObj.endTime && candidateObj.endTime.getTime() < Date.now()) {
+                return res.status(409).json({ error: 'Interview has ended.' });
+            }
+
+            const userObj = await userServices.getUserById(candidateObj.userId);
+            if (!userObj) {
+                throw new Error("User not found");
+            }
+            const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
+            const agent = await InterviewAiModel.create({
+                interview: interviewObj,
+                candidate: candidateObj,
+                modelToUse: "gemini-2.5-flash-lite",
+                user: userObj,
+            });
+            let history = await agent.getHistory();
+            if (!history.length) {
+                await agent.sendMessage("Lets start the interview");
+                history = await agent.getHistory();
+            }
+            if (history[history.length -1].role === 'human') {
+                await agent.sendMessage();
+                history = await agent.getHistory();
+            }
+            return res.json({ completedAt: candidateObj.completedAt, messages: history });
+        } catch (error: any) {
+            logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.post('/messages/:id', async (req: Request, res: Response) => {
+        const { id } = req.params;
+        try {
+            const zodResponse = userMessage.safeParse(req.body);
+            if (!zodResponse.success) {
+                return res.status(400).json({ message: 'Bad request', details: zodResponse.error });
+            }
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) {
+                return res.status(404).json({ error: 'Interview not found' });
+            }
+            if (candidateObj.completedAt) {
+                return res.status(409).json({ error: 'Interview is already completed' });
+            }
+
+            const payload = zodResponse.data;
+            logger.info(`User responded with: ${payload.userInput}`);
+
+            const chatHistoryFromRedis = await redis.lrange(redisConstant.getChatHistory(id), 0, -1);
+            if (!chatHistoryFromRedis.length) throw new Error('Something went wrong');
+
+            // const history = chatHistoryFromRedis.map((ele: string) => JSON.parse(ele));
+            // const aiModel = new InterviewAiModel('gemini-2.5-flash-lite', { history, systemInstructions: 'You will be interviewing student on behalf of codequotient. Greet yourself accordingly.' });
+            // const response = await aiModel.sendMessage(payload.userInput, false, { isJSON: true });
+            // const newHistory = await aiModel.getHistory();
+
+            // await redis.del(redisConstant.getChatHistory(id));
+            // await redis.lpush(redisConstant.getChatHistory(id), ...newHistory.map((ele: any) => JSON.stringify(ele)).reverse());
+
+            // if ('text' in response.response) {
+            //     const parsedResponse = InterviewAiModel.parseAiResponse(response.response.text());
+            //     const schemaParser = Zod.object({ isInterviewGoingOn: Zod.boolean() });
+            //     const data = schemaParser.safeParse(parsedResponse);
+            //     if (data.success && !data.data.isInterviewGoingOn) {
+            //         await candidateServices.saveToSubmissionQueue(id);
+            //     }
+            // }
+
+            // await redis.zadd(redisConstant.activeChatSet, redisConstant.getScoreForChat(), id);
+            // const finalHistory = newHistory.slice(1);
+            // return res.json(finalHistory);
+        } catch (error: any) {
+            logger.error(error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    router.patch('/revaluate/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        const { id } = req.params;
+        try {
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) return res.status(404).json({ error: 'Interview Attempt Not Found' });
+            if (!candidateObj.completedAt) return res.status(409).json({ error: 'Interview is not completed yet.' });
+
+            const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId);
+            if (!interviewObj) return res.status(404).json({ error: 'Interview Not Found' });
+            if (!checkPermissionForContentModification(interviewObj, req.session)) return res.status(401).json({ error: 'Not Authorized' });
+
+            await candidateResponseService.populateAttemptFromDBToRedis(id);
+            await candidateServices.generateAndSaveUserReport(id, true);
+            return res.status(200).json({ id: candidateObj.id });
+        } catch (error: any) {
+            logger.error(error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    router.patch('/conclude-interviews/:interviewId', async (req: Request, res: Response) => {
+        try {
+            const attemptIds = (req.body as any).attemptIds;
+            const findObj: any = {
+                interviewId: req.params.interviewId,
+                $or: [{ completedAt: { $exists: false } }, { completedAt: null }],
+            };
+            if (attemptIds?.length) findObj.id = attemptIds;
+
+            const candidatesWhoseInterviewIsNotConcluded = await candidateServices.find(findObj, { id: 1 }, {});
+            await candidateServices.concludeCandidateInterview(candidatesWhoseInterviewIsNotConcluded.map((ele: any) => ele.id.toString()));
+            return res.json({ id: candidatesWhoseInterviewIsNotConcluded.map((ele: any) => ele.id.toString()) });
+        } catch (error: any) {
+            logger.error({ endpoint: 'conclude-interview GET /', error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.get('/:interviewId/:id', async (req: Request & { session?: Session }, res: Response) => {
+        const { interviewId, id } = req.params;
+        try {
+            const interviewObj = await interviewServices.getInterviewById(interviewId);
+            if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
+            if (!checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
+
+            const attempt = await candidateServices.findById(id);
+            if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
+
+            delete (attempt as any).interviewId;
+            (attempt as any).interview = { _id: interviewObj._id, title: interviewObj.title, duration: interviewObj.duration };
+
+            const userObj = await userServices.getUserById((attempt as any).userId);
+            if (!userObj) {
+                throw new Error("Something went wrong, User not found");
+            }
+            (attempt as any).email = userObj.email;
+            (attempt as any).name = userObj.name;
+            (attempt as any).phone = userObj.phone;
+
+            return res.json(attempt);
+        } catch (error: any) {
+            logger.error({ endpoint: `/interviewAttempt interviewId: ${interviewId} id: ${id}`, trace: error?.stack, error: error?.message });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    router.patch('/:interviewId/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        const { interviewId, id } = req.params;
+        try {
+            logger.info(`PATCH request body: ${JSON.stringify(req.body)}`);
+            const payload = await candidateUpdateSchema.safeParseAsync(req.body);
+            if (!payload.success) {
+                logger.error(`Validation failed: ${payload.error}`);
+                return res.status(400).json({ error: 'Invalid payload', details: payload.error });
+            }
+
+            logger.info(`Validated payload: ${JSON.stringify(payload.data)}`);
+            logger.info(`name: ${payload.data.name}, phone: ${payload.data.phone}, yearOfExperience: ${payload.data.yearOfExperience}`);
+
+            const interviewObj = await interviewServices.getInterviewById(interviewId);
+            if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
+            if (!checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not authorized' });
+
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) return res.status(404).json({ error: 'Candidate attempt not found' });
+            if (candidateObj.interviewId.toString() !== interviewId) return res.status(400).json({ error: 'Candidate does not belong to this interview' });
+
+            // Update user fields
+            if (payload.data.name !== undefined || payload.data.phone !== undefined) {
+                if (candidateObj.externalUser) {
+                    logger.warn(`Attempted to update external user ${candidateObj.userId} - not implemented`);
+                } else {
+                    const userUpdateData: any = {};
+                    if (payload.data.name !== undefined) userUpdateData.name = payload.data.name;
+                    if (payload.data.phone !== undefined) userUpdateData.phone = payload.data.phone;
+
+                    const existingUser = await userServices.getUserById(candidateObj.userId);
+                    const updatedUser = await userServices.updateUserById(candidateObj.userId, { $set: userUpdateData });
+                    logger.info(`User update result: ${updatedUser}`);
+                }
+            }
+
+            // Update candidate fields
+            const candidateUpdateData: any = {};
+            if (payload.data.startTime !== undefined) candidateUpdateData.startTime = typeof payload.data.startTime === 'string' ? new Date(payload.data.startTime) : payload.data.startTime;
+            if (payload.data.endTime !== undefined) candidateUpdateData.endTime = typeof payload.data.endTime === 'string' ? new Date(payload.data.endTime) : payload.data.endTime;
+            if (payload.data.yearOfExperience !== undefined) candidateUpdateData.yearOfExperience = payload.data.yearOfExperience;
+            if (payload.data.userSpecificDescription !== undefined) candidateUpdateData.userSpecificDescription = payload.data.userSpecificDescription;
+
+            logger.info(`Updating candidate ${id} with data: ${JSON.stringify(candidateUpdateData)}`);
+            if (Object.keys(candidateUpdateData).length > 0) {
+                const updateResult = await candidateServices.updateOne({ id }, { $set: candidateUpdateData });
+                logger.info(`Candidate update result: ${updateResult}`);
+            }
+
+            const userObj = await userServices.getUserById(candidateObj.userId);
+            
+            if (userObj) {
+                await sendInvite({
+                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateUpdateData.startTime || candidateObj.startTime, endDate: candidateUpdateData.endTime || candidateObj.endTime,
+                    jobTitle: ""
+                });
+                logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);
+            }
+
+            return res.status(200).json({ id: candidateObj.id, message: 'Candidate updated successfully' });
+        } catch (error: any) {
+            logger.error({ endpoint: `candidate PATCH /${interviewId}/${id}`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    return router;
+}
+
+export default createCandidateRoutes;
