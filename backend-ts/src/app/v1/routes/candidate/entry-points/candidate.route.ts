@@ -33,13 +33,55 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
 
     router.get('/metrics', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
         try {
-            const daysLimit = parseInt((req.query as any).daysLimit ?? '1');
+            const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+            const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+
+            if (startDate && isNaN(startDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid startDate format' });
+            }
+            if (endDate && isNaN(endDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid endDate format' });
+            }
+            if (startDate && endDate && startDate > endDate) {
+                return res.status(400).json({ error: 'startDate must be before or equal to endDate' });
+            }
+
             const accessibleInterviews = await interviewServices.listInterview(req.session);
-            const interviewIds = accessibleInterviews.map((interview: any) => interview.id);
-            const metricsData = await candidateServices.getMetrics({ daysLimit }, interviewIds);
+            const interviewIds = accessibleInterviews.map(interview => interview.id);
+
+            const metricsData = await candidateServices.getMetrics({ startDate, endDate }, interviewIds);
+
             return res.json(metricsData);
-        } catch (error: any) {
-            logger.error({ endpoint: req.originalUrl, error: error?.message ?? error });
+        } catch (error) {
+            logger.error({
+                endpoint: req.originalUrl,
+                error: error instanceof Error ? error.message : error,
+            });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    router.get('/metrics/date-details', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        try {
+            const date = req.query.date ? new Date(req.query.date as string) : null;
+            const type = (req.query.type as 'date') || 'date';
+
+            if (!date || isNaN(date.getTime())) {
+                return res.status(400).json({ error: 'Invalid or missing date parameter' });
+            }
+
+            // Get accessible interviews for the current user
+            const accessibleInterviews = await interviewServices.listInterview(req.session);
+            const interviewIds = accessibleInterviews.map(interview => interview.id);
+
+            const interviews = await candidateServices.getInterviewsByDate(date, type, interviewIds);
+
+            return res.json(interviews);
+        } catch (error) {
+            logger.error({
+                endpoint: req.originalUrl,
+                error: error instanceof Error ? error.message : error,
+            });
             return res.status(500).json({ error: 'Internal Server Error' });
         }
     });

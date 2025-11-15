@@ -5,11 +5,16 @@ import { candidateInterviewAttemptStatus } from "@root/constants";
 import type CandidateRepository from "@root/app/v1/routes/candidate/data-access/candidate.repository"
 
 
-type GetMetricsOptions = { daysLimit?: number };
+type GetMetricsOptions = {
+	startDate?: Date;
+	endDate?: Date;
+};
+
+type LabelFormat = "hour" | "date" | "month";
 
 type MetricRow = {
-    date: string;    // ISO date string for the bucket start
-    label: string;   // human readable label
+    date: string;    
+    label: string;   
     scheduled: number;
     concluded: number;
 };
@@ -160,150 +165,186 @@ export class Candidate {
         return redisPipeline.exec();
     }
 
-    async getMetrics(options: GetMetricsOptions = {}, interviewIds: string[] = []): Promise<GetMetricsResult> {
-        const locales = "en-US";
-        const MIN_DAYS_LIMIT = 1;
-        const MAX_DAYS_LIMIT = 400;
-        const daysLimit = Math.max(MIN_DAYS_LIMIT, Math.min(options?.daysLimit ?? 7, MAX_DAYS_LIMIT));
+    async getMetrics(
+		options?: GetMetricsOptions,
+		interviewIds: string[] = []
+	): Promise<GetMetricsResult> {
+		const locales = "en-US";
+		const MAX_DATE_RANGE_DAYS = 400;
+		const now = new Date();
 
-        // Calculate start & end date bounds (endDate now, startDate daysLimit ago)
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - daysLimit);
+		let endDate = options?.endDate || now;
+		let startDate = options?.startDate;
 
-        // Determine bucket type
-        const labelFormat: "hour" | "date" | "month" =
-            daysLimit === 1 ? "hour" :
-                daysLimit <= 180 ? "date" :
-                    "month";
+		if (!startDate) {
+			startDate = new Date(endDate);
+			startDate.setDate(endDate.getDate() - 7);
+		}
 
-        // Base match for scheduled
-        const baseMatch: Record<string, any> = {
-            startTime: { $gte: startDate, $lte: endDate },
-            isActive: true,
-        };
+		if (endDate > now) endDate = now;
 
-        // only add interviewId filter if provided (avoid $in: [] which matches nothing)
-        if (Array.isArray(interviewIds) && interviewIds.length > 0) {
-            baseMatch.interviewId = { $in: interviewIds };
-        }
+		if (startDate > endDate) {
+			startDate = new Date(endDate);
+			startDate.setDate(endDate.getDate() - 7);
+		}
 
-        // Helper to build _id grouping expression depending on labelFormat and field
-        const buildGroupId = (fieldName: string) => {
-            if (labelFormat === "hour") {
-                return {
-                    year: { $year: `$${fieldName}` },
-                    month: { $month: `$${fieldName}` },
-                    day: { $dayOfMonth: `$${fieldName}` },
-                    hour: { $hour: `$${fieldName}` },
-                };
-            }
-            if (labelFormat === "date") {
-                return {
-                    year: { $year: `$${fieldName}` },
-                    month: { $month: `$${fieldName}` },
-                    day: { $dayOfMonth: `$${fieldName}` },
-                };
-            }
-            // month
-            return {
-                year: { $year: `$${fieldName}` },
-                month: { $month: `$${fieldName}` },
-            };
-        };
+		let diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+		let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // aggregate types as any to avoid strict mongo typings; adjust if you have models typed
-        const scheduledMetrics = await this.#model.model.aggregate<any>([
-            { $match: baseMatch },
-            {
-                $group: {
-                    _id: buildGroupId("startTime"),
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
+		if (diffDays > MAX_DATE_RANGE_DAYS) {
+			startDate = new Date(endDate);
+			startDate.setDate(endDate.getDate() - MAX_DATE_RANGE_DAYS);
+		}
 
-        // Build match conditions for concluded
-        const concludedMatch: Record<string, any> = {
-            completedAt: { $gte: startDate, $lte: endDate },
-            isActive: true,
-        };
-        if (Array.isArray(interviewIds) && interviewIds.length > 0) {
-            concludedMatch.interviewId = { $in: interviewIds };
-        }
+		let labelFormat: LabelFormat = "date";
+		// if (diffDays <= 1) labelFormat = "hour";
+		// else if (diffDays <= 180) labelFormat = "date";
+		// else labelFormat = "month";
 
-        const concludedMetrics = await this.#model.model.aggregate<any>([
-            { $match: concludedMatch },
-            {
-                $group: {
-                    _id: buildGroupId("completedAt"),
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
+		const baseMatch: Record<string, any> = {
+			startTime: { $gte: startDate, $lte: endDate },
+			isActive: true,
+			interviewId: { $in: interviewIds },
+		};
 
-        // Merge results into a map by JSON key of _id
-        const metricsMap = new Map<string, { _id: any; scheduled: number; concluded: number }>();
+		const scheduledMetrics = await this.#model.model.aggregate([
+			{ $match: baseMatch },
+			{
+				$group: {
+					_id:{
+                        year: { $year: "$startTime" },
+                        month: { $month: "$startTime" },
+                        day: { $dayOfMonth: "$startTime" },
+					},
+					count: { $sum: 1 },
+				},
+			},
+		]);
 
-        scheduledMetrics.forEach((m: { _id: any; count: number }) => {
-            const key = JSON.stringify(m._id);
-            metricsMap.set(key, { _id: m._id, scheduled: m.count, concluded: 0 });
-        });
+		const concludedMatch: Record<string, any> = {
+			completedAt: { $gte: startDate, $lte: endDate },
+			isActive: true,
+			interviewId: { $in: interviewIds },
+		};
 
-        concludedMetrics.forEach((m: { _id: any; count: number }) => {
-            const key = JSON.stringify(m._id);
-            const existing = metricsMap.get(key);
-            if (existing) {
-                existing.concluded = m.count;
-            } else {
-                metricsMap.set(key, { _id: m._id, scheduled: 0, concluded: m.count });
-            }
-        });
+		const concludedMetrics = await this.#model.model.aggregate([
+			{ $match: concludedMatch },
+			{
+				$group: {
+					_id: {
+                        year: { $year: "$completedAt" },
+                        month: { $month: "$completedAt" },
+                        day: { $dayOfMonth: "$completedAt" },
+					},
+					count: { $sum: 1 },
+				},
+			},
+		]);
 
-        // Convert map to array and sort chronologically
-        const metricsArray = Array.from(metricsMap.values()).sort((a, b) => {
-            // compare year -> month -> day -> hour (if available)
-            if (a._id.year !== b._id.year) return a._id.year - b._id.year;
-            if (a._id.month !== b._id.month) return a._id.month - b._id.month;
-            if (a._id.day !== undefined && b._id.day !== undefined && a._id.day !== b._id.day) return a._id.day - b._id.day;
-            if (a._id.hour !== undefined && b._id.hour !== undefined && a._id.hour !== b._id.hour) return a._id.hour - b._id.hour;
-            return 0;
-        });
+		interface MetricDoc {
+			_id: { year: number; month: number; day?: number; hour?: number };
+			count: number;
+		}
 
-        // Intl options depending on bucket
-        const intlOptions: Intl.DateTimeFormatOptions =
-            labelFormat === "hour" ? { hour: "2-digit", hour12: false } :
-                labelFormat === "date" ? { month: "short", day: "numeric" } :
-                    { month: "short", year: "numeric" };
+		const metricsMap = new Map<
+			string,
+			{ _id: MetricDoc["_id"]; scheduled: number; concluded: number }
+		>();
 
-        const formattedMetrics: MetricRow[] = metricsArray.map(metric => {
-            let dateObj: Date;
+		(scheduledMetrics as MetricDoc[]).forEach((metric) => {
+			const key = JSON.stringify(metric._id);
+			metricsMap.set(key, { _id: metric._id, scheduled: metric.count, concluded: 0 });
+		});
 
-            if (labelFormat === "hour") {
-                dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day, metric._id.hour);
-            } else if (labelFormat === "date") {
-                dateObj = new Date(metric._id.year, metric._id.month - 1, metric._id.day);
-            } else {
-                // month: use first day of the month
-                dateObj = new Date(metric._id.year, metric._id.month - 1, 1);
-            }
+		(concludedMetrics as MetricDoc[]).forEach((metric) => {
+			const key = JSON.stringify(metric._id);
+			const existing = metricsMap.get(key);
+			if (existing) existing.concluded = metric.count;
+			else
+				metricsMap.set(key, {
+					_id: metric._id,
+					scheduled: 0,
+					concluded: metric.count,
+				});
+		});
 
-            const date = dateObj.toISOString();
-            const label = dateObj.toLocaleString(locales, intlOptions);
+		const metrics = Array.from(metricsMap.values()).sort((a, b) => {
+			if (a._id.year !== b._id.year) return a._id.year - b._id.year;
+			if (a._id.month !== b._id.month) return a._id.month - b._id.month;
+			if (a._id.day && b._id.day && a._id.day !== b._id.day)
+				return a._id.day - b._id.day;
+			if (a._id.hour && b._id.hour && a._id.hour !== b._id.hour)
+				return a._id.hour - b._id.hour;
+			return 0;
+		});
 
-            return {
-                date,
-                label,
-                scheduled: metric.scheduled ?? 0,
-                concluded: metric.concluded ?? 0,
-            };
-        });
+		const intlOptions: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 
-        return {
-            labelFormat: { locales, type: labelFormat, intlOptions },
-            metrics: formattedMetrics,
-        };
-    }
+		const formattedMetrics: MetricRow[] = metrics.map((metric) => {
+			const { year, month, day, hour } = metric._id;
+			const dateObj = new Date(year, month - 1, day!)
+
+			return {
+				date: dateObj.toISOString(),
+				label: dateObj.toLocaleString(locales, intlOptions),
+				scheduled: metric.scheduled,
+				concluded: metric.concluded,
+			};
+		});
+
+		return {
+			labelFormat: { locales, type: labelFormat, intlOptions },
+			metrics: formattedMetrics,
+		};
+	}
+
+async getInterviewsByDate(
+	date: Date,
+	type: 'hour' | 'date' | 'month',
+	interviewIds: string[] = []
+): Promise<any[]> {
+		let startDate: Date, endDate: Date;
+
+		if (type === 'hour') {
+			startDate = new Date(date);
+			startDate.setMinutes(0, 0, 0);
+			endDate = new Date(startDate);
+			endDate.setHours(startDate.getHours() + 1);
+		} else if (type === 'date') {
+			startDate = new Date(date);
+			startDate.setHours(0, 0, 0, 0);
+			endDate = new Date(startDate);
+			endDate.setDate(startDate.getDate() + 1);
+		} else if (type === 'month') {
+			startDate = new Date(date);
+			startDate.setDate(1);
+			startDate.setHours(0, 0, 0, 0);
+			endDate = new Date(startDate);
+			endDate.setMonth(startDate.getMonth() + 1);
+		} else {
+			throw new Error('Invalid type parameter');
+		}
+
+		const interviews = await this.#model.model.find(
+			{
+				interviewId: { $in: interviewIds },
+				startTime: { $gte: startDate, $lt: endDate },
+				isActive: true
+			},
+			{ interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1 }
+		)
+		.populate({
+			path: 'interview',
+			select: '_id id title duration'
+		})
+		.populate({
+			path: 'user',
+			select: '_id id name email'
+		})
+		.sort({ startTime: -1 });
+
+		return interviews;
+	}
 
 }
 
