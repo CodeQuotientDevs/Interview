@@ -17,3 +17,84 @@ export const interviewParserSchema = z.object({
 });
 
 export type InterviewParserType = z.infer<typeof interviewParserSchema>
+
+
+const QuestionSchema = z.object({
+    question: z
+        .string()
+        .min(1)
+        .describe("Question asked to the user"),
+    score: z
+        .number()
+        .int()
+        .min(0)
+        .max(10)
+        .describe(
+            "Score for this question (SCORE should be between 0 to 10) and strictly depend on the user's answer. If user didn't attempt or skip the question score must be 0"
+        ),
+    userAnswer: z
+        .string()
+        .describe(
+            "User answer in markdown format; if plain text then also provide in markdown format"
+        ),
+    remarks: z
+        .string()
+        .describe("Evaluator remarks for the user's answer"),
+}).describe("Schema for a single question asked under a topic");
+
+const TopicDetailSchema = z.object({
+    topic: z
+        .string()
+        .min(1)
+        .describe("The name or title of the topic that the user was tested on during the interview"),
+    topicWeight: z
+        .number()
+        .describe("The weight of this topic from overall interview"),
+    score: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("The user's score for this specific topic (0-100)"),
+    detailedReport: z
+        .string()
+        .describe(
+            "A comprehensive report that provides insight into the user's strengths and weaknesses in the topic."
+        ),
+    questionsAsked: z
+        .array(QuestionSchema)
+        .describe(
+            "Provide the questions which were asked to this user for this topic. Make sure to show all questions."
+        ),
+}).describe("Each object represents the performance report for a specific topic");
+
+
+export const interviewReportSchema = z.object({
+    result: z
+        .boolean()
+        .describe(
+            "Indicates whether the user passed the interview. `true` means passed, `false` means did not pass."
+        ),
+
+    scorePercentage: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe(
+            "The overall percentage score of the user in the interview, between 0 and 100. Calculated by combining topic-wise scores with their weightages."
+        ),
+
+    summaryReport: z
+        .string()
+        .describe("Provide brief summary of user report in markdown format."),
+
+    detailsDescription: z
+        .array(TopicDetailSchema)
+        .describe(
+            "An array containing a detailed report of the user's performance on specific topics in the interview."
+        ),
+}).describe(
+    "Schema representing the response of a user's interview results, including overall performance and detailed topic-wise report."
+);
+
+
+export type InterviewReportType = z.infer<typeof interviewParserSchema>;

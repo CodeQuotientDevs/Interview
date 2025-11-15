@@ -50,6 +50,9 @@ const schema = new Schema<Candidate>({
     summaryReport: {
         type: String,
     },
+    revaluationStartDate: {
+        type: Date,
+    },
     detailedReport: [{
         topic: String,
         score: Number,

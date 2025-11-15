@@ -140,6 +140,10 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (candidateObj.endTime && candidateObj.endTime.getTime() < Date.now()) {
                 return res.status(409).json({ error: 'Interview has ended.' });
             }
+            
+            if (candidateObj.completedAt && candidateObj.completedAt) {
+                return res.status(409).json({ error: 'Thankyou for attempting this interview.' });
+            }
 
             const userObj = await userServices.getUserById(candidateObj.userId);
             if (!userObj) {
@@ -182,33 +186,41 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (candidateObj.completedAt) {
                 return res.status(409).json({ error: 'Interview is already completed' });
             }
-
             const payload = zodResponse.data;
             logger.info(`User responded with: ${payload.userInput}`);
+            const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
 
-            const chatHistoryFromRedis = await redis.lrange(redisConstant.getChatHistory(id), 0, -1);
-            if (!chatHistoryFromRedis.length) throw new Error('Something went wrong');
-
-            // const history = chatHistoryFromRedis.map((ele: string) => JSON.parse(ele));
-            // const aiModel = new InterviewAiModel('gemini-2.5-flash-lite', { history, systemInstructions: 'You will be interviewing student on behalf of codequotient. Greet yourself accordingly.' });
-            // const response = await aiModel.sendMessage(payload.userInput, false, { isJSON: true });
-            // const newHistory = await aiModel.getHistory();
-
-            // await redis.del(redisConstant.getChatHistory(id));
-            // await redis.lpush(redisConstant.getChatHistory(id), ...newHistory.map((ele: any) => JSON.stringify(ele)).reverse());
-
-            // if ('text' in response.response) {
-            //     const parsedResponse = InterviewAiModel.parseAiResponse(response.response.text());
-            //     const schemaParser = Zod.object({ isInterviewGoingOn: Zod.boolean() });
-            //     const data = schemaParser.safeParse(parsedResponse);
-            //     if (data.success && !data.data.isInterviewGoingOn) {
-            //         await candidateServices.saveToSubmissionQueue(id);
-            //     }
-            // }
-
-            // await redis.zadd(redisConstant.activeChatSet, redisConstant.getScoreForChat(), id);
-            // const finalHistory = newHistory.slice(1);
-            // return res.json(finalHistory);
+            const userObj = await userServices.getUserById(candidateObj.userId);
+            if (!userObj) {
+                throw new Error("User not found");
+            }
+            const agent = await InterviewAiModel.create({
+                interview: interviewObj,
+                candidate: candidateObj,
+                modelToUse: "gemini-2.5-flash-lite",
+                user: userObj,
+            });
+            let history = await agent.getHistory();
+            if (!history.length) {
+                throw new Error("Invalid request");
+            }
+            if (history[history.length -1].role === 'human') {
+                await agent.sendMessage();
+                history = await agent.getHistory();
+            }
+            const response = await agent.sendMessage(payload.userInput);
+            if (response?.latestAiResponse?.structuredResponse?.isInterviewGoingOn === false) {
+                await candidateServices.saveToSubmissionQueue(id);
+                await candidateServices.updateOne({
+                    id: id,
+                }, {
+                    $set: {
+                        completedAt: new Date(),
+                    }
+                })
+            }
+            history = await agent.getHistory();
+            return res.json(history);
         } catch (error: any) {
             logger.error(error);
             return res.status(500).json({ error: 'Internal server error' });
@@ -221,13 +233,18 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             const candidateObj = await candidateServices.findById(id);
             if (!candidateObj) return res.status(404).json({ error: 'Interview Attempt Not Found' });
             if (!candidateObj.completedAt) return res.status(409).json({ error: 'Interview is not completed yet.' });
-
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview Not Found' });
             if (!checkPermissionForContentModification(interviewObj, req.session)) return res.status(401).json({ error: 'Not Authorized' });
-
             await candidateResponseService.populateAttemptFromDBToRedis(id);
-            await candidateServices.generateAndSaveUserReport(id, true);
+            await candidateServices.saveToSubmissionQueue(id);
+            await candidateServices.updateOne({
+                id: id,
+            }, {
+                $set: {
+                    revaluationStartDate: new Date(),
+                },
+            });
             return res.status(200).json({ id: candidateObj.id });
         } catch (error: any) {
             logger.error(error);

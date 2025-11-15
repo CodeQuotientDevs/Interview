@@ -15,6 +15,7 @@ type Candidate = {
     externalUserUniquenessKey?: string,
     isActive: boolean,
     summaryReport?: string,
+    revaluationStartDate?: Date,
     detailedReport: Array<{
         topic: string,
         score: number,

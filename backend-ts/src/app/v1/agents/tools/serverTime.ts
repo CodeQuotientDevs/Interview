@@ -11,9 +11,7 @@ export const getServerTime = tool(
     ({ }: {  }) => dayjs().format(),
     {
         name: 'get_server_time',
-        description: "Get the server time according to the required dayjs timezone.",
-        schema: zod.object({
-            timezone: zod.string().describe("Required timezone dayjs"),
-        }),
+        description: "Get the server time.",
+        schema: zod.object({}),
     }
 )

@@ -33,3 +33,4 @@ export const listener = server.listen(port, (err) => {
 process.on('SIGTERM', () => {
 	listener.close();
 });
+

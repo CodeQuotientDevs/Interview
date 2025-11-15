@@ -89,44 +89,6 @@ export class Candidate {
         return redis.zadd(redisConstant.completedInterview, Date.now(), id);
     }
 
-    async generateAndSaveUserReport(id: string, revaluate: boolean) {
-        // const history = await redis.lrange(redisConstant.getChatHistory(id), 0, -1);
-        // const parsedHistory = history.map(el => JSON.parse(el));
-        // const aiModel = new InterviewAiModel('gemini-2.5-flash', {
-        //     history: parsedHistory,
-        //     useReportSchema: true,
-        // });
-        // const message = await aiModel.getUserReport();
-        // if ('text' in message.response) {
-        //     const response = InterviewAiModel.parseAiResponse(message.response.text());
-        //     const parsedResponse = userReportSchema.safeParse(response);
-        //     if (parsedResponse.error) {
-        //         throw new Error(`Invalid Response by ai model for ${id}`);
-        //     }
-        //     if (parsedResponse.success) {
-        //         const setObj = {
-        //             completedAt: new Date(),
-        //             score: parsedResponse.data.scorePercentage ?? 0,
-        //             summaryReport: parsedResponse.data.summaryReport,
-        //             detailedReport: parsedResponse.data.detailsDescription ?? [],
-        //         }
-        //         if (revaluate) {
-        //             delete setObj.completedAt;
-        //         }
-        //         const updateObj = {
-        //             $set: setObj,
-        //         }
-        //         const response = await this.updateOne({
-        //             id: id,
-        //         }, updateObj);
-        //         if (response.interviewId) {
-        //             await removeFromCache(cacheRedisConstants.getPreviouslyAskedQuestion(response.interviewId))
-        //         }
-        //         return response;
-        //     }
-        // }
-    }
-
     async #previouslyAskedQuestionsFromDB(interviewId: string) {
         const interviewAttempts = await this.#model.model.aggregate(
             [

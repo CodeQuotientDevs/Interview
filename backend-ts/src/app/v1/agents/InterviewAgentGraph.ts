@@ -1,4 +1,4 @@
-import zod from "zod";
+import zod, { check } from "zod";
 import {
     StateGraph,
     START,
@@ -13,7 +13,6 @@ import type { Interview } from "@app/v1/routes/interview/data-access/interview.m
 import type { Candidate } from "@app/v1/routes/candidate/data-access/candidate.model";
 import type { SingleUserModel as BasicUserDetails } from "@app/v1/routes/user/data-access/user.model";
 
-// prompt helpers
 import {
     systemInstructionCurrentInterview,
     systemInstructionConvertSimpleStringToStructuredOutput,
@@ -23,7 +22,7 @@ import { getServerTime } from "./tools/serverTime";
 import createModel from "./models";
 import { createAgent } from "langchain";
 
-import { interviewParserSchema } from "./schema/interviewAgent";
+import { interviewParserSchema, interviewReportSchema } from "./schema/interviewAgent";
 
 
 type MessageType = {
@@ -42,6 +41,10 @@ const InterviewState = Annotation.Root({
         },
         default: () => [],
     }),
+    latestAiResponse: Annotation<MessageType | null>({
+        reducer: (current, update) => update ?? current,
+        default: () => null,
+    }),
     shouldConvertToStructured: Annotation<boolean>({
         reducer: (current, update) => update ?? current,
         default: () => true,
@@ -50,6 +53,10 @@ const InterviewState = Annotation.Root({
         reducer: (current, update) => update ?? current,
         default: () => 0,
     }),
+    interviewStartTime: Annotation<Date>({
+        reducer: (current, update) => update ?? current,
+        default: () => new Date(),
+    })
 });
 
 type InterviewStateType = typeof InterviewState.State;
@@ -61,7 +68,7 @@ async function ensureGraphCompiled() {
     const builder = new StateGraph(InterviewState)
         .addNode("askAndRespond", async (state: InterviewStateType, config: any) => {
             const ctx = config.configurable?.context ?? {};
-            const { interview, candidate, user, model } = ctx;
+            const { interview, candidate, user, model, messages } = ctx;
 
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
@@ -71,12 +78,19 @@ async function ensureGraphCompiled() {
                 candidate as Candidate,
                 user as BasicUserDetails
             );
-            
+            let enhancedSystemPrompt = systemPrompt;
+            const isFirstMessage = state.messages.length == 1;
+            if (isFirstMessage) {
+                enhancedSystemPrompt += `\n\nIMPORTANT: This is the FIRST message. You MUST call get_server_time immediately to establish the interview start time.`;
+            } else if (state.interviewStartTime) {
+                enhancedSystemPrompt += `\n\nInterview Start Time: ${state.interviewStartTime} (timestamp in ms). Current message count: ${state.messages.length}. Remember to call get_server_time to calculate elapsed time.`;
+            }
+
             const messagesForModel: BaseMessage[] = [
-                new SystemMessage(systemPrompt),
+                new SystemMessage(enhancedSystemPrompt),
                 ...state.messages.map(ele => ele.message),
             ];
-            
+
             const modelResponse = await model.invoke(messagesForModel, {
                 tools: [getServerTime],
             });
@@ -87,10 +101,18 @@ async function ensureGraphCompiled() {
                 createdAt: new Date(),
                 structuredResponse: {},
             };
-            
-            return {
+            let updates: any = {
                 messages: [newAiMessage],
+                latestAiResponse: newAiMessage,
             };
+
+            if (isFirstMessage && modelResponse.tool_calls && modelResponse.tool_calls.length > 0) {
+                const timeCall = modelResponse.tool_calls.find((tc: any) => tc.name === 'get_server_time');
+                if (timeCall) {
+                    updates.interviewStartTime = Date.now();
+                }
+            }
+            return updates;
         })
         .addNode("convertToStructuredResponse", async (state: InterviewStateType, config: any) => {
             const instruction = systemInstructionConvertSimpleStringToStructuredOutput();
@@ -134,6 +156,7 @@ async function ensureGraphCompiled() {
                 
                 return {
                     messages: [updatedMessage],
+                    latestAiResponse: updatedMessage,
                 };
 
             } catch (error) {
@@ -236,14 +259,14 @@ async function ensureGraphCompiled() {
 export class InterviewAgent {
     private interview: Interview;
     private candidate: Candidate;
-    private user: BasicUserDetails;
+    private user: BasicUserDetails | null;
     private model: BaseChatModel;
     private threadId: string;
 
     static async create(opts: {
         interview: Interview;
         candidate: Candidate;
-        user: BasicUserDetails;
+        user: BasicUserDetails | null;
         modelToUse: llmModels;
     }) {
         await ensureGraphCompiled();
@@ -253,14 +276,14 @@ export class InterviewAgent {
     private constructor(
         interview: Interview,
         candidate: Candidate,
-        user: BasicUserDetails,
+        user: BasicUserDetails | null,
         model: llmModels
     ) {
         this.interview = interview;
         this.candidate = candidate;
         this.user = user;
         this.model = createModel(model);
-        this.threadId = String((interview as any)?.id ?? Date.now());
+        this.threadId = candidate.id.toString();
     }
 
     async sendMessage(userInput?: string) {
@@ -311,9 +334,9 @@ export class InterviewAgent {
         return [];
     }
 
-    async getHistory() {
+    async getHistory(config: { includeToolCalls: boolean } = { includeToolCalls: false }) {
         const messages = await this.getPersistedMessages();
-        return messages.map((msg) => {
+        return messages.reduce((result: Array<any>, msg) => {
             const base = {
                 id: msg.id,
                 createdAt: msg.createdAt,
@@ -321,11 +344,51 @@ export class InterviewAgent {
                 rowText: typeof msg.message.content === 'string' ? msg.message.content : JSON.stringify(msg.message.content),
                 parsedResponse: msg.structuredResponse,
             };
-            if (msg.message instanceof AIMessage && msg.message.tool_calls) {
-                return { ...base, toolCalls: msg.message.tool_calls };
+
+            if (msg.message instanceof AIMessage && ((msg.message.tool_calls?.length ?? 0) > 0)) {
+                if (config.includeToolCalls) {
+                    result.push(
+                        { ...base, toolCalls: msg.message.tool_calls }
+                    );
+                }
+            } else if (msg.message instanceof ToolMessage) {
+                if (config.includeToolCalls) {
+                    result.push(base);
+                }
+            } else {
+                result.push(base);
             }
-            return base;
+            return result;
+        }, []);
+    }
+
+    async generateReport(): Promise<zod.infer<typeof interviewReportSchema>> {
+        const systemInstruction = '';
+        const schema = interviewReportSchema;
+        const agent = createAgent({
+            model: this.model,
+            systemPrompt: systemInstruction,
+            responseFormat: schema,
         });
+        const checkpoint = await checkPointer.get({
+            configurable: { thread_id: this.threadId }
+        });
+        const existingMessages: Array<any> = (checkpoint?.channel_values?.messages ?? []) as any;
+        if (!existingMessages.length) {
+            return {
+                scorePercentage: 0,
+                detailsDescription: [],
+                result: false,
+                summaryReport: "No message to evaluate user",
+            }
+        }
+        const response = await agent.invoke(
+            {
+                messages: existingMessages.map(ele => ele.message),
+            }
+        );
+        console.log(response);
+        return response.structuredResponse;
     }
 
     async clearHistory() {
