@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 
-if (!process.env.MONGO_CONNECTION_URI) {
-    throw new Error("Mongo Connection String Not Provided");
-}
+export const connectMongo = async () => {
+    const connectionString = process.env.MONGO_CONNECTION_URI;
 
-mongoose.connect(process.env.MONGO_CONNECTION_URI);
+    if (!connectionString) {
+        throw new Error("Mongo Connection String Not Provided");
+    }
+
+    await mongoose.connect(connectionString);
+};

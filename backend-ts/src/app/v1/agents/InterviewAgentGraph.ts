@@ -23,6 +23,7 @@ import createModel from "./models";
 import { createAgent } from "langchain";
 
 import { interviewParserSchema, interviewReportSchema } from "./schema/interviewAgent";
+import { logger } from "@root/libs";
 
 
 type MessageType = {
@@ -387,7 +388,7 @@ export class InterviewAgent {
                 messages: existingMessages.map(ele => ele.message),
             }
         );
-        console.log(response);
+        logger.info(response);
         return response.structuredResponse;
     }
 
