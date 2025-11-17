@@ -179,11 +179,6 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (candidateObj.startTime.getTime() > Date.now()) {
                 return res.status(409).json({ error: 'Interview has not started yet.' });
             }
-            
-            if (candidateObj.completedAt && candidateObj.completedAt) {
-                return res.status(409).json({ error: 'Thank you for attempting this interview.' });
-            }
-
             const userObj = await userServices.getUserById(candidateObj.userId);
             if (!userObj) {
                 throw new Error("User not found");

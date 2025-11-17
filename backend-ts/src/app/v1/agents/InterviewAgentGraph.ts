@@ -118,7 +118,7 @@ async function ensureGraphCompiled() {
         .addNode("convertToStructuredResponse", async (state: InterviewStateType, config: any) => {
             const instruction = systemInstructionConvertSimpleStringToStructuredOutput();
             const ctx = config.configurable?.context ?? {};
-            const { model } = ctx;
+            const { model, user } = ctx;
 
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
@@ -159,7 +159,9 @@ async function ensureGraphCompiled() {
                     message: lastAIMessageWrapper.message,
                     structuredResponse: structuredData,
                 };
-                
+                if (structuredData.isInterviewGoingOn === false) {
+                    updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
+                }
                 return {
                     messages: [updatedMessage],
                     latestAiResponse: updatedMessage,
@@ -403,7 +405,8 @@ export class InterviewAgent {
             configurable: { thread_id: this.threadId }
         });
         const existingMessages: Array<any> = (checkpoint?.channel_values?.messages ?? []) as any;
-        if (!existingMessages.length) {
+        const messages = InterviewAgent.parseMessage({ includeToolCalls: false },existingMessages); 
+        if (!messages.length) {
             return {
                 scorePercentage: 0,
                 detailsDescription: [],
@@ -413,7 +416,7 @@ export class InterviewAgent {
         }
         const response = await agent.invoke(
             {
-                messages: existingMessages.map(ele => ele.message),
+                messages: messages.map(ele => ele.message),
             }
         );
         return response.structuredResponse;
