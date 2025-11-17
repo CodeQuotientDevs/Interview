@@ -3,11 +3,9 @@ import Zod from 'zod';
 
 export function parseModelResponseToCompatibleForChat(data: typeof messageSchema._type, index: number): MessageType {
     let content = data.rowText;
-    let createdAt: Date | undefined;
     try {
         const parsedContent = Zod.object({message: Zod.string(), createdAt: Zod.string()}).parse(JSON.parse(content));
         content = parsedContent.message;
-        createdAt = new Date(parsedContent.createdAt);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_error) { /* empty */ }
 
@@ -25,7 +23,7 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
                 ...data.parsedResponse,
             },
             role: 'model',
-            createdAt,
+            createdAt: data.createdAt,
         };
     }
     return {
@@ -33,6 +31,6 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
         error: false,
         content: content,
         role: 'user',
-        createdAt,
+        createdAt: data.createdAt,
     }
 }

@@ -179,12 +179,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (candidateObj.startTime.getTime() > Date.now()) {
                 return res.status(409).json({ error: 'Interview has not started yet.' });
             }
-            if (candidateObj.endTime && candidateObj.endTime.getTime() < Date.now()) {
-                return res.status(409).json({ error: 'Interview has ended.' });
-            }
             
             if (candidateObj.completedAt && candidateObj.completedAt) {
-                return res.status(409).json({ error: 'Thankyou for attempting this interview.' });
+                return res.status(409).json({ error: 'Thank you for attempting this interview.' });
             }
 
             const userObj = await userServices.getUserById(candidateObj.userId);
@@ -200,6 +197,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             });
             let history = await agent.getHistory();
             if (!history.length) {
+                if (candidateObj.endTime && candidateObj.endTime.getTime() < Date.now()) {
+                    return res.status(409).json({ error: 'Interview has ended.' });
+                }
                 await agent.sendMessage("Lets start the interview");
                 history = await agent.getHistory();
             }

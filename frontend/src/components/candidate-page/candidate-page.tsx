@@ -64,7 +64,6 @@ export default function CandidatePage(props: CandidatePageProps) {
 	}, []);
 
 	const onSubmit = useCallback(async (data: unknown) => {
-		console.log(data);
 		const parsedData = interviewCreateSchema.safeParse(data);
 		if (parsedData.error) {
 			showAlert({
