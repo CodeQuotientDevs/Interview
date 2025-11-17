@@ -1,4 +1,4 @@
-import zod, { check } from "zod";
+import zod, { check, number } from "zod";
 import {
     StateGraph,
     START,
@@ -123,7 +123,9 @@ async function ensureGraphCompiled() {
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
             }
-            
+
+            const numberOfMessagesAdditionalRequired = Math.ceil(state.conversionAttempts * 25  * state.messages.length) / 100;
+            const messagesToGive = InterviewAgent.parseMessage({ includeToolCalls: false },state.messages.slice( state.messages.length - numberOfMessagesAdditionalRequired  ));
             const lastAIMessageWrapper = state.messages.slice().reverse().find(
                 wrapper => wrapper.message instanceof AIMessage
             );
@@ -131,14 +133,17 @@ async function ensureGraphCompiled() {
             if (!lastAIMessageWrapper) {
                 return { messages: [] };
             }
-            
+
+            if (state.conversionAttempts > 3) {
+                return END;
+            } 
             const messages = [
                 new SystemMessage(instruction),
+                ...(messagesToGive.map(ele => ele.message)),
                 new HumanMessage(`PARSE THIS MESSAGE CONTENT:\n${lastAIMessageWrapper.message.content ?? ""}`),
             ];
-
             const agent = createAgent({
-                model,
+                model: model,
                 responseFormat: interviewParserSchema,
                 tools: [],
                 
@@ -158,6 +163,7 @@ async function ensureGraphCompiled() {
                 return {
                     messages: [updatedMessage],
                     latestAiResponse: updatedMessage,
+                    conversionAttempts: state.conversionAttempts + 1,
                 };
 
             } catch (error) {
@@ -168,9 +174,10 @@ async function ensureGraphCompiled() {
                     structuredResponse: { 
                         __raw: error, 
                         __error: "JSON parse failed" 
-                    }
+                    },
                 };
                 return {
+                    conversionAttempts: state.conversionAttempts + 1,
                     messages: [updatedMessage],
                 };
             }
@@ -249,6 +256,22 @@ async function ensureGraphCompiled() {
                 end: END,
             }
         )
+        .addConditionalEdges("convertToStructuredResponse", (state: InterviewStateType) => {
+            const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
+            if (!lastMessageWrapper?.structuredResponse?.confidence) {
+                return "end";
+            }
+            if (state.conversionAttempts > 3) {
+                return "end";
+            }
+            if (lastMessageWrapper?.structuredResponse?.confidence > 0.7) {
+                return "end";
+            }
+            return "retry";
+        }, {
+            retry: "convertToStructuredResponse",
+            end: END,
+        })
         .addEdge(START, "askAndRespond")
         .addEdge("executeTools", "askAndRespond")
         .addEdge("convertToStructuredResponse", END);
@@ -335,9 +358,27 @@ export class InterviewAgent {
         return [];
     }
 
+    static parseMessage(config: { includeToolCalls: boolean } = { includeToolCalls: false }, messages: Array<MessageType>) {
+        return messages.reduce((result: Array<MessageType>, msg) => {
+            if (msg.message instanceof AIMessage && ((msg.message.tool_calls?.length ?? 0) > 0)) {
+                if (config.includeToolCalls) {
+                    result.push(msg);
+                }
+            } else if (msg.message instanceof ToolMessage) {
+                if (config.includeToolCalls) {
+                    result.push(msg);
+                }
+            } else {
+                result.push(msg);
+            }
+            return result;
+        }, []);
+    }
+
     async getHistory(config: { includeToolCalls: boolean } = { includeToolCalls: false }) {
         const messages = await this.getPersistedMessages();
-        return messages.reduce((result: Array<any>, msg) => {
+        const messageToInclude = InterviewAgent.parseMessage(config, messages);
+        return messageToInclude.reduce((result: Array<any>, msg) => {
             const base = {
                 id: msg.id,
                 createdAt: msg.createdAt,
@@ -345,20 +386,7 @@ export class InterviewAgent {
                 rowText: typeof msg.message.content === 'string' ? msg.message.content : JSON.stringify(msg.message.content),
                 parsedResponse: msg.structuredResponse,
             };
-
-            if (msg.message instanceof AIMessage && ((msg.message.tool_calls?.length ?? 0) > 0)) {
-                if (config.includeToolCalls) {
-                    result.push(
-                        { ...base, toolCalls: msg.message.tool_calls }
-                    );
-                }
-            } else if (msg.message instanceof ToolMessage) {
-                if (config.includeToolCalls) {
-                    result.push(base);
-                }
-            } else {
-                result.push(base);
-            }
+            result.push(base);
             return result;
         }, []);
     }
@@ -388,7 +416,6 @@ export class InterviewAgent {
                 messages: existingMessages.map(ele => ele.message),
             }
         );
-        logger.info(response);
         return response.structuredResponse;
     }
 
