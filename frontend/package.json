@@ -44,7 +44,6 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "emblor": "^1.4.7",
-    "exceljs": "^4.4.0",
     "framer-motion": "11",
     "immer": "^10.1.1",
     "lucide-react": "^0.475.0",
