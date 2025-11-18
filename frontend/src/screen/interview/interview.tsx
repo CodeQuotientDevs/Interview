@@ -61,7 +61,7 @@ export const Interview = (props: InterviewProps) => {
     useEffect(() => {
         if (interview.data?.messages) {
             const messages = interview.data.messages;
-            const parsedMessages = messages.map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+            const parsedMessages = messages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
             setMessages(parsedMessages);
         }
     }, [interview.data]);
