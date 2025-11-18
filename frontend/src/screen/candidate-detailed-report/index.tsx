@@ -1,11 +1,11 @@
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Loader } from "@/components/ui/loader";
-import { CheckCircle, XCircle, AlertCircle, Trophy, Target, MessageSquare, Code } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Trophy, Target, MessageSquare, Code, ArrowLeft } from "lucide-react";
 
 import { useAppStore, useMainStore } from "@/store";
 import { AlertType } from "@/constants";
@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 // Type definitions based on Zod schema
 type DetailedReport = {
@@ -47,6 +48,7 @@ export function CandidateDetailedReport() {
     const { interviewId, candidateId } = useParams();
     const showAlert = useAppStore().showAlert;
     const getCandidateAttempt = useMainStore().getCandidateAttempt;
+    const navigate = useNavigate();
 
     const reportQuery = useQuery({
         queryKey: ['candidate-report', interviewId, candidateId],
@@ -68,8 +70,21 @@ export function CandidateDetailedReport() {
                 type: AlertType.error,
                 message: reportQuery.error?.message ?? 'Failed to load the detailed report. Please try again.'
             });
+            return;
         }
     }, [reportQuery.error, showAlert]);
+
+    useEffect(() => {
+        if (reportQuery.data && !reportQuery.data?.completedAt) {
+            showAlert({
+                time: 5,
+                title: 'Error loading report',
+                type: AlertType.error,
+                message: 'Interview attempt is not yet completed jqhewgfdjsdhg'
+            });
+        }
+    }, [reportQuery.data, showAlert]);
+
 
     const getBreadcrumbs = (candidateName?: string) => {
         // TODO: Get interview title from API response when available
@@ -87,7 +102,7 @@ export function CandidateDetailedReport() {
     if (reportQuery.isLoading) {
         return (
             <>
-                <SiteHeader 
+                <SiteHeader
                     breadcrumbs={getBreadcrumbs()}
                     showBack={true}
                     backTo={`/interview/candidates/${interviewId}`}
@@ -101,21 +116,34 @@ export function CandidateDetailedReport() {
         );
     }
 
-    if (!reportQuery.data) {
+    if (!reportQuery.data || !reportQuery.data.completedAt) {
         return (
             <>
-                <SiteHeader 
+                <SiteHeader
                     breadcrumbs={getBreadcrumbs()}
                     showBack={true}
                     backTo={`/interview/candidates/${interviewId}`}
                 />
                 <div className="flex flex-1 flex-col">
-                    <div className="@container/main flex flex-1 flex-col">
-                        <div className="flex flex-col py-2">
-                            <div className="px-4 lg:px-6">
-                                <div className="text-center py-8">
-                                    <p>No report data found for this candidate.</p>
-                                </div>
+                    <div className="@container/main flex flex-1 items-center justify-center">
+                        <div className="max-w-xl w-full text-center p-8 bg-background/70 backdrop-blur rounded-lg border border-muted-foreground/10">
+                            <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center bg-gray-100 rounded-full">
+                                <AlertCircle className="w-8 h-8 text-gray-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">No report available</h3>
+                            <p className="text-sm text-muted-foreground mb-6">
+                                It may still be processing or the candidate hasn't completed the interview.
+                            </p>
+                            <div className="flex items-center justify-center gap-3">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate(`/interview/candidates/${interviewId}`)}
+                                    className="h-8 hover:bg-muted"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    <span>Back to candidates</span>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -149,7 +177,7 @@ export function CandidateDetailedReport() {
 
     return (
         <>
-            <SiteHeader 
+            <SiteHeader
                 breadcrumbs={getBreadcrumbs(reportData.name)}
                 showBack={true}
                 backTo={`/interview/candidates/${interviewId}`}
@@ -168,7 +196,7 @@ export function CandidateDetailedReport() {
                                                 {reportData.name}'s Interview Report
                                             </CardTitle>
                                             <CardDescription>
-                                                Interview: {reportData.interview?.title || 'N/A'} • 
+                                                Interview: {reportData.interview?.title || 'N/A'} •
                                                 Completed: {reportData.completedAt ? new Date(reportData.completedAt).toLocaleDateString() : 'N/A'}
                                             </CardDescription>
                                         </div>
@@ -198,7 +226,7 @@ export function CandidateDetailedReport() {
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-2xl font-bold text-green-600">
-                                                    {(reportData.detailedReport ?? []).reduce((acc: number, report: DetailedReport) => 
+                                                    {(reportData.detailedReport ?? []).reduce((acc: number, report: DetailedReport) =>
                                                         acc + (report.questionsAsked?.length || 0), 0)}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Questions Asked</div>
@@ -236,7 +264,7 @@ export function CandidateDetailedReport() {
                                     <Target className="w-5 h-5" />
                                     Topic-wise Analysis
                                 </h2>
-                                
+
                                 <Accordion type="multiple" className="w-full space-y-4">
                                     {(reportData.detailedReport ?? []).map((report: DetailedReport, index: number) => (
                                         <AccordionItem key={report.topic} value={report.topic} className="border rounded-lg overflow-hidden">
@@ -246,8 +274,8 @@ export function CandidateDetailedReport() {
                                                         <Code className="w-4 h-4" />
                                                         <span className="text-lg font-medium">{report.topic}</span>
                                                     </div>
-                                                    <Badge 
-                                                        variant="outline" 
+                                                    <Badge
+                                                        variant="outline"
                                                         className={`flex items-center gap-1 mr-2 ${getScoreColor(report.score)}`}
                                                     >
                                                         {getScoreIcon(report.score)}
@@ -264,9 +292,9 @@ export function CandidateDetailedReport() {
                                                         <h4 className="font-medium mb-2 text-muted-foreground">Detailed Feedback</h4>
                                                         <p className="text-sm leading-relaxed">{report.detailedReport}</p>
                                                     </div>
-                                                    
+
                                                     <Separator />
-                                                    
+
                                                     <div>
                                                         <h4 className="font-medium mb-3 flex items-center gap-2">
                                                             <MessageSquare className="w-4 h-4" />
@@ -297,13 +325,13 @@ export function CandidateDetailedReport() {
                                                                                     <CheckCircle className="w-3 h-3" />
                                                                                     Candidate's Answer
                                                                                 </h5>
-                                                                                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                                                                                        {question.userAnswer ? (
-                                                                                            <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
-                                                                                        ) : (
-                                                                                            <p className="text-sm text-green-800">No answer provided</p>
-                                                                                        )}
-                                                                                    </div>
+                                                                                <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                                                                                    {question.userAnswer ? (
+                                                                                        <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
+                                                                                    ) : (
+                                                                                        <p className="text-sm text-green-800">No answer provided</p>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                             <div>
                                                                                 <h5 className="text-sm font-medium text-blue-700 mb-2 flex items-center gap-1">
