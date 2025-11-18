@@ -209,7 +209,7 @@ export function MessageInput({
         </div>
       )}
 
-      <div className="absolute right-3 top-3 z-20 flex gap-2">
+      <div className="absolute right-3 bottom-3 z-20 flex gap-2">
         {props.allowAttachments && (
           <Button
             type="button"
