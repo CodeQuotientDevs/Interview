@@ -202,7 +202,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            return res.json({ completedAt: candidateObj.completedAt, messages: history });
+            return res.json({ completedAt: candidateObj.completedAt, messages: history, candidate: {... candidateObj, user: userObj} });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
             return res.status(500).json({ error: 'Internal Server Error' });

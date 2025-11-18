@@ -6,8 +6,6 @@ import {
     type VisibilityState,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
@@ -41,23 +39,47 @@ interface DataTableInterface {
     loading: boolean,
     data: Array<typeof interviewListItemSchema._type>
     cloneInterview: (id: string) => Promise<void>
+    searchFilter: string
+    onSearchChange: (value: string) => void
+    sortState: { id: string; desc: boolean }
+    onSortChange: (columnId: string, desc: boolean) => void
 }
 export function InterviewDataTable(props: DataTableInterface) {
     const alertModels = useAppStore().useAlertModel;
-    const { data, loading, cloneInterview } = props;
+    const { data, loading, cloneInterview, searchFilter, onSearchChange, sortState, onSortChange } = props;
     const [sorting, setSorting] = React.useState<SortingState>([
         {
-            id: "updatedAt",
-            desc: true
+            id: sortState.id,
+            desc: sortState.desc
         }
     ])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
+        searchFilter ? [{ id: "title", value: searchFilter }] : []
     )
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({})
 
     const navigation = useNavigate();
+
+    // Update sorting when parent state changes
+    React.useEffect(() => {
+        setSorting([{ id: sortState.id, desc: sortState.desc }]);
+    }, [sortState]);
+
+    // Update filters when parent state changes
+    React.useEffect(() => {
+        setColumnFilters(searchFilter ? [{ id: "title", value: searchFilter }] : []);
+    }, [searchFilter]);
+
+    // Notify parent when sorting changes
+    React.useEffect(() => {
+        if (sorting.length > 0) {
+            const currentSort = sorting[0];
+            if (currentSort.id !== sortState.id || currentSort.desc !== sortState.desc) {
+                onSortChange(currentSort.id, currentSort.desc ?? false);
+            }
+        }
+    }, [sorting, sortState, onSortChange]);
 
     const handleClone = React.useCallback((id: string, title: string) => {
         alertModels({
@@ -187,9 +209,9 @@ export function InterviewDataTable(props: DataTableInterface) {
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
+        manualSorting: true,
+        manualFiltering: true,
         state: {
             sorting,
             columnFilters,
@@ -213,11 +235,9 @@ export function InterviewDataTable(props: DataTableInterface) {
                     </Tooltip>
                 </TooltipProvider>
                 <Input
-                    placeholder="Filter interview..."
-                    value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        table.getColumn("title")?.setFilterValue(event.target.value)
-                    }
+                    placeholder="Search interview..."
+                    value={searchFilter}
+                    onChange={(event) => onSearchChange(event.target.value)}
                     className="max-w-sm"
                 />
                 <DropdownMenu>

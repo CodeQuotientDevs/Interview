@@ -1,8 +1,8 @@
 import Zod from "zod";
 
 const types = {
-    name: Zod.string().nonempty(),
-    email: Zod.string().nonempty(),
+    name: Zod.string().nonempty("Name must contain at least 1 character(s)"),
+    email: Zod.string().nonempty("Email must contain valid email"),
     phone: Zod.string(),
     yearOfExperience: Zod.preprocess(
     (v) => {
@@ -15,7 +15,7 @@ const types = {
 ),
     startTime: Zod.date(),
     endTime: Zod.date(),
-    userSpecificDescription: Zod.string().nonempty(),
+    userSpecificDescription: Zod.string().nonempty("Description must contain at least 1 character(s)"),
 }
 
 export const candidateInviteSchema = Zod.object({
@@ -71,4 +71,12 @@ export const interviewContentSchema = Zod.object({
         return args;
     }, Zod.date().optional()),
     messages: messagesSchema,
+    candidate: Zod.object({
+        _id: Zod.string(),
+        user: Zod.object({
+            _id: Zod.string(),
+            name: Zod.string(),
+            email: Zod.string(),
+        }),
+    }).optional(),
 });

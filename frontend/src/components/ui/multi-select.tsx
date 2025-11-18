@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { X, ChevronDown } from "lucide-react";
-import logger from "@/lib/logger";
 
 export type Option = { label: string; value: string };
 
@@ -137,7 +136,6 @@ export default function MultiSelect({
         <PopoverContent className="w-56 p-0">
           <Command
             filter={(value, search, keywords) => {
-              logger.info(value, search, keywords);
               if (search.length && keywords?.length == 0 && value === createNewTag.value) {
                 return 1;
               }

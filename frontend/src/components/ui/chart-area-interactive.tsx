@@ -53,8 +53,10 @@ export function ChartAreaInteractive({
 }) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState("7");
-  const [showCustomRange, setShowCustomRange] = React.useState(false);
+  const [showCustomRangeDialog, setShowCustomRangeDialog] = React.useState(false);
   const [customRange, setCustomRange] = React.useState<DateRange | undefined>(undefined);
+  const showCustomRange = timeRange === "custom-selected";
+  console.table({ timeRange, showCustomRange })
 
   React.useEffect(() => {
     if (isMobile) {
@@ -86,23 +88,29 @@ export function ChartAreaInteractive({
             value={timeRange.toString()}
             onValueChange={(value) => {
               if (value === "custom") {
-                setShowCustomRange(true)
-                setTimeRange("custom")
+                setShowCustomRangeDialog(true)
+                setTimeRange("custom-selected")
               } else {
                 const days = parseInt(value)
                 const endDate = new Date()
                 const startDate = new Date()
                 startDate.setDate(endDate.getDate() - days)
                 onRangeChange({ startDate, endDate })
+                setShowCustomRangeDialog(false);
                 setTimeRange(days.toString())
               }
             }}
           >
-            <SelectTrigger className="flex w-40 @[767px]/card:hidden">
+            <SelectTrigger className="flex min-w-[120px] @[767px]/card:hidden">
               <SelectValue placeholder="Last 7 days" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="7">Last 7 days</SelectItem>
+              {showCustomRange ?
+              <SelectItem value="custom-selected">
+                {`${customRange?.from?.toLocaleDateString()} - ${customRange?.to?.toLocaleDateString()}`}
+              </SelectItem>
+              :null}
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
@@ -162,13 +170,47 @@ export function ChartAreaInteractive({
               type="monotone"
               fill="url(#fillConcluded)"
               stroke="var(--color-concluded)"
-              stackId="a"
+              stackId="b"
               cursor="pointer"
             />
           </AreaChart>
         </ChartContainer>
       </CardContent>
-      <Dialog open={showCustomRange} onOpenChange={setShowCustomRange}>
+      <CustomRangeDialog
+        open={showCustomRangeDialog}
+        onOpenChange={(open) => setShowCustomRangeDialog(open)}
+        onRangeSelect={(range) => {
+          setCustomRange(range);
+          if (range?.from && range?.to) {
+            onRangeChange({ startDate: range.from, endDate: range.to });
+          }
+        }}
+      />
+    </Card>
+  );
+}
+
+function CustomRangeDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRangeSelect?: (range: DateRange) => void;
+}) {
+
+  const [customRange, setCustomRange] = React.useState<DateRange | undefined>();
+
+  React.useEffect(() => {
+    if (customRange) {
+      props.onRangeSelect?.(customRange);
+    }
+  }, [customRange, props]);
+
+  React.useEffect(() => {
+    if (!props.open) {
+      setCustomRange(undefined);
+    }
+  }, [props.open]);
+
+  return <Dialog open={props.open} onOpenChange={props.onOpenChange}>
         <DialogContent className="sm:max-w-[80%] sm:w-[600px]">
           <DialogHeader>
             <DialogTitle>Select Date Range</DialogTitle>
@@ -182,18 +224,18 @@ export function ChartAreaInteractive({
           />
 
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowCustomRange(false)}>
-              Cancel
+            <Button variant="outline" onClick={() => setCustomRange(undefined)}>
+              Clear
             </Button>
 
             <Button
               onClick={() => {
                 if (customRange?.from && customRange?.to) {
-                  onRangeChange({
-                    startDate: customRange.from,
-                    endDate: customRange.to
+                  setCustomRange({
+                    from: customRange.from,
+                    to: customRange.to
                   });
-                  setShowCustomRange(false);
+                  props.onOpenChange(false);
                 }
               }}
             >
@@ -202,6 +244,4 @@ export function ChartAreaInteractive({
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
-  );
 }

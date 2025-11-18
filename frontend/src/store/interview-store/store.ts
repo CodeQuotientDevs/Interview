@@ -16,7 +16,7 @@ import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
     sendMessageAi: (id: string, message: string) => Promise<typeof messagesSchema._type>;
-    interviewList: (page?: number, limit?: number) => Promise<{
+    interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
         data: Array<typeof interviewListItemSchema._type>;
         pagination: {
             page: number;
@@ -54,8 +54,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.addInterview(data);
             return res;
         },
-        async interviewList(page?: number, limit?: number) {
-            const res = await client.interviewList(page, limit);
+        async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+            const res = await client.interviewList(page, limit, searchQuery, sortBy, sortOrder);
             return res;
         },
         async updateInterview(data) {

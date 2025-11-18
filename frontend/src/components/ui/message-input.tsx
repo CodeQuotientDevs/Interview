@@ -43,6 +43,7 @@ export function MessageInput({
   enableInterrupt = true,
   ...props
 }: MessageInputProps) {
+  const trimmedValue = props.value.trim();
   const [isDragging, setIsDragging] = useState(false)
   const [showInterruptPrompt, setShowInterruptPrompt] = useState(false)
 
@@ -125,7 +126,7 @@ export function MessageInput({
           setShowInterruptPrompt(false)
           event.currentTarget.form?.requestSubmit()
         } else if (
-          props.value ||
+          trimmedValue ||
           (props.allowAttachments && props.files?.length)
         ) {
           setShowInterruptPrompt(true)
@@ -209,7 +210,7 @@ export function MessageInput({
         </div>
       )}
 
-      <div className="absolute right-3 top-3 z-20 flex gap-2">
+      <div className="absolute right-3 bottom-3 z-20 flex gap-2">
         {props.allowAttachments && (
           <Button
             type="button"
@@ -241,7 +242,7 @@ export function MessageInput({
             size="icon"
             className="h-8 w-8 transition-opacity"
             aria-label="Send message"
-            disabled={props.value === "" || isGenerating}
+            disabled={trimmedValue === "" || isGenerating}
           >
             <ArrowUp className="h-5 w-5" />
           </Button>

@@ -76,10 +76,13 @@ export default class MainClient {
         return obj.data.id;
     }
 
-    async interviewList(page?: number, limit?: number) {
+    async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
         const params = new URLSearchParams();
         if (page) params.append('page', page.toString());
         if (limit) params.append('limit', limit.toString());
+        if (searchQuery) params.append('searchQuery', searchQuery);
+        if (sortBy) params.append('sortBy', sortBy);
+        if (sortOrder) params.append('sortOrder', sortOrder);
 
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews?${params.toString()}`));
         const obj = await Zod.object({
@@ -96,7 +99,6 @@ export default class MainClient {
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
-        logger.info('Actual Data: ', obj.data);
         return obj.data;
     }
 
@@ -104,10 +106,8 @@ export default class MainClient {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/${id}`));
         const obj = await Zod.array(interviewCandidateListSchema).safeParseAsync(response.data);
         if (!obj.success) {
-            logger.error('Type Error: ', obj);
             throw new Error('Something went wrong');
         }
-        logger.info('Actual Data: ', obj.data);
         return obj.data;
     }
 

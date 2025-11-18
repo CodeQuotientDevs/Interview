@@ -108,7 +108,14 @@ export function InterviewCreation(props: CandidatePageProps) {
 	const onSubmit = useCallback(async (data: unknown) => {
 		logger.info("Data");
 		logger.info(data);
-		const parsedData = interviewCreateSchema.safeParse(data);
+		// Trim title and AI instructions before validation/submission
+		const d = data as any ?? {};
+		const cleanedData = {
+			...d,
+			title: typeof d.title === 'string' ? d.title.trim() : d.title,
+			generalDescriptionForAi: typeof d.generalDescriptionForAi === 'string' ? d.generalDescriptionForAi.trim() : d.generalDescriptionForAi,
+		};
+		const parsedData = interviewCreateSchema.safeParse(cleanedData);
 		if (parsedData.data?.difficulty) {
 			const totalWeight = Object.values(parsedData.data?.difficulty).reduce((result, current) => result += current.weight, 0);
 			if (Math.abs(totalWeight) !== 100) {
@@ -174,7 +181,14 @@ export function InterviewCreation(props: CandidatePageProps) {
 				});
 				setSelectedOptions(selectedOptions);
 			}
-			setValue(typedKey, value as Exclude<typeof value, Date>);
+			// Trim title and AI instructions when populating form from existing data
+			if (typedKey === 'title' && typeof value === 'string') {
+				setValue(typedKey, value.trim() as Exclude<typeof value, Date>);
+			} else if (typedKey === 'generalDescriptionForAi' && typeof value === 'string') {
+				setValue(typedKey, value.trim() as Exclude<typeof value, Date>);
+			} else {
+				setValue(typedKey, value as Exclude<typeof value, Date>);
+			}
 		});
 	}, [defaultOptionsValueToNameObj, setValue]);
 
@@ -329,6 +343,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 													</div>
 													{selectedTopics.map((topic, topicIndex) => {
 														const title = defaultOptionsValueToNameObj[topic] ?? topic;
+														const topicErrors = (form.formState.errors as any)?.difficulty?.[topic];
 														return (
 															<>
 																<div key={topic} className="border p-2 rounded-md">
@@ -378,6 +393,12 @@ export function InterviewCreation(props: CandidatePageProps) {
 																		</TableBody>
 																	</Table>
 																</div >
+																{topicErrors?.weight && (
+																	<p className="text-sm font-medium text-destructive mt-2">Weight is required</p>
+																)}
+																{topicErrors?.duration && (
+																	<p className="text-sm font-medium text-destructive mt-2">Duration is required</p>
+																)}
 															</>
 														)
 													})}

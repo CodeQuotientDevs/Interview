@@ -15,7 +15,7 @@ dayjs.extend(timezone);
 /**
  * Types
  */
-type PaginationConfig = { page?: number; limit?: number };
+type PaginationConfig = { page?: number; limit?: number; searchQuery?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' };
 type InterviewCreation = z.infer<typeof interviewCreationSchema>;
 
 type CandidateDoc = Document & {
@@ -77,19 +77,31 @@ export class InterviewService {
     }
 
     async listInterviewPaginated(paginationConfig: PaginationConfig, session: Session) {
-        const { page = 1, limit = 10 } = paginationConfig;
+        const { page = 1, limit = 10, searchQuery, sortBy, sortOrder } = paginationConfig;
         const skip = (page - 1) * limit;
 
-        const findObj = {
+        const findObj: Record<string, any> = {
             isActive: true,
             createdBy: new mongoose.Types.ObjectId(session.userId),
         };
+
+        // Apply search filter
+        if (searchQuery) {
+            findObj.title = { $regex: new RegExp(searchQuery, 'i') };
+        }
+
+        // Apply sorting
+        let sortOption: Record<string, 1 | -1> = { createdAt: -1 }; // Default sort
+        if (sortBy) {
+            const sortDirection = sortOrder === 'desc' ? -1 : 1;
+            sortOption = { [sortBy]: sortDirection };
+        }
 
         const total = await this.model.model.countDocuments(findObj);
         const data = await this.model.find(findObj, {}, {
             skip,
             limit,
-            sort: { createdAt: -1 },
+            sort: sortOption,
         });
 
         const totalPages = Math.ceil(total / limit);

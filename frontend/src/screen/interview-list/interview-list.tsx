@@ -15,10 +15,12 @@ export const InterviewList = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10); // Fixed page size for now
+    const [searchFilter, setSearchFilter] = useState("");
+    const [sortState, setSortState] = useState({ id: "updatedAt", desc: true });
 
     const interviewListFetchResult = useQuery({
-        queryKey: ['interview-list', currentPage, pageSize],
-        queryFn: () => getListItems(currentPage, pageSize),
+        queryKey: ['interview-list', currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc],
+        queryFn: () => getListItems(currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc ? 'desc' : 'asc'),
     });
 
     const cloneMutation = useMutation({
@@ -38,6 +40,16 @@ export const InterviewList = () => {
 
     const handlePageChange = useCallback((page: number) => {
         setCurrentPage(page);
+    }, []);
+
+    const handleSearchChange = useCallback((value: string) => {
+        setCurrentPage(1); // Reset to first page when search changes
+        setSearchFilter(value);
+    }, []);
+
+    const handleSortChange = useCallback((columnId: string, desc: boolean) => {
+        setCurrentPage(1); // Reset to first page when sort changes
+        setSortState({ id: columnId, desc });
     }, []);
 
     useEffect(() => {
@@ -64,6 +76,10 @@ export const InterviewList = () => {
                                 data={interviewListFetchResult.data?.data ?? []}
                                 loading={interviewListFetchResult.isLoading}
                                 cloneInterview={cloneHandler}
+                                searchFilter={searchFilter}
+                                onSearchChange={handleSearchChange}
+                                sortState={sortState}
+                                onSortChange={handleSortChange}
                             />
 
                             {/* Pagination Controls */}

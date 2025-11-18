@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import logger from '@/lib/logger';
 import { useAppStore, useMainStore } from '@/store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -7,6 +7,7 @@ import AiChat from '@/components/ai-chat/ai-chat';
 import { parseModelResponseToCompatibleForChat } from '@/lib/messageParser';
 import { useQuery } from '@tanstack/react-query';
 import { placeHolderConversation } from '@/constants/interview';
+import { Navbar } from '@/components/navbar';
 
 interface InterviewProps {
     id: string,
@@ -28,6 +29,14 @@ export const Interview = (props: InterviewProps) => {
         },
         queryKey: ['interview-message', id],
     });
+
+    const startedAt = useMemo(() => {
+        if (messages && messages.length > 0 && messages[0].createdAt) {
+            const c = messages[0].createdAt;
+            return typeof c === 'string' ? new Date(c) : c;
+        }
+        return null;
+    }, [messages]);
 
     const handleSubmission = useCallback(async (message: string) => {
         try {
@@ -61,7 +70,7 @@ export const Interview = (props: InterviewProps) => {
     useEffect(() => {
         if (interview.data?.messages) {
             const messages = interview.data.messages;
-            const parsedMessages = messages.map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+            const parsedMessages = messages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
             setMessages(parsedMessages);
         }
     }, [interview.data]);
@@ -102,15 +111,22 @@ export const Interview = (props: InterviewProps) => {
                     </Alert>
                 )
             }
-            <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt ? 'blur-md' : ''}`}>
-                <AiChat
-                    messages={messages}
-                    // interviewId={interviewObj.id}
-                    interviewEnded={isInterviewEnded}
-                    handleSubmission={handleSubmission}
-                    setIsInterviewEnded={setIsInterviewEnded}
-                    isGenerating={isGenerating}
-                />
+            <div className="h-full">
+                <div className="fixed top-0 left-0 w-full h-[60px] z-50">
+                <Navbar startedAt={startedAt} user={interview.data?.candidate?.user}/>
+                </div>
+                <div className="pt-[60px] h-full">                       
+                    <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt ? 'blur-md' : ''}`}>
+                        <AiChat
+                            messages={messages}
+                            // interviewId={interviewObj.id}
+                            interviewEnded={isInterviewEnded}
+                            handleSubmission={handleSubmission}
+                            setIsInterviewEnded={setIsInterviewEnded}
+                            isGenerating={isGenerating}
+                        />
+                    </div>
+                </div>
             </div>
         </>
     )

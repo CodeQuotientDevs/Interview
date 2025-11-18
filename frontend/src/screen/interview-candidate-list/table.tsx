@@ -145,17 +145,23 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         });
     }, [props, alertModel]);
 
-    function rowFormatter(item:typeof interviewCandidateListSchema._type, columns: ExcelColumn[]){
-        const row: Record<string, unknown> = {};
+    function rowFormatter(item:typeof interviewCandidateListSchema._type, columns: ExcelColumn[]): Record<string, string | number | Date> {
+        const row: Record<string, string | number | Date> = {};
         columns.forEach(column => {
             const value = item[column.key as keyof typeof item] as unknown;
             
             if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
-                row[column.key] = value ? dayjs(value).format('DD-MM-YYYY HH:mm:ss') : 'N/A';
-            }else if(column.key == "reports"){
-                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}?userid=${item.id}`
-            }else {
-                row[column.key] = value !== undefined && value !== null ? value : 'N/A';
+                row[column.key] = value ? dayjs(value as any).format('DD-MM-YYYY HH:mm:ss') : 'N/A';
+            } else if (column.key == "reports") {
+                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}/report/${item.id}`;
+            } else {
+                if (value === undefined || value === null) {
+                    row[column.key] = 'N/A';
+                } else if (typeof value === 'number' || value instanceof Date) {
+                    row[column.key] = value as number | Date;
+                } else {
+                    row[column.key] = String(value);
+                }
             }
         });
         return row;
@@ -172,15 +178,16 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 { header: 'Score', key: 'score', width: 20 },  
             ];
             const filename = `${interviewName}.xlsx`;
-            
-            jsonToExcel(data, columns, filename,rowFormatter).catch(() => {
+            try{
+                jsonToExcel(data, columns, filename, rowFormatter);
+            }catch{
                 showAlert({
                     time: 5,
                     title: 'Unable to generate report',
                     type: AlertType.error,
                     message: 'An error occurred while generating the Excel file. Please try again.'
                 });
-            });
+            };
         }
     }
 
@@ -448,7 +455,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
                     </TooltipProvider>
                     <Input
-                        placeholder="Filter emails..."
+                        placeholder="Search emails..."
                         value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
                         onChange={(event) =>
                             table.getColumn("email")?.setFilterValue(event.target.value)
@@ -487,7 +494,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         <div>
                             <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-semibold">{interviewObj?.title}</h1>
-                            <Badge className="bg-green-100 text-green-600">Active</Badge>
                             </div>
                             <p className="text-gray-600 text-sm mt-1 line-clamp-1">{interviewObj?.generalDescriptionForAi}</p>
                         </div>
