@@ -28,6 +28,9 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
         try {
             const page = parseInt((req.query as any).page) || 1;
             const limit = parseInt((req.query as any).limit) || 10;
+            const searchQuery = (req.query as any).searchQuery || undefined;
+            const sortBy = (req.query as any).sortBy || undefined;
+            const sortOrder = (req.query as any).sortOrder || undefined;
 
             if (page < 1 || limit < 1 || limit > 100) {
                 return res.status(400).json({
@@ -36,7 +39,7 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
                 });
             }
 
-            const result = await interviewServices.listInterviewPaginated({ page, limit }, req.session);
+            const result = await interviewServices.listInterviewPaginated({ page, limit, searchQuery, sortBy, sortOrder }, req.session);
             return res.status(200).json(result);
         } catch (error: any) {
             logger.error({ endpoint: 'interview GET /', error: error?.message, trace: error?.stack });

@@ -19,8 +19,8 @@ export const InterviewList = () => {
     const [sortState, setSortState] = useState({ id: "updatedAt", desc: true });
 
     const interviewListFetchResult = useQuery({
-        queryKey: ['interview-list', currentPage, pageSize],
-        queryFn: () => getListItems(currentPage, pageSize),
+        queryKey: ['interview-list', currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc],
+        queryFn: () => getListItems(currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc ? 'desc' : 'asc'),
     });
 
     const cloneMutation = useMutation({
@@ -43,13 +43,13 @@ export const InterviewList = () => {
     }, []);
 
     const handleSearchChange = useCallback((value: string) => {
-        setSearchFilter(value);
         setCurrentPage(1); // Reset to first page when search changes
+        setSearchFilter(value);
     }, []);
 
     const handleSortChange = useCallback((columnId: string, desc: boolean) => {
-        setSortState({ id: columnId, desc });
         setCurrentPage(1); // Reset to first page when sort changes
+        setSortState({ id: columnId, desc });
     }, []);
 
     useEffect(() => {

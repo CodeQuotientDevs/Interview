@@ -6,8 +6,6 @@ import {
     type VisibilityState,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
@@ -211,9 +209,9 @@ export function InterviewDataTable(props: DataTableInterface) {
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
+        manualSorting: true,
+        manualFiltering: true,
         state: {
             sorting,
             columnFilters,

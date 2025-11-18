@@ -494,7 +494,6 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         <div>
                             <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-semibold">{interviewObj?.title}</h1>
-                            <Badge className="bg-green-100 text-green-600">Active</Badge>
                             </div>
                             <p className="text-gray-600 text-sm mt-1 line-clamp-1">{interviewObj?.generalDescriptionForAi}</p>
                         </div>
