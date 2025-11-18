@@ -30,10 +30,6 @@ export const Interview = (props: InterviewProps) => {
         queryKey: ['interview-message', id],
     });
 
-    const firstMessage = useMemo(() => {
-        return messages && messages.length > 0 ? messages[0].content : null;
-    }, [messages]);
-
     const startedAt = useMemo(() => {
         if (messages && messages.length > 0 && messages[0].createdAt) {
             const c = messages[0].createdAt;
@@ -117,7 +113,7 @@ export const Interview = (props: InterviewProps) => {
             }
             <div className="h-full">
                 <div className="fixed top-0 left-0 w-full h-[60px] z-50">
-                <Navbar firstMessage={firstMessage} startedAt={startedAt} user={interview.data?.candidate?.user}/>
+                <Navbar startedAt={startedAt} user={interview.data?.candidate?.user}/>
                 </div>
                 <div className="pt-[60px] h-full">                       
                     <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt ? 'blur-md' : ''}`}>

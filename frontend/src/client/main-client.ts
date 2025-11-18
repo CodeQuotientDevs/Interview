@@ -96,7 +96,6 @@ export default class MainClient {
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
-        logger.info('Actual Data: ', obj.data);
         return obj.data;
     }
 
@@ -104,10 +103,8 @@ export default class MainClient {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/${id}`));
         const obj = await Zod.array(interviewCandidateListSchema).safeParseAsync(response.data);
         if (!obj.success) {
-            logger.error('Type Error: ', obj);
             throw new Error('Something went wrong');
         }
-        logger.info('Actual Data: ', obj.data);
         return obj.data;
     }
 

@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import CQLogo from "@/assets/cq_logo_primary.png";
-import { useAppStore } from "@/store";
 import { Badge } from "../ui/badge";
 import { TimerIcon } from "lucide-react";
 
 interface NavbarProps {
-    firstMessage?: string | null;
     startedAt?: string | Date | null;
     user?: {_id: string, name: string, email: string}
 }
@@ -18,8 +16,7 @@ const formatElapsed = (seconds: number) => {
     return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 }
 
-export const Navbar = ({ firstMessage, startedAt, user }: NavbarProps) => {
-    const session = useAppStore().session;
+export const Navbar = ({ startedAt, user }: NavbarProps) => {
     const start = useMemo(() => {
         if (!startedAt) return null;
         return typeof startedAt === 'string' ? new Date(startedAt) : startedAt;
