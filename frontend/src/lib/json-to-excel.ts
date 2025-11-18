@@ -1,4 +1,4 @@
-import * as ExcelJS from 'exceljs';
+import * as XLSX from "xlsx";
 
 export interface ExcelColumn {
   header: string;
@@ -6,34 +6,55 @@ export interface ExcelColumn {
   width?: number;
 }
 
-export async function jsonToExcel<T extends Record<string, unknown>>(
+export function jsonToExcel<T extends Record<string, unknown>>(
   data: T[],
   columns: ExcelColumn[],
   filename: string,
-  rowFormatter: (item: T, columns: ExcelColumn[]) => Record<string, unknown>
-): Promise<void> {
+  rowFormatter: (item: T, columns: ExcelColumn[]) => Record<string, string | number | Date>
+): void {
+  console.log({data})
   if (!data || data.length === 0) {
-    throw new Error('No data provided for Excel export');
+    throw new Error("No data provided for Excel export");
   }
 
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Data');
+  // Create a worksheet data array: first row = headers
+  const sheetData: (string | number | Date)[][] = [];
 
-  worksheet.columns = columns;
+  // Headers
+  sheetData.push(columns.map(col => col.header));
 
+  // Rows
   data.forEach(item => {
-    const row = rowFormatter(item, columns);
-    worksheet.addRow(row);
+    console.log("Processing item: %o", item);
+    const formatted = rowFormatter(item, columns);
+
+    const row = columns.map<string | number | Date>(col => {
+      let v = formatted[col.key];
+      console.log("key: %s, value: %o", col.key, v);
+
+      // XLSX supports JS Date objects directly
+      if (typeof v === "string" && !isNaN(Date.parse(v))) {
+        v = new Date(v);
+      }
+
+      return v;
+    });
+
+    sheetData.push(row);
   });
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-  });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  // Create worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // Set column widths (XLSX stores widths in a special field)
+  worksheet["!cols"] = columns.map(col => ({
+    wch: col.width ?? 20
+  }));
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+  // Create file & download it
+  XLSX.writeFile(workbook, filename);
 }

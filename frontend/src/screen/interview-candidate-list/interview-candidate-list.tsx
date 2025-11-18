@@ -219,7 +219,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
     const readBulkUpload = useCallback( async (files: Array<File> | File | null) => {
         const file = Array.isArray(files)?files[0]:files;
         if (file) {
-            const [data, error] = await readExcel<typeof candidateInviteSchema.shape>(file, candidateInviteSchema);
+            const [data, error] = await readExcel(file, candidateInviteSchema);
             if (error.length) {
                 showAlert({
                     time: 4,
@@ -233,14 +233,14 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                 error,
             })
             logger.info(data);
-        }
-        if (file) {
-            showAlert({
-                time: 4,
-                title: "Bulk Upload Success",
-                type: AlertType.success,
-                message: `file added successfully`
-            });
+            if (data.length > 0) {
+                showAlert({
+                    time: 4,
+                    title: "Bulk upload success",
+                    type: AlertType.success,
+                    message: `file added successfully`
+                });
+            }
         }
     }, [showAlert]);
 
