@@ -41,21 +41,24 @@ export async function readExcel<T extends Zod.ZodRawShape>(
             const headers: string[] = [];
             const data: Array<Zod.infer<typeof validatorFunction>> = [];
             const errors: Array<{ error: string; index: number }> = [];
-
-            worksheet.eachRow((row, index) => {
+            console.log("Number of rows: ", worksheet.rowCount);
+            for (let index = 0; index < worksheet.rowCount; index++) {
+                const row = worksheet.getRow(index);
                 if (index == 0) {
-                    return;
+                    continue;
                 }
                 if (index === 1) {
                     headers.push(...(row.values as string[]).slice(1));
-                    return;
+                    continue;
                 }
                 if (!row?.values) {
-                    return;
+                    continue;
                 }
                 const currentDataArray =  (row.values as Array<unknown>).slice(1);
-
                 const obj = convertToObject(currentDataArray, headers);
+                if (!Object.keys(obj).length) {
+                    break;
+                }
                 if (obj && obj.startTime && typeof obj.startTime === 'number') {
                     obj.startTime = new Date(obj.startTime + 18000000);
                 }
@@ -75,8 +78,7 @@ export async function readExcel<T extends Zod.ZodRawShape>(
                 } else {
                     data.push(parsedObj.data);
                 }
-            });
-
+            }
             resolve([data, errors]);
         };
 
