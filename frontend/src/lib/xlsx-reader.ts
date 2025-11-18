@@ -1,6 +1,17 @@
 import * as XLSX from "xlsx";
 import * as Zod from "zod";
 
+function sanitizeCell(value: unknown): unknown {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    // treat empty or whitespace-only as undefined
+    return trimmed === "" ? undefined : trimmed;
+  }
+
+  return value;
+}
+
 function convertRowToObject(
   row: unknown[],
   headers: string[]
@@ -11,12 +22,12 @@ function convertRowToObject(
     const key = headers[index];
     if (!key) return;
 
-    // Handle hyperlink-style cell objects
+    // hyperlink-like objects (ExcelJS style)
     if (typeof value === "object" && value && "text" in value) {
       value = (value as any).text;
     }
 
-    obj[key] = value;
+    obj[key] = sanitizeCell(value);
   });
 
   return obj;

@@ -225,7 +225,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                     time: 4,
                     title: "Something went wrong",
                     type: AlertType.error,
-                    message: `${error.length} content is not valid please recheck this file`
+                    message: `${error.length} item(s) are invalid. Only valid entries will be uploaded.`,
                 });
             }
             setFileUploadData({
