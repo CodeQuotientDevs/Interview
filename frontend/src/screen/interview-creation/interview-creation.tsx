@@ -329,6 +329,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 													</div>
 													{selectedTopics.map((topic, topicIndex) => {
 														const title = defaultOptionsValueToNameObj[topic] ?? topic;
+														const topicErrors = (form.formState.errors as any)?.difficulty?.[topic];
 														return (
 															<>
 																<div key={topic} className="border p-2 rounded-md">
@@ -378,6 +379,12 @@ export function InterviewCreation(props: CandidatePageProps) {
 																		</TableBody>
 																	</Table>
 																</div >
+																{topicErrors?.weight && (
+																	<p className="text-sm font-medium text-destructive mt-2">Weight is required</p>
+																)}
+																{topicErrors?.duration && (
+																	<p className="text-sm font-medium text-destructive mt-2">Duration is required</p>
+																)}
 															</>
 														)
 													})}

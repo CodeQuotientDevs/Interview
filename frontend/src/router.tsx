@@ -43,7 +43,7 @@ export const Routes = createBrowserRouter(
             path="/"
             errorElement={<ErrorPage statusCode={404} errorMessage="Page not found." />}
         >
-            <Route path="candidates" element={<MainScreen/>}>
+            <Route path="candidates">
                 <Route path=":id" element={
                     <>
                         <Suspense fallback={<AppLoader loading={true} children={<></>} />}>

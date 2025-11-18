@@ -55,12 +55,32 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     const onSubmit = async (data: CandidateInvite) => {
         try {
             setLoading(true);
+            if(data.startTime < new Date()){
+                showAlert({
+                    time: 4,
+                    title: "Invalid Start Date",
+                    type: AlertType.error,
+                    message:
+                        "Start Date should be greater than or equal to current time",
+                });
+                return;
+            }
+            if(data.endTime && data.endTime < new Date()){
+                showAlert({
+                    time: 4,
+                    title: "Invalid Start Date",
+                    type: AlertType.error,
+                    message:
+                        "End Date should be greater than or equal to current time",
+                });
+                return;
+            }
             await handleSaveData(data);
-            // Modal closing is now handled by the parent component
         } catch (error) {
             logger.error(error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const onClose = useCallback(() => {
@@ -83,13 +103,10 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     }, [onClose, open]);
 
     useEffect(() => {
-        if(!open) {
-            return;
-        }
-        if (defaultValues) {
+        if (isEditing && defaultValues) {
             form.reset(defaultValues);
         }
-    }, [defaultValues, form, open]);
+    }, [defaultValues?.email, open]);
 
     return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
@@ -190,19 +207,18 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                             placeHolder="Start Time"
                             setDate={(date) => {
                                 const clean = removeSeconds(date);
-                                if (clean && clean < new Date()){
+                                if (clean && clean < new Date()) {
                                     showAlert({
-                                    time: 4,
-                                    title: "Invalid Start Date",
-                                    type: AlertType.error,
-                                    message:
-                                        "Start Date should be greater than or equal to current time",
+                                        time: 4,
+                                        title: "Invalid Start Date",
+                                        type: AlertType.error,
+                                        message:
+                                            "Start Date should be greater than or equal to current time",
                                     });
-                                    field.onChange(new Date());
-                                    return;
                                 }
-                                field.onChange(clean);
-                            }}
+
+                            field.onChange(clean);
+                        }}
                         />
                         </FormControl>
                         <FormMessage />
@@ -229,8 +245,6 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                                 message:
                                     "End Date should be greater than or equal to current time",
                                 });
-                                field.onChange(new Date());
-                                return;
                             }
                             field.onChange(date);
                             }}

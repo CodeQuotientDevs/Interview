@@ -71,4 +71,12 @@ export const interviewContentSchema = Zod.object({
         return args;
     }, Zod.date().optional()),
     messages: messagesSchema,
+    candidate: Zod.object({
+        _id: Zod.string(),
+        user: Zod.object({
+            _id: Zod.string(),
+            name: Zod.string(),
+            email: Zod.string(),
+        }),
+    }).optional(),
 });

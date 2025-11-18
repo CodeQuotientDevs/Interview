@@ -1,13 +1,13 @@
 import Zod from "zod";
 
 const types = {
-	title: Zod.string().nonempty(),
+	title: Zod.string().nonempty("Tittle must contain at least 1 character(s)"),
 	name: Zod.string().nonempty(),
 	email: Zod.string().email(),
 	phone: Zod.string().nonempty().optional(),
 	jobTitle: Zod.string().nonempty(),
 	description: Zod.string().nonempty(),
-	duration: Zod.number().nonnegative().min(1),
+	duration: Zod.number().nonnegative().min(1, "Duration must be greater than or equal to 1"),
 	difficulty: Zod.record(Zod.string(), Zod.object({
 		difficulty: Zod.preprocess((arg) => {
 			if (typeof arg === 'string') {
@@ -24,7 +24,7 @@ const types = {
 	completedAt: Zod.date().optional(),
 	score: Zod.number()?.optional(),
 	keywords: Zod.array(Zod.string().nonempty()),
-	generalDescriptionForAi: Zod.string().nonempty(),
+	generalDescriptionForAi: Zod.string().nonempty("Description must contain at least 1 character(s)"),
 }
 
 export const interviewCreateSchema = Zod.object({
