@@ -12,6 +12,7 @@ import { AlertType } from "@/constants";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { useEffect } from "react";
 
 // Type definitions based on Zod schema
 type DetailedReport = {
@@ -56,15 +57,19 @@ export function CandidateDetailedReport() {
         retry: false,
     });
 
+    // debugger;
+
     // Handle errors
-    if (reportQuery.error) {
-        showAlert({
-            time: 5,
-            title: 'Error loading report',
-            type: AlertType.error,
-            message: 'Failed to load the detailed report. Please try again.'
-        });
-    }
+    useEffect(() => {
+        if (reportQuery.error) {
+            showAlert({
+                time: 5,
+                title: 'Error loading report',
+                type: AlertType.error,
+                message: reportQuery.error?.message ?? 'Failed to load the detailed report. Please try again.'
+            });
+        }
+    }, [reportQuery.error, showAlert]);
 
     const getBreadcrumbs = (candidateName?: string) => {
         // TODO: Get interview title from API response when available
