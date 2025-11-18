@@ -153,7 +153,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
                 row[column.key] = value ? dayjs(value).format('DD-MM-YYYY HH:mm:ss') : 'N/A';
             }else if(column.key == "reports"){
-                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}?userid=${item.id}`
+                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}/report/${item.id}`;
             }else {
                 row[column.key] = value !== undefined && value !== null ? value : 'N/A';
             }
