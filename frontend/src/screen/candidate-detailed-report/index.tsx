@@ -80,7 +80,7 @@ export function CandidateDetailedReport() {
                 time: 5,
                 title: 'Error loading report',
                 type: AlertType.error,
-                message: 'Interview attempt is not yet completed jqhewgfdjsdhg'
+                message: 'Interview attempt is not yet completed'
             });
         }
     }, [reportQuery.data, showAlert]);
