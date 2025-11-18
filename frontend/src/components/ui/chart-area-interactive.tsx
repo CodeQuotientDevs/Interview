@@ -55,7 +55,7 @@ export function ChartAreaInteractive({
   const [timeRange, setTimeRange] = React.useState("7");
   const [showCustomRangeDialog, setShowCustomRangeDialog] = React.useState(false);
   const [customRange, setCustomRange] = React.useState<DateRange | undefined>(undefined);
-  const showCustomRange = timeRange === "custom-selected";
+  const showCustomRange = timeRange === "custom-selected" && customRange?.from && customRange?.to;
   console.table({ timeRange, showCustomRange })
 
   React.useEffect(() => {
