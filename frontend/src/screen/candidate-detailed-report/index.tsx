@@ -74,17 +74,6 @@ export function CandidateDetailedReport() {
         }
     }, [reportQuery.error, showAlert]);
 
-    useEffect(() => {
-        if (reportQuery.data && !reportQuery.data?.completedAt) {
-            showAlert({
-                time: 5,
-                title: 'Error loading report',
-                type: AlertType.error,
-                message: 'Interview attempt is not yet completed'
-            });
-        }
-    }, [reportQuery.data, showAlert]);
-
 
     const getBreadcrumbs = (candidateName?: string) => {
         // TODO: Get interview title from API response when available
