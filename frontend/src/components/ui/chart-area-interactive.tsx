@@ -162,7 +162,7 @@ export function ChartAreaInteractive({
               type="monotone"
               fill="url(#fillConcluded)"
               stroke="var(--color-concluded)"
-              stackId="a"
+              stackId="b"
               cursor="pointer"
             />
           </AreaChart>
