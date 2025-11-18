@@ -114,6 +114,9 @@ export default class MainClient {
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
+        if (!obj.data.completedAt) {
+            throw new Error('Interview attempt is not yet completed');
+        }
         return obj.data;
     }
 

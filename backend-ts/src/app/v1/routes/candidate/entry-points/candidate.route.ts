@@ -317,15 +317,6 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             const attempt = await candidateServices.findById(id);
             if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
 
-
-            if (!attempt.completedAt) {
-                return res.status(409).json({ error: 'Interview is not completed yet.' });
-            }
-
-            if (attempt.detailedReport && attempt.detailedReport.length === 0) {
-                return res.status(404).json({ error: 'Detailed report not found' });
-            }
-
             delete (attempt as any).interviewId;
             (attempt as any).interview = { _id: interviewObj._id, title: interviewObj.title, duration: interviewObj.duration };
 
