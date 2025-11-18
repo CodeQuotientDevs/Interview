@@ -448,7 +448,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
                     </TooltipProvider>
                     <Input
-                        placeholder="Filter emails..."
+                        placeholder="Search emails..."
                         value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
                         onChange={(event) =>
                             table.getColumn("email")?.setFilterValue(event.target.value)
