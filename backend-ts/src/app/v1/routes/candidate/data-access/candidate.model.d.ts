@@ -10,6 +10,7 @@ type Candidate = {
     endTime: Date,
     startTime: Date,
     completedAt: Date,
+    concludedAt: Date,
     userSpecificDescription: string,
     yearOfExperience: number,
     externalUserUniquenessKey?: string,

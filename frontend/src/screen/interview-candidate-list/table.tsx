@@ -206,10 +206,10 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
             cell: ({ row }) => {
-                const isCompleted = !!row.original.completedAt;
+                const isConcluded = row.original.concludedAt !== undefined;
                 const name = row.getValue("name") as string;
                 
-                if (isCompleted) {
+                if (isConcluded) {
                     return (
                         <button
                             onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
@@ -304,6 +304,13 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             header: () => <div className="text-center"></div>,
             enableHiding: false,
             cell: ({ row }) => {
+                const isCompleted = row.original.completedAt !== undefined;
+                const isConcluding = row.original.isBeingConcluded === true;
+                const isConcluded = row.original.concludedAt !== undefined;
+
+                const canEdit = !isCompleted && !isConcluding && !isConcluded;
+                const canConclude = !isConcluded && !isConcluding;
+
                 return (
                     <div className="text-center max-h-[80vh] overflow-auto">
                         <DropdownMenu>
@@ -315,6 +322,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                {(!canEdit && !isConcluded && !canConclude) ? <DropdownMenuItem key="no-actions" disabled>No actions available</DropdownMenuItem> : null}
                                 {/* <DropdownMenuItem
                                     onClick={() => handleDeleteInvite(interview.id)}
                                 >
@@ -326,17 +334,17 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                 >
                                     Info
                                 </DropdownMenuItem> */}
-                                <DropdownMenuItem
+                                {canEdit ? <DropdownMenuItem
                                     onClick={() => onEditCandidate?.(row.original)}
                                 >
                                     Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
+                                </DropdownMenuItem> : null}
+                                {canEdit ? <DropdownMenuItem
                                     onClick={() => handleCopyInterview(row.original.id)}
                                 >
                                     Interview Link
-                                </DropdownMenuItem>
-                                {row.original.completedAt
+                                </DropdownMenuItem> : null}
+                                {isConcluded
                                     && (
                                         <>
                                             <DropdownMenuItem
@@ -353,7 +361,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                         </>
                                     )
                                 }
-                                {!row.original.completedAt
+                                {canConclude
                                     && (
                                         <>
                                             <DropdownMenuSeparator />

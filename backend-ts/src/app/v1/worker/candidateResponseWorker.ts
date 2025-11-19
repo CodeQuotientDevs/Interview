@@ -34,6 +34,7 @@ export class CandidateResponseWorker{
             user: null,
         });
         const report = await agent.generateReport();
+        const concludedAt = new Date;
         const result = await this.candidateService.updateOne({
             id: attempt.id,
         }, {
@@ -41,6 +42,8 @@ export class CandidateResponseWorker{
                 score: report.scorePercentage,
                 detailedReport: report.detailsDescription,
                 summaryReport: report.summaryReport,
+                completedAt: attempt.completedAt ?? concludedAt,
+                concludedAt,
             },
             $unset: {
                 revaluationStartDate: 1,
