@@ -54,7 +54,7 @@ export const Interview = (props: InterviewProps) => {
                 }]
             });
             const messages = await postMessage(props.id, message);
-            const parsedMessages = messages.map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+            const parsedMessages = messages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
             setMessages(parsedMessages);
         } catch (error) {
             logger.error(error);
