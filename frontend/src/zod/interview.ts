@@ -145,6 +145,8 @@ export const interviewCandidateListSchema = Zod.object({
 		return arg;
 	}, Zod.date().optional()),
 	completedAt: interviewCandidate.completedAt.optional(),
+	concludedAt: interviewCandidate.completedAt.optional(),
+	isBeingConcluded: Zod.boolean().optional(),
 	score: interviewCandidate.score.optional(),
 	summaryReport: interviewCandidate.summaryReport.optional(),
 	detailedReport: interviewCandidate.detailedReport.optional(),

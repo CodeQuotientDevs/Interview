@@ -47,6 +47,7 @@ const schema = new Schema<Candidate>({
     endTime: Date,
     score: Number,
     completedAt: Date,
+    concludedAt: Date,
     summaryReport: {
         type: String,
     },

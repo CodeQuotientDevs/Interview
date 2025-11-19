@@ -111,6 +111,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (usersToGetFromExternalService.size) {
                 userMapExternal = new Map();
             }
+            const pendingConclusionStatuses = await candidateServices.getPendingConclusionCandidates(list.map(ele => ele.id.toString()));
             list.forEach((ele) => {
                 if (ele.externalUser) {
                     const userObj = userMapExternal.get(ele.userId.toString());
@@ -124,6 +125,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 }
                 ele.name = userObj.name;
                 ele.email = userObj.email;
+                ele.isBeingConcluded = pendingConclusionStatuses[ele.id.toString()] || false;
             });
             return res.json(list);
         } catch (error: any) {

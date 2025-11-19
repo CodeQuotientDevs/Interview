@@ -165,6 +165,14 @@ export class Candidate {
         return redisPipeline.exec();
     }
 
+		async getPendingConclusionCandidates(ids: string[]) {
+			const redisPipeline = redis.pipeline();
+			const result = await redisPipeline.zmscore(redisConstant.completedInterview, ...ids).exec();
+			return Object.fromEntries(
+				result?.map((ele, index) => [ids[index], ele[1] !== null]) || []
+			);
+		}
+
     async getMetrics(
 		options?: GetMetricsOptions,
 		interviewIds: string[] = []
