@@ -108,7 +108,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 	const onSubmit = useCallback(async (data: unknown) => {
 		logger.info("Data");
 		logger.info(data);
-		// Trim title and AI instructions before validation/submission
+		
 		const d = data as any ?? {};
 		const cleanedData = {
 			...d,

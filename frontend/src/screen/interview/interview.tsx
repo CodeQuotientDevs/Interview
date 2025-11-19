@@ -113,7 +113,7 @@ export const Interview = (props: InterviewProps) => {
             }
             <div className="h-full">
                 <div className="fixed top-0 left-0 w-full h-[60px] z-50">
-                <Navbar startedAt={startedAt} user={interview.data?.candidate?.user}/>
+                <Navbar startedAt={startedAt} completedAt={interview?.data?.completedAt} user={interview.data?.candidate?.user}/>
                 </div>
                 <div className="pt-[60px] h-full">                       
                     <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt ? 'blur-md' : ''}`}>
