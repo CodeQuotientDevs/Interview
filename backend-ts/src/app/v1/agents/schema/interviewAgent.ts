@@ -14,6 +14,7 @@ export const interviewParserSchema = z.object({
     intent: z.string().nullable().describe("Short string representing the interpreted meaning of the message"),
     confidence: z.number().min(0).max(1).describe("Confidence level (0–1) of this interpretation"),
     shortSummary: z.string().default("").describe("Optional one-line summary of the candidate’s message"),
+    topicComplete: z.boolean().describe("Describe if the interview topic is covered or not"),
 });
 
 export type InterviewParserType = z.infer<typeof interviewParserSchema>

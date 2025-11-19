@@ -111,7 +111,6 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (usersToGetFromExternalService.size) {
                 userMapExternal = new Map();
             }
-            const pendingConclusionStatuses = await candidateServices.getPendingConclusionCandidates(list.map(ele => ele.id.toString()));
             list.forEach((ele) => {
                 if (ele.externalUser) {
                     const userObj = userMapExternal.get(ele.userId.toString());
@@ -125,7 +124,6 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 }
                 ele.name = userObj.name;
                 ele.email = userObj.email;
-                ele.isBeingConcluded = pendingConclusionStatuses[ele.id.toString()] || false;
             });
             return res.json(list);
         } catch (error: any) {
@@ -204,6 +202,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
+            if (history[history.length -1].role === "ai" && !history[history.length -1].parsedResponse.confidence) {
+                await agent.recreateLastMessage();
+            }
             return res.json({ completedAt: candidateObj.completedAt, messages: history, candidate: {... candidateObj, user: userObj} });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
@@ -245,6 +246,10 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
             if (history[history.length -1].role === 'human') {
                 await agent.sendMessage();
+                history = await agent.getHistory();
+            }
+            if (history[history.length -1].role === "ai" && !history[history.length -1].parsedResponse.confidence) {
+                await agent.recreateLastMessage();
                 history = await agent.getHistory();
             }
             const response = await agent.sendMessage(payload.userInput);

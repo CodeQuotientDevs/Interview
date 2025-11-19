@@ -22,6 +22,7 @@ export const createServer = (redisStore: RedisStore, config: ServerConfig) => {
         secret: process.env.SESSION_SECRET || process.env.SESSION_SECRETE || 'your-session-secret',
         resave: false,
         saveUninitialized: false,
+        rolling: true,
         cookie: {
             secure: false,
             httpOnly: true,

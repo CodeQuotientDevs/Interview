@@ -50,6 +50,7 @@ export class CandidateResponseWorker{
             }
         })
         await redis.zrem(redisConstant.completedInterview, attemptId);
+        logger.info(`Report generated for attempt ${attemptId}`);
         return result;
     }
 }

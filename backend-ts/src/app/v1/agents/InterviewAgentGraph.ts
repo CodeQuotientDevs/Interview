@@ -1,4 +1,4 @@
-import zod, { check, number } from "zod";
+import zod, { check, int, number } from "zod";
 import {
     StateGraph,
     START,
@@ -16,6 +16,8 @@ import type { SingleUserModel as BasicUserDetails } from "@app/v1/routes/user/da
 import {
     systemInstructionCurrentInterview,
     systemInstructionConvertSimpleStringToStructuredOutput,
+    systemInstructionForGeneratingReport,
+    systemInstructionToDetectIntent,
 } from "./systemInstruction";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { getServerTime } from "./tools/serverTime";
@@ -24,6 +26,9 @@ import { createAgent } from "langchain";
 
 import { interviewParserSchema, interviewReportSchema } from "./schema/interviewAgent";
 import { logger } from "@root/libs";
+import { systemInstructionValidateModelResponse } from "./systemInstruction/validation";
+import { IntentResponseSchema, ModelResponseValidator } from "./schema/validator";
+import { ms } from "zod/v4/locales";
 
 
 type MessageType = {
@@ -31,6 +36,11 @@ type MessageType = {
     createdAt: Date,
     message: BaseMessage,
     structuredResponse: Record<string, any>,
+}
+
+type Intent = {
+    intent: 'answer' | 'clarify_question' | 'dont_know_concept' | 'end_interview' | 'off_topic';
+    confidence: number;
 }
 
 const InterviewState = Annotation.Root({
@@ -57,6 +67,18 @@ const InterviewState = Annotation.Root({
     interviewStartTime: Annotation<Date>({
         reducer: (current, update) => update ?? current,
         default: () => new Date(),
+    }),
+    correctionRequired: Annotation<boolean>({
+        reducer: (current, update) => update ?? current,
+        default: () => false,
+    }),
+    detectCandidateIntent: Annotation<boolean>({
+        reducer: (current, update) => update ?? current,
+        default: () => true,
+    }),
+    candidateIntent: Annotation<Intent | null>({
+        reducer: (current, update) => update ?? current,
+        default: () => null,
     })
 });
 
@@ -74,19 +96,79 @@ async function ensureGraphCompiled() {
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
             }
+            let intent = state.candidateIntent
             const systemPrompt = systemInstructionCurrentInterview(
                 interview as Interview,
                 candidate as Candidate,
                 user as BasicUserDetails
             );
             let enhancedSystemPrompt = systemPrompt;
-            const isFirstMessage = state.messages.length == 1;
+
+            const messagesToAdd = state.messages.map(ele => ele.message);
+            if (state.correctionRequired) {
+                for (let index = messagesToAdd.length - 1; index >= 0; index--) {
+                    const message = messagesToAdd[index];
+                    if (message instanceof HumanMessage) {
+                        break;
+                    }
+                    messagesToAdd.pop();
+                }
+            }
+            
+            let updates: any = {};
+
+            // if (!intent && state.detectCandidateIntent) {
+            //     let userMessage = null;
+            //     let previousAiMessage = null;
+            //     for (let i = state.messages.length - 1; i >= 0; i--) {
+            //         const msg = state.messages[i];
+            //         if (!userMessage && msg.message  instanceof HumanMessage) {
+            //             userMessage = msg.message;
+            //             continue;
+            //         }
+            //         if (!previousAiMessage && msg.message instanceof AIMessage) {
+            //             previousAiMessage = msg.message;
+            //         }
+
+            //         if (userMessage && previousAiMessage) break;
+            //     }
+            //     if (previousAiMessage && userMessage) {
+            //         const intentDetectionAgent = createAgent({
+            //             model,
+            //             systemPrompt: systemInstructionToDetectIntent(previousAiMessage.text, userMessage.text),
+            //             responseFormat: IntentResponseSchema,
+            //         })
+            //         const intentResponse = await intentDetectionAgent.invoke({
+            //             messages: [ new HumanMessage(
+            //                 "Please provide the response",
+            //             )]
+            //         });
+            //         intent = intentResponse.structuredResponse as Intent;
+            //         logger.info({
+            //             userMessage: userMessage.text,
+            //             userIntent: intent.intent,
+            //             confidence: intent.confidence,
+            //         });
+            //     }
+            //     updates.candidateIntent = intent;
+            // }
+            let needsQuestionClarification = false;
+            let needsConceptTeaching = false;
+            let wantsToEnd = false;
+            let isOffTopic = false;
+            // if (intent && intent.confidence > 0.7) {
+            //         needsQuestionClarification = intent.intent === 'clarify_question';
+            //         needsConceptTeaching = intent.intent === 'dont_know_concept';
+            //         wantsToEnd = intent.intent === 'end_interview';
+            //         isOffTopic = intent.intent === 'off_topic';
+            // } 
+
+            const isFirstMessage = messagesToAdd.length == 1;
             if (isFirstMessage) {
                 enhancedSystemPrompt += `\n\nIMPORTANT: This is the FIRST message. You MUST call get_server_time immediately to establish the interview start time.`;
             } else if (state.interviewStartTime) {
-                enhancedSystemPrompt += `\n\nInterview Start Time: ${state.interviewStartTime} (timestamp in ms). Current message count: ${state.messages.length}. Remember to call get_server_time to calculate elapsed time.`;
+                enhancedSystemPrompt += `\n\nInterview Start Time: ${state.interviewStartTime} (timestamp in ms). Current message count: ${messagesToAdd.length}. Remember to call get_server_time to calculate elapsed time.`;
             }
-
             const messagesForModel: BaseMessage[] = [
                 new SystemMessage(enhancedSystemPrompt),
                 ...state.messages.map(ele => ele.message),
@@ -102,18 +184,56 @@ async function ensureGraphCompiled() {
                 createdAt: new Date(),
                 structuredResponse: {},
             };
-            let updates: any = {
-                messages: [newAiMessage],
-                latestAiResponse: newAiMessage,
-            };
 
+            updates.messages = [newAiMessage];
+            updates.latestAiResponse = newAiMessage;
             if (isFirstMessage && modelResponse.tool_calls && modelResponse.tool_calls.length > 0) {
                 const timeCall = modelResponse.tool_calls.find((tc: any) => tc.name === 'get_server_time');
                 if (timeCall) {
                     updates.interviewStartTime = Date.now();
                 }
             }
-            return updates;
+            return {
+                ...updates,
+                correctionRequired: false,
+            };
+        })
+        .addNode("validateModelResponse", async (state: InterviewStateType, config: any) => {
+            const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
+            if (!lastMessageWrapper) {
+                return;
+            }
+            const ctx = config?.configurable?.context ?? {};
+            const { model, user } = ctx;
+            const validatorAgent = createAgent({
+                model,
+                systemPrompt: systemInstructionValidateModelResponse(),
+                responseFormat: ModelResponseValidator,
+            });
+            if (!lastMessageWrapper.message.text) {
+                return {
+                    correctionRequired: true,
+                }
+            }
+            const response = await validatorAgent.invoke({
+                messages: [new HumanMessage(lastMessageWrapper.message.text)],
+            });
+            if (!response.structuredResponse.valid) {
+                logger.info({
+                    message: "Response From AI not valid",
+                    reason: response.structuredResponse.reason,
+                    aiMessage: lastMessageWrapper.message.text,
+                });
+                return {
+                    correctionRequired: true,
+                }
+            };
+            logger.info({
+                message: "Valid response came from model",
+            });
+            return {
+                correctionRequired: false,
+            };
         })
         .addNode("convertToStructuredResponse", async (state: InterviewStateType, config: any) => {
             const instruction = systemInstructionConvertSimpleStringToStructuredOutput();
@@ -124,19 +244,14 @@ async function ensureGraphCompiled() {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
             }
 
-            const numberOfMessagesAdditionalRequired = Math.ceil(state.conversionAttempts * 25  * state.messages.length) / 100;
-            const messagesToGive = InterviewAgent.parseMessage({ includeToolCalls: false },state.messages.slice( state.messages.length - numberOfMessagesAdditionalRequired  ));
+            const numberOfMessagesAdditionalRequired = Math.ceil(state.conversionAttempts * 25 * state.messages.length) / 100;
+            const messagesToGive = InterviewAgent.parseMessage({ includeToolCalls: false }, state.messages.slice(state.messages.length - numberOfMessagesAdditionalRequired));
             const lastAIMessageWrapper = state.messages.slice().reverse().find(
                 wrapper => wrapper.message instanceof AIMessage
             );
-
             if (!lastAIMessageWrapper) {
-                return { messages: [] };
+                return {};
             }
-
-            if (state.conversionAttempts > 3) {
-                return END;
-            } 
             const messages = [
                 new SystemMessage(instruction),
                 ...(messagesToGive.map(ele => ele.message)),
@@ -146,7 +261,7 @@ async function ensureGraphCompiled() {
                 model: model,
                 responseFormat: interviewParserSchema,
                 tools: [],
-                
+
             });
             const response = await agent.invoke({
                 messages: messages,
@@ -166,6 +281,7 @@ async function ensureGraphCompiled() {
                     messages: [updatedMessage],
                     latestAiResponse: updatedMessage,
                     conversionAttempts: state.conversionAttempts + 1,
+                    candidateIntent: false,
                 };
 
             } catch (error) {
@@ -173,12 +289,13 @@ async function ensureGraphCompiled() {
                     id: lastAIMessageWrapper.id,
                     message: lastAIMessageWrapper.message,
                     createdAt: lastAIMessageWrapper.createdAt,
-                    structuredResponse: { 
-                        __raw: error, 
-                        __error: "JSON parse failed" 
+                    structuredResponse: {
+                        __raw: error,
+                        __error: "JSON parse failed"
                     },
                 };
                 return {
+                    candidateIntent: false,
                     conversionAttempts: state.conversionAttempts + 1,
                     messages: [updatedMessage],
                 };
@@ -189,6 +306,7 @@ async function ensureGraphCompiled() {
             if (!lastMessageWrapper) {
                 return { messages: [] };
             }
+            logger.info('Executing tool call');
             const lastMessage = lastMessageWrapper.message;
             if (!(lastMessage instanceof AIMessage) || !lastMessage.tool_calls || lastMessage.tool_calls.length === 0) {
                 return { messages: [] };
@@ -207,7 +325,7 @@ async function ensureGraphCompiled() {
                         default:
                             result = `Tool ${toolCall.name} not found`;
                     }
-                    
+
                     toolMessages.push(
                         new ToolMessage({
                             content: typeof result === "string" ? result : JSON.stringify(result),
@@ -229,7 +347,7 @@ async function ensureGraphCompiled() {
                 id: crypto.randomUUID(),
                 message: toolMsg,
                 createdAt: new Date(),
-                structuredResponse: {}
+                structuredResponse: {},
             }));
 
             return { messages: newToolMessages };
@@ -241,23 +359,34 @@ async function ensureGraphCompiled() {
                 if (!lastMessageWrapper) {
                     return "end";
                 }
-            
+
                 const lastMessage = lastMessageWrapper.message;
 
                 if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
                     return "tools";
                 }
-                if (state.shouldConvertToStructured) {
-                    return "structured_conversion"
-                }
-                return "end";
+                return "validate";
             },
             {
                 tools: "executeTools",
                 structured_conversion: "convertToStructuredResponse",
                 end: END,
+                validate: "validateModelResponse",
             }
         )
+        .addConditionalEdges("validateModelResponse", (state: InterviewStateType) => {
+            if (!state.correctionRequired) {
+                if (state.shouldConvertToStructured) {
+                    return "convertToStructure"
+                }
+                return "end";
+            }
+            return "retry"
+        }, {
+            end: END,
+            retry: "askAndRespond",
+            convertToStructure: "convertToStructuredResponse",
+        })
         .addConditionalEdges("convertToStructuredResponse", (state: InterviewStateType) => {
             const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
             if (!lastMessageWrapper?.structuredResponse?.confidence) {
@@ -276,6 +405,7 @@ async function ensureGraphCompiled() {
         })
         .addEdge(START, "askAndRespond")
         .addEdge("executeTools", "askAndRespond")
+        .addEdge("validateModelResponse", "convertToStructuredResponse")
         .addEdge("convertToStructuredResponse", END);
 
     compiledGraph = builder.compile({ checkpointer: checkPointer });
@@ -322,7 +452,9 @@ export class InterviewAgent {
                     candidate: this.candidate,
                     user: this.user,
                     model: this.model,
-                },
+                    detectCandidateIntent: true,
+                    candidateIntent: null,
+                }
             },
         };
         const messages = [];
@@ -350,7 +482,7 @@ export class InterviewAgent {
             const state = await graph.getState({
                 configurable: { thread_id: this.threadId },
             });
-            
+
             if (state && state.values && Array.isArray(state.values.messages)) {
                 return state.values.messages;
             }
@@ -371,7 +503,13 @@ export class InterviewAgent {
                     result.push(msg);
                 }
             } else {
-                result.push(msg);
+                if (msg.message instanceof AIMessage) {
+                    if (msg.structuredResponse?.confidence) {
+                        result.push(msg);
+                    }
+                } else {
+                    result.push(msg);
+                }
             }
             return result;
         }, []);
@@ -394,7 +532,7 @@ export class InterviewAgent {
     }
 
     async generateReport(): Promise<zod.infer<typeof interviewReportSchema>> {
-        const systemInstruction = '';
+        const systemInstruction = systemInstructionForGeneratingReport(this.interview, this.candidate);
         const schema = interviewReportSchema;
         const agent = createAgent({
             model: this.model,
@@ -405,7 +543,7 @@ export class InterviewAgent {
             configurable: { thread_id: this.threadId }
         });
         const existingMessages: Array<any> = (checkpoint?.channel_values?.messages ?? []) as any;
-        const messages = InterviewAgent.parseMessage({ includeToolCalls: false },existingMessages); 
+        const messages = InterviewAgent.parseMessage({ includeToolCalls: false }, existingMessages);
         if (!messages.length) {
             return {
                 scorePercentage: 0,
@@ -420,6 +558,31 @@ export class InterviewAgent {
             }
         );
         return response.structuredResponse;
+    }
+
+    async recreateLastMessage() {
+        const graph = await ensureGraphCompiled();
+        const config = {
+            configurable: {
+                thread_id: this.threadId,
+                context: {
+                    interview: this.interview,
+                    candidate: this.candidate,
+                    user: this.user,
+                    model: this.model,
+                },
+            },
+        };
+        const result = await graph.invoke(
+            {
+                messages: [],
+                shouldConvertToStructured: true,
+                conversionAttempts: 0,
+                correctionRequired: true,
+            },
+            config
+        );
+        return result;
     }
 
     async clearHistory() {
