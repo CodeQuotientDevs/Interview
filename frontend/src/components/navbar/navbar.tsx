@@ -5,6 +5,7 @@ import { TimerIcon } from "lucide-react";
 
 interface NavbarProps {
     startedAt?: string | Date | null;
+    completedAt?: string | Date | null;
     user?: {_id: string, name: string, email: string}
 }
 
@@ -16,20 +17,36 @@ const formatElapsed = (seconds: number) => {
     return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 }
 
-export const Navbar = ({ startedAt, user }: NavbarProps) => {
+export const Navbar = ({ startedAt, user, completedAt }: NavbarProps) => {
     const start = useMemo(() => {
         if (!startedAt) return null;
         return typeof startedAt === 'string' ? new Date(startedAt) : startedAt;
     }, [startedAt]);
 
+    const end = useMemo(() => {
+        if (!completedAt) return null;
+        return typeof completedAt === "string"
+            ? new Date(completedAt)
+            : completedAt;
+    }, [completedAt]);
+
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(() => {
         if (!start) return 0;
-        const diff = (Date.now() - start.getTime()) / 1000;
+        const endTime = end ? end.getTime() : Date.now();
+        const diff = (endTime - start.getTime()) / 1000;
         return Math.max(0, Math.floor(diff));
     });
 
     useEffect(() => {
-        if (!start) return;
+         if (!start) {
+            setElapsedSeconds(0);
+            return;
+        }
+        if (end) {
+            const diff = (end.getTime() - start.getTime()) / 1000;
+            setElapsedSeconds(Math.max(0, Math.floor(diff)));
+            return;
+        }
         const tick = () => {
             const diff = (Date.now() - start.getTime()) / 1000;
             setElapsedSeconds(Math.max(0, Math.floor(diff)));
