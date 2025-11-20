@@ -52,6 +52,7 @@ export class Candidate {
             completedAt: 1,
             summaryReport: 1,
             detailedReport: 1,
+			concludedAt: 1,
         });
         return data;
     }
