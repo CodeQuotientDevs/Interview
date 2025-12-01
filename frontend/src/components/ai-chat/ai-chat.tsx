@@ -30,25 +30,29 @@ export default function AiChat(props: AiChatProp) {
 
     const handleEditorSubmit = useCallback(async (skip?: boolean) => {
         const value = editorRef.current?.getValue();
-        let input = '';
+        let inputToSend = '';
         if (skip) {
-            input = 'Lets skip this question.';
+            inputToSend = 'Lets skip this question.';
             setOpenCodeEditor(false);
         }
-        if (value) {
-            input = value;
-        }
         if (value && selectedLanguage) {
-            input = `\`\`\`${selectedLanguage}\n${value}\n\`\`\``
+            inputToSend = `\`\`\`${selectedLanguage}\n${value}\n${input}\`\`\``;
         }
-        await handleSubmission(input);
+        setInput('');
+        await handleSubmission(inputToSend);
         setEditorValue('');
-    }, [ selectedLanguage, handleSubmission, setEditorValue]);
+    }, [ selectedLanguage, handleSubmission, setEditorValue, input]);
 
     const handleSubmissionSimpleInput = useCallback(async (event?: { preventDefault?: (() => void) | undefined; }) => {
         event?.preventDefault?.();
-        setInput('')
-        await handleSubmission(input);
+        setInput('');
+        let inputToSend = input;
+        const editorContent = editorRef.current?.getValue();
+        if (editorContent) {
+            inputToSend = `\`\`\`${selectedLanguage}\n${editorContent}\n${input}\n\`\`\``
+            setEditorValue('');
+        }
+        await handleSubmission(inputToSend);
     }, [input, handleSubmission]);
 
     useEffect(() => {
