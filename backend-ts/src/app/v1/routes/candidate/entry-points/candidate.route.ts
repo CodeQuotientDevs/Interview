@@ -106,7 +106,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 }
                 return usersToGet.add(ele.userId);
             });
-            const userMap = await userServices.getUserMap(Array.from(usersToGet), {name: 1, email: 1 });
+            const userMap = await userServices.getUserMap(Array.from(usersToGet), { name: 1, email: 1 });
             let userMapExternal = new Map();
             if (usersToGetFromExternalService.size) {
                 userMapExternal = new Map();
@@ -198,14 +198,20 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage("Lets start the interview");
                 history = await agent.getHistory();
             }
-            if (history[history.length -1].role === 'human') {
+            if (history[history.length - 1].role === 'human') {
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length -1].role === "ai" && !history[history.length -1].parsedResponse.confidence) {
+            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
                 await agent.recreateLastMessage();
             }
-            return res.json({ completedAt: candidateObj.completedAt, messages: history, candidate: {... candidateObj, user: userObj} });
+            let idleWarningTime = process.env.IDLE_WARNING_TIME
+            let idleSubmitTime = process.env.IDLE_SUBMIT_TIME
+            return res.json({
+                idleWarningTime,
+                idleSubmitTime,
+                completedAt: candidateObj.completedAt, messages: history, candidate: { ...candidateObj, user: userObj }
+            });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
             return res.status(500).json({ error: 'Internal Server Error' });
@@ -244,11 +250,11 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!history.length) {
                 throw new Error("Invalid request");
             }
-            if (history[history.length -1].role === 'human') {
+            if (history[history.length - 1].role === 'human') {
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length -1].role === "ai" && !history[history.length -1].parsedResponse.confidence) {
+            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
                 await agent.recreateLastMessage();
                 history = await agent.getHistory();
             }
@@ -296,6 +302,33 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         }
     });
 
+    router.patch('/conclude-interviews/:interviewId', async (req: Request, res: Response) => {
+        try {
+            const attemptIds = (req.body as any).attemptIds;
+            const findObj: any = {
+                interviewId: req.params.interviewId,
+                $or: [{ completedAt: { $exists: false } }, { completedAt: null }],
+            };
+            if (attemptIds?.length) findObj.id = attemptIds;
+
+            const candidatesWhoseInterviewIsNotConcluded = await candidateServices.find(findObj, { id: 1 }, {});
+            await candidateServices.concludeCandidateInterview(candidatesWhoseInterviewIsNotConcluded.map((ele: any) => ele.id.toString()));
+            return res.json({ id: candidatesWhoseInterviewIsNotConcluded.map((ele: any) => ele.id.toString()) });
+        } catch (error: any) {
+            logger.error({ endpoint: 'conclude-interview GET /', error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+    router.patch('/conclude-interview/:attemptId', async (req: Request, res: Response) => {
+        try {
+            const attemptId = req.params.attemptId
+            await candidateServices.concludeCandidateInterview([attemptId]);
+            return res.json({ id: attemptId });
+        } catch (error: any) {
+            logger.error({ endpoint: 'conclude-interview GET /', error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
     router.patch('/conclude-interviews/:interviewId', async (req: Request, res: Response) => {
         try {
             const attemptIds = (req.body as any).attemptIds;
@@ -392,7 +425,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const userObj = await userServices.getUserById(candidateObj.userId);
-            
+
             if (userObj) {
                 await sendInvite({
                     id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateUpdateData.startTime || candidateObj.startTime, endDate: candidateUpdateData.endTime || candidateObj.endTime,

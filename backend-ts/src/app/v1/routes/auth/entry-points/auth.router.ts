@@ -27,6 +27,7 @@ async function assignSession(sessionObj: SessionStore, user: SessionUser) {
 export function createAuthRouter({ authService }: { authService: AuthService }) {
     const router = Router();
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    console.log(googleClientId);
 
     router.get('/logout', async (req: Request, res: Response) => {
         try {
@@ -57,7 +58,10 @@ export function createAuthRouter({ authService }: { authService: AuthService }) 
     });
 
     if (googleClientId) {
+        console.log('Google Post Request Registered');
         const client = new OAuth2Client(googleClientId);
+        console.log('Google Post Request Registered');
+
         router.post('/login/google', async (req: Request, res: Response) => {
             try {
                 const googleToken = await loginGoogleSchema.safeParseAsync(req.body);

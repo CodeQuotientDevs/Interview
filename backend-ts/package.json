@@ -17,9 +17,9 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "@langchain/core": "^1.0.4",
-    "@langchain/google-genai": "^1.0.0",
-    "@langchain/langgraph": "^1.0.2",
+    "@langchain/core": "^1.1.2",
+    "@langchain/google-genai": "^2.0.2",
+    "@langchain/langgraph": "^1.0.3",
     "@langchain/langgraph-checkpoint-mongodb": "^1.0.0",
     "@langchain/openai": "^1.1.0",
     "@types/cookie-parser": "^1.4.10",

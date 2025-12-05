@@ -59,7 +59,6 @@ export function CandidateDetailedReport() {
         retry: false,
     });
 
-    // debugger;
 
     // Handle errors
     useEffect(() => {

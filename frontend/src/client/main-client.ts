@@ -113,7 +113,7 @@ export default class MainClient {
 
     async getCandidateInterviewAttempt(interviewId: string, attemptId: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/${interviewId}/${attemptId}`));
-        const obj = await interviewCandidateReportSchema.safeParse(response.data);
+        const obj =  interviewCandidateReportSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -180,6 +180,12 @@ export default class MainClient {
         const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/conclude-interviews/${interviewId}`, { attemptIds }));
         return response.data;
     }
+    
+    async concludeCandidateInterview(attemptId: string) {
+        const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/conclude-interview/${attemptId}`));
+        return response.data;
+    }
+
     async getDashboardStats() {
         const response = await this.requestWrapper(this._mainAPI.get('/api/v1/interviews/stats'));
         const obj = DashboardSchema.safeParse(response.data);

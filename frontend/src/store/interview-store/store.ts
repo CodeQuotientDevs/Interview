@@ -37,6 +37,7 @@ interface MainStoreState {
     cloneInterview: (id: string) => Promise<string>
     revaluate: (id: string) => Promise<string>
     getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
+    concludeCandidateInterview: (attemptId: string) => Promise<void>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
     getDashboardStats: () => Promise<typeof DashboardSchema._type>;
     getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
@@ -97,6 +98,9 @@ export const createMainStore = (client: MainApi) => {
         },
         async concludeInterview(interviewId, attemptId) {
             await client.concludeInterview(interviewId, attemptId ? [attemptId] : undefined);
+        },
+        async concludeCandidateInterview(attemptId) {
+            await client.concludeCandidateInterview(attemptId);
         },
         async getDashboardStats() {
             const res = await client.getDashboardStats();

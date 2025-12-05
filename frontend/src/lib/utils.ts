@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import dayjs from "dayjs"
+import duration from "dayjs/plugin/duration";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -32,3 +33,18 @@ export function formatTime(date: string | Date | null | undefined): string {
   if (!date) return "—"
   return dayjs(date).format('hh:mm A')
 }
+
+
+dayjs.extend(duration);
+
+export function formatDurationDayjs(seconds:number) {
+  const d = dayjs.duration(seconds, "seconds");
+
+  const parts = [];
+  if (d.hours()) parts.push(`${d.hours()} hours`);
+  if (d.minutes()) parts.push(`${d.minutes()} minutes`);
+  if (d.seconds()) parts.push(`${d.seconds()} seconds`);
+
+  return parts.join(" ");
+}
+

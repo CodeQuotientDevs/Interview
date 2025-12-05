@@ -1,0 +1,213 @@
+{"level":50,"time":1764908457528,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908457528,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":30,"time":1764908457535,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764908457536,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":50,"time":1764908457580,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908457594,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908457681,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908457825,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908457833,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908458039,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908458040,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908458292,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908458595,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908458595,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908458950,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908459353,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908459593,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908459807,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908460310,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908460864,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908461320,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis session client error","error":"","trace":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)"}
+{"level":50,"time":1764908461466,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908462120,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":50,"time":1764908462823,"pid":75570,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Redis Connection Error","error":{"code":"ECONNREFUSED"}}
+{"level":30,"time":1764908502881,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764908502890,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764908502890,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764909363002,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6931835d1b0fff1f645403f2"}
+{"level":30,"time":1764909363058,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6931835d1b0fff1f645403f2"}
+{"level":30,"time":1764913547402,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Sending invite Email"}
+{"level":30,"time":1764913547414,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Skipping emails as email cred are not provided"}
+{"level":30,"time":1764914787096,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764914788803,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":50,"time":1764917820637,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cast to ObjectId failed for value \"undefined\" (type string) at path \"interviewId\" for model \"interviewAttempt\"","trace":"CastError: Cast to ObjectId failed for value \"undefined\" (type string) at path \"interviewId\" for model \"interviewAttempt\"\n    at SchemaObjectId.cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schema/objectId.js:253:11)\n    at SchemaType.applySetters (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schemaType.js:1288:12)\n    at SchemaType.castForQuery (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schemaType.js:1724:17)\n    at cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/cast.js:390:32)\n    at Query.cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:5060:12)\n    at Query._castConditions (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:2374:10)\n    at model.Query._find (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:2401:8)\n    at model.Query.exec (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:4627:80)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:308:60)"}
+{"level":50,"time":1764917843597,"pid":75766,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cast to ObjectId failed for value \"undefined\" (type string) at path \"interviewId\" for model \"interviewAttempt\"","trace":"CastError: Cast to ObjectId failed for value \"undefined\" (type string) at path \"interviewId\" for model \"interviewAttempt\"\n    at SchemaObjectId.cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schema/objectId.js:253:11)\n    at SchemaType.applySetters (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schemaType.js:1288:12)\n    at SchemaType.castForQuery (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/schemaType.js:1724:17)\n    at cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/cast.js:390:32)\n    at Query.cast (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:5060:12)\n    at Query._castConditions (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:2374:10)\n    at model.Query._find (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:2401:8)\n    at model.Query.exec (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongoose/lib/query.js:4627:80)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:308:60)"}
+{"level":30,"time":1764925575543,"pid":88116,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925575568,"pid":88116,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925575569,"pid":88116,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925591657,"pid":88150,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925591664,"pid":88150,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925591665,"pid":88150,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925599170,"pid":88172,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925599192,"pid":88172,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925599193,"pid":88172,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925609055,"pid":88195,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925609077,"pid":88195,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925609078,"pid":88195,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925619536,"pid":88221,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925619543,"pid":88221,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925619543,"pid":88221,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925670564,"pid":88255,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925670568,"pid":88255,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925670569,"pid":88255,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925687228,"pid":88308,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925687244,"pid":88308,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925687245,"pid":88308,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925774252,"pid":88435,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925774281,"pid":88435,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925774281,"pid":88435,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925793052,"pid":88472,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925793064,"pid":88472,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925793065,"pid":88472,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925821534,"pid":88509,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925821570,"pid":88509,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925821572,"pid":88509,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925832079,"pid":88540,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925832105,"pid":88540,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925832105,"pid":88540,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764925841909,"pid":88569,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764925841921,"pid":88569,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764925841922,"pid":88569,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":50,"time":1764926698911,"pid":88569,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cannot read properties of undefined (reading 'id')","trace":"TypeError: Cannot read properties of undefined (reading 'id')\n    at <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:326:81)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+{"level":50,"time":1764926734117,"pid":88569,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cannot read properties of undefined (reading 'id')","trace":"TypeError: Cannot read properties of undefined (reading 'id')\n    at <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:326:81)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+{"level":30,"time":1764926765438,"pid":89608,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764926765455,"pid":89608,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764926765456,"pid":89608,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":50,"time":1764926814412,"pid":89608,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cannot read properties of undefined (reading 'id')","trace":"TypeError: Cannot read properties of undefined (reading 'id')\n    at <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:326:81)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+{"level":30,"time":1764926869108,"pid":90311,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764926869147,"pid":90311,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764926869148,"pid":90311,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":50,"time":1764926914266,"pid":90311,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cannot read properties of undefined (reading 'id')","trace":"TypeError: Cannot read properties of undefined (reading 'id')\n    at <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:326:81)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+{"level":30,"time":1764926917948,"pid":90354,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764926917981,"pid":90354,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764926917982,"pid":90354,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":50,"time":1764926929366,"pid":90354,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"conclude-interview GET /","error":"Cannot read properties of undefined (reading 'id')","trace":"TypeError: Cannot read properties of undefined (reading 'id')\n    at <anonymous> (/Users/maaniksharma/Documents/hello/Interview/backend-ts/src/app/v1/routes/candidate/entry-points/candidate.route.ts:326:81)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+{"level":30,"time":1764927055630,"pid":90479,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764927055646,"pid":90479,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764927055647,"pid":90479,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764927109069,"pid":90526,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764927109082,"pid":90526,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764927109083,"pid":90526,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764927122740,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764927122768,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764927122769,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764927145210,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927157453,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927190513,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927195261,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927210514,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927213338,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927550555,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764927555278,"pid":90560,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764928112258,"pid":91544,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764928112298,"pid":91544,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764928112299,"pid":91544,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764928597427,"pid":91868,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764928597438,"pid":91868,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764928597439,"pid":91868,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764928852753,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764928852767,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764928852767,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764928932748,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764928938532,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764928942750,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764928945532,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764929042757,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764929046358,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764929092764,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764929098306,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932718bc207cad01b9ea115"}
+{"level":30,"time":1764929320891,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Sending invite Email"}
+{"level":30,"time":1764929320943,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Skipping emails as email cred are not provided"}
+{"level":30,"time":1764929413387,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764929415596,"pid":92108,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764931497142,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764931497163,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764931497163,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764931527148,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932af28da83a44c0ca912aa"}
+{"level":30,"time":1764931529855,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932af28da83a44c0ca912aa"}
+{"level":30,"time":1764931567152,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932af28da83a44c0ca912aa"}
+{"level":30,"time":1764931571527,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932af28da83a44c0ca912aa"}
+{"level":50,"time":1764931937858,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoint":"candidate POST /6932af0fda83a44c0ca9129c","error":"E11000 duplicate key error collection: ai.interviewattempts index: userId_1_interviewId_1 dup key: { userId: \"6931835d1b0fff1f645403ee\", interviewId: ObjectId('6932af0fda83a44c0ca9129c') }","trace":"MongoServerError: E11000 duplicate key error collection: ai.interviewattempts index: userId_1_interviewId_1 dup key: { userId: \"6931835d1b0fff1f645403ee\", interviewId: ObjectId('6932af0fda83a44c0ca9129c') }\n    at InsertOneOperation.handleOk (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongodb/src/operations/insert.ts:79:13)\n    at tryOperation (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongodb/src/operations/execute_operation.ts:290:26)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async executeOperation (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongodb/src/operations/execute_operation.ts:119:12)\n    at async Collection.insertOne (/Users/maaniksharma/Documents/hello/Interview/backend-ts/node_modules/mongodb/src/collection.ts:294:12)"}
+{"level":30,"time":1764931966973,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Sending invite Email"}
+{"level":30,"time":1764931967040,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Skipping emails as email cred are not provided"}
+{"level":30,"time":1764932186541,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764932188734,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764932327232,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932b97e2d6aa229037994be"}
+{"level":30,"time":1764932329446,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932b97e2d6aa229037994be"}
+{"level":30,"time":1764932369123,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Sending invite Email"}
+{"level":30,"time":1764932369137,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Skipping emails as email cred are not provided"}
+{"level":30,"time":1764932401797,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764932403701,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764932427252,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932429436,"pid":94745,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932483782,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Redis connected"}
+{"level":30,"time":1764932483810,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"port":"7008"}
+{"level":30,"time":1764932483810,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"endpoints":[],"msg":"Registered HTTP endpoints"}
+{"level":30,"time":1764932573798,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932579732,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932783841,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932786808,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932813843,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764932816047,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764933083877,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764933089687,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764933533911,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764933535972,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764934884018,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764934888348,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932bb112d6aa22903799505"}
+{"level":30,"time":1764936803789,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Sending invite Email"}
+{"level":30,"time":1764936803857,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Skipping emails as email cred are not provided"}
+{"level":30,"time":1764936967788,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764936969840,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937005138,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: my name is maanik , i am very good in js coding , ask me anything in js coding please"}
+{"level":30,"time":1764937006589,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937008506,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937094656,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: hello sir"}
+{"level":30,"time":1764937096267,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937097930,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937307963,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: ```javascript\nddfdfgdfgd\ngdfgdg```"}
+{"level":30,"time":1764937309091,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937310983,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937317888,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: dg"}
+{"level":30,"time":1764937319395,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937322104,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937330267,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: yes sir"}
+{"level":30,"time":1764937331542,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937333054,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937340569,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: a"}
+{"level":30,"time":1764937342056,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937344087,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937355047,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: Lets skip this question."}
+{"level":30,"time":1764937356444,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937358430,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937363862,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: Lets skip this question."}
+{"level":30,"time":1764937364802,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937366748,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937409947,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: hello sir where have you gone"}
+{"level":30,"time":1764937411529,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937413088,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937422772,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: yes sir i will write the code"}
+{"level":30,"time":1764937424586,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937447492,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: yes it sending event innerside  next ask me a coding question"}
+{"level":30,"time":1764937448783,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937451273,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937476806,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: Lets skip this question."}
+{"level":30,"time":1764937478002,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937480138,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937519280,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: f"}
+{"level":30,"time":1764937520618,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937522804,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937541183,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: yes it is shit open editor so i will write the code"}
+{"level":30,"time":1764937543593,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937557725,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: this is the scope info"}
+{"level":30,"time":1764937559951,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937561663,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937570393,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: ```javascript\ndf\n```"}
+{"level":30,"time":1764937571447,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937573491,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937580065,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"User responded with: Lets skip this question."}
+{"level":30,"time":1764937581229,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Executing tool call"}
+{"level":30,"time":1764937583322,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"message":"Valid response came from model"}
+{"level":30,"time":1764937624370,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Generating report attempt 6932cc63a9572c17f4000c32"}
+{"level":30,"time":1764937665873,"pid":95686,"hostname":"Maanik-Macbook-air-m2-4988.local","port":"7008","worker":true,"msg":"Report generated for attempt 6932cc63a9572c17f4000c32"}

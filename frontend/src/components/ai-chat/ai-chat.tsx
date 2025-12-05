@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
+
+
 interface AiChatProp {
     // interviewId: string;
     isGenerating: boolean;
@@ -13,6 +15,7 @@ interface AiChatProp {
     messages: Array<MessageType>;
     handleSubmission: (response: string) => Promise<void>;
     setIsInterviewEnded: (data: boolean) => void;
+    handleIntervieweeIdle: () => void;
 }
 
 export default function AiChat(props: AiChatProp) {
@@ -23,12 +26,21 @@ export default function AiChat(props: AiChatProp) {
     const [selectedLanguage, setSelectedLanguage] = useState<string>("");
     const [editorValue, setEditorValue] = useState<string>('');
     const editorRef = useRef<EditorRefType>(null);
+   
 
     const handleInputChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
-    }, []);
+        props.handleIntervieweeIdle();
+    }, [ props.handleIntervieweeIdle]);
+
+    const handleEditorInputChange = useCallback((value: string) => {
+        setEditorValue(value);
+        props.handleIntervieweeIdle();
+    }, [props.handleIntervieweeIdle]);
+
 
     const handleEditorSubmit = useCallback(async (skip?: boolean) => {
+         props.handleIntervieweeIdle();
         const value = editorRef.current?.getValue();
         let inputToSend = '';
         if (skip) {
@@ -41,9 +53,10 @@ export default function AiChat(props: AiChatProp) {
         setInput('');
         await handleSubmission(inputToSend);
         setEditorValue('');
-    }, [ selectedLanguage, handleSubmission, setEditorValue, input]);
+    }, [props.handleIntervieweeIdle, selectedLanguage, handleSubmission, setEditorValue, input]);
 
     const handleSubmissionSimpleInput = useCallback(async (event?: { preventDefault?: (() => void) | undefined; }) => {
+        props.handleIntervieweeIdle();
         event?.preventDefault?.();
         setInput('');
         let inputToSend = input;
@@ -53,7 +66,7 @@ export default function AiChat(props: AiChatProp) {
             setEditorValue('');
         }
         await handleSubmission(inputToSend);
-    }, [input, handleSubmission]);
+    }, [props.handleIntervieweeIdle,input, handleSubmission]);
 
     useEffect(() => {
         for (let index = messages.length - 1; index >= 0; index--) {
@@ -143,7 +156,7 @@ export default function AiChat(props: AiChatProp) {
                             ref={editorRef}
                             value={editorValue}
                             language={selectedLanguage}
-                            onChange={setEditorValue}
+                            onChange={handleEditorInputChange}
                         />
                     </motion.div>
                 )}
