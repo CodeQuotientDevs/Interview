@@ -1,14 +1,14 @@
-import Zod from "zod";
+
 import { Router, Request, Response } from 'express';
 
-import redisConstant from "@root/constants/redis";
+
 import { logger } from '@libs/logger';
 
 import middleware from "@app/v1/middleware";
 import { checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
 
 
-import { candidateCreateSchema, createCandidateFromBackendSchema, candidateUpdateSchema } from '@app/v1/zod/candidate';
+import { candidateCreateSchema, candidateUpdateSchema } from '@app/v1/zod/candidate';
 import { sendInvite } from '@services/mailer';
 import redis from '@services/redis';
 import InterviewAiModel from '@app/v1/agents/InterviewAgentGraph';
@@ -19,7 +19,7 @@ import type InterviewService from "../../interview/domain/interview.service";
 import type CandidateService from "../../candidate/domain/candidate.service";
 import type UserService from "../../user/domain/user.service";
 import type CandidateResponseService from "../../candidate-responses/domain/candidate-response.service";
-import { HumanMessage } from "langchain";
+
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
     interviewServices: InterviewService,
@@ -245,6 +245,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 candidate: candidateObj,
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
+                temperature: 1.25,
             });
             let history = await agent.getHistory();
             if (!history.length) {

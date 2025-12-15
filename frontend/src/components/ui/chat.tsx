@@ -28,6 +28,7 @@ interface ChatPropsBase {
     messageId: string,
     rating: "thumbs-up" | "thumbs-down"
   ) => void
+  allowEmptySubmit?: boolean
 }
 
 interface ChatPropsWithoutSuggestions extends ChatPropsBase {
@@ -54,6 +55,7 @@ export function Chat({
   suggestions,
   className,
   onRateResponse,
+  allowEmptySubmit,
 }: ChatProps) {
   const lastMessage = messages.at(-1)
   const isEmpty = messages.length === 0
@@ -133,6 +135,7 @@ export function Chat({
             // setFiles={setFiles}
             stop={stop}
             isGenerating={isGenerating}
+            allowEmptySubmit={allowEmptySubmit}
           />
         )}
       </ChatForm>

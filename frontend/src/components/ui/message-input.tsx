@@ -17,6 +17,7 @@ interface MessageInputBaseProps
   stop?: () => void
   isGenerating: boolean
   enableInterrupt?: boolean
+  allowEmptySubmit?: boolean
 }
 
 interface MessageInputWithoutAttachmentProps extends MessageInputBaseProps {
@@ -41,6 +42,7 @@ export function MessageInput({
   stop,
   isGenerating,
   enableInterrupt = true,
+  allowEmptySubmit = false,
   ...props
 }: MessageInputProps) {
   const trimmedValue = props.value.trim();
@@ -127,6 +129,7 @@ export function MessageInput({
           event.currentTarget.form?.requestSubmit()
         } else if (
           trimmedValue ||
+          allowEmptySubmit ||
           (props.allowAttachments && props.files?.length)
         ) {
           setShowInterruptPrompt(true)
@@ -242,7 +245,7 @@ export function MessageInput({
             size="icon"
             className="h-8 w-8 transition-opacity"
             aria-label="Send message"
-            disabled={trimmedValue === "" || isGenerating}
+            disabled={(!allowEmptySubmit && trimmedValue === "") || isGenerating}
           >
             <ArrowUp className="h-5 w-5" />
           </Button>

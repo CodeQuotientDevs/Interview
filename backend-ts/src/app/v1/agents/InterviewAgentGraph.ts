@@ -36,6 +36,7 @@ type MessageType = {
     createdAt: Date,
     message: BaseMessage,
     structuredResponse: Record<string, any>,
+    toDelete?: boolean,
 }
 
 type Intent = {
@@ -46,9 +47,18 @@ type Intent = {
 const InterviewState = Annotation.Root({
     messages: Annotation<MessageType[]>({
         reducer: (current, update) => {
-            const updateIds = new Set(update.map(msg => msg.id));
-            const filteredCurrent = current.filter(msg => !updateIds.has(msg.id));
-            return filteredCurrent.concat(update);
+            const deletedIds = new Set(
+                update.filter(msg => msg.toDelete).map(msg => msg.id)
+            );
+            const updateIds = new Set(
+                update.filter(msg => !msg.toDelete).map(msg => msg.id)
+            );
+
+            const filteredCurrent = current.filter(
+                msg => !updateIds.has(msg.id) && !deletedIds.has(msg.id)
+            );
+
+            return filteredCurrent.concat(update.filter(msg => !msg.toDelete));
         },
         default: () => [],
     }),
@@ -91,7 +101,7 @@ async function ensureGraphCompiled() {
     const builder = new StateGraph(InterviewState)
         .addNode("askAndRespond", async (state: InterviewStateType, config: any) => {
             const ctx = config.configurable?.context ?? {};
-            const { interview, candidate, user, model, messages } = ctx;
+            const { interview, candidate, user, model } = ctx;
 
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
@@ -104,6 +114,8 @@ async function ensureGraphCompiled() {
             );
             let enhancedSystemPrompt = systemPrompt;
 
+            const messagesToDelete: Array<MessageType> = [];
+
             const messagesToAdd = state.messages.map(ele => ele.message);
             if (state.correctionRequired) {
                 for (let index = messagesToAdd.length - 1; index >= 0; index--) {
@@ -112,56 +124,18 @@ async function ensureGraphCompiled() {
                         break;
                     }
                     messagesToAdd.pop();
+                    const msg = state.messages.pop();
+                    if (msg) {
+                        messagesToDelete.push({
+                            toDelete: true,
+                            ...msg,
+                        });
+                    }
+
                 }
             }
-            
+
             let updates: any = {};
-
-            // if (!intent && state.detectCandidateIntent) {
-            //     let userMessage = null;
-            //     let previousAiMessage = null;
-            //     for (let i = state.messages.length - 1; i >= 0; i--) {
-            //         const msg = state.messages[i];
-            //         if (!userMessage && msg.message  instanceof HumanMessage) {
-            //             userMessage = msg.message;
-            //             continue;
-            //         }
-            //         if (!previousAiMessage && msg.message instanceof AIMessage) {
-            //             previousAiMessage = msg.message;
-            //         }
-
-            //         if (userMessage && previousAiMessage) break;
-            //     }
-            //     if (previousAiMessage && userMessage) {
-            //         const intentDetectionAgent = createAgent({
-            //             model,
-            //             systemPrompt: systemInstructionToDetectIntent(previousAiMessage.text, userMessage.text),
-            //             responseFormat: IntentResponseSchema,
-            //         })
-            //         const intentResponse = await intentDetectionAgent.invoke({
-            //             messages: [ new HumanMessage(
-            //                 "Please provide the response",
-            //             )]
-            //         });
-            //         intent = intentResponse.structuredResponse as Intent;
-            //         logger.info({
-            //             userMessage: userMessage.text,
-            //             userIntent: intent.intent,
-            //             confidence: intent.confidence,
-            //         });
-            //     }
-            //     updates.candidateIntent = intent;
-            // }
-            let needsQuestionClarification = false;
-            let needsConceptTeaching = false;
-            let wantsToEnd = false;
-            let isOffTopic = false;
-            // if (intent && intent.confidence > 0.7) {
-            //         needsQuestionClarification = intent.intent === 'clarify_question';
-            //         needsConceptTeaching = intent.intent === 'dont_know_concept';
-            //         wantsToEnd = intent.intent === 'end_interview';
-            //         isOffTopic = intent.intent === 'off_topic';
-            // } 
 
             const isFirstMessage = messagesToAdd.length == 1;
             if (isFirstMessage) {
@@ -169,15 +143,56 @@ async function ensureGraphCompiled() {
             } else if (state.interviewStartTime) {
                 enhancedSystemPrompt += `\n\nInterview Start Time: ${state.interviewStartTime} (timestamp in ms). Current message count: ${messagesToAdd.length}. Remember to call get_server_time to calculate elapsed time.`;
             }
-            const messagesForModel: BaseMessage[] = [
+            let messagesForModel: BaseMessage[] = [
                 new SystemMessage(enhancedSystemPrompt),
-                ...state.messages.map(ele => ele.message),
+                ...messagesToAdd,
             ];
 
-            const modelResponse = await model.invoke(messagesForModel, {
-                tools: [getServerTime],
-            });
+            let modelResponse;
+            const maxRetries = 6;
+            let lastError: any;
 
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    modelResponse = await model.invoke(messagesForModel, {
+                        tools: [getServerTime],
+                    });
+
+                    if (!modelResponse) {
+                        throw new Error("Model returned empty response");
+                    }
+
+                    // Success - break out of retry loop
+                    break;
+                } catch (error: any) {
+                    lastError = error;
+                    logger.error({
+                        message: `Error invoking model (attempt ${attempt}/${maxRetries})`,
+                        error: error.message,
+                        stack: error.stack,
+                        messagesCount: messagesForModel.length,
+                    });
+
+                    // If this was the last attempt, throw the error
+                    if (attempt === maxRetries) {
+                        throw error;
+                    }
+
+                    // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+                    let uniqueSuffix = crypto.randomUUID();
+                    const waitTime = Math.pow(2, attempt - 1) * 1000;
+                    let lastMessage = messagesForModel[messagesForModel.length - 1]
+                    messagesForModel[messagesForModel.length - 1].content += `${lastMessage.content}\n\n${uniqueSuffix}`;
+                    logger.info({
+                        message: `Retrying model invocation in ${waitTime}ms`,
+                        attempt: attempt + 1,
+                        uniqueSuffix,
+                        lastMessageContent: messagesForModel[messagesForModel.length - 1].content,
+                    });
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+            }
+            logger.info('Ai Response Came');
             const newAiMessage: MessageType = {
                 id: crypto.randomUUID(),
                 message: modelResponse,
@@ -185,7 +200,7 @@ async function ensureGraphCompiled() {
                 structuredResponse: {},
             };
 
-            updates.messages = [newAiMessage];
+            updates.messages = [newAiMessage, ...messagesToDelete];
             updates.latestAiResponse = newAiMessage;
             if (isFirstMessage && modelResponse.tool_calls && modelResponse.tool_calls.length > 0) {
                 const timeCall = modelResponse.tool_calls.find((tc: any) => tc.name === 'get_server_time');
@@ -424,21 +439,25 @@ export class InterviewAgent {
         candidate: Candidate;
         user: BasicUserDetails | null;
         modelToUse: llmModels;
+        temperature?: number;
     }) {
         await ensureGraphCompiled();
-        return new InterviewAgent(opts.interview, opts.candidate, opts.user, opts.modelToUse);
+        return new InterviewAgent(opts.interview, opts.candidate, opts.user, opts.modelToUse, opts.temperature);
     }
 
     private constructor(
         interview: Interview,
         candidate: Candidate,
         user: BasicUserDetails | null,
-        model: llmModels
+        model: llmModels,
+        temperature?: number,
     ) {
         this.interview = interview;
         this.candidate = candidate;
         this.user = user;
-        this.model = createModel(model);
+        this.model = createModel(model, {
+            temperature: temperature || 1,
+        });
         this.threadId = candidate.id.toString();
     }
 

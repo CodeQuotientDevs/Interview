@@ -30,7 +30,8 @@ export const Interview = (props: InterviewProps) => {
 
   const interview = useQuery({
     queryFn: () => getDataForInterview(id),
-    queryKey: ['interview-message', id]
+    queryKey: ['interview-message', id],
+    retry: false,
   });
 
   const startedAt = useMemo(() => {
@@ -125,8 +126,8 @@ export const Interview = (props: InterviewProps) => {
   );
 
   useEffect(() => {
-    setAppLoading(interview.isLoading);
-  }, [interview.isLoading, setAppLoading]);
+    setAppLoading(interview.isFetching);
+  }, [interview.isFetching, setAppLoading]);
 
   useEffect(() => {
     console.log(interview.data);

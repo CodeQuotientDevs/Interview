@@ -18,3 +18,12 @@ export const placeHolderConversation = [
         role: "model",
     },
 ];
+
+
+export const languagesAllowed = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "cpp", label: "C++" },
+    { value: "typescript", label: "TypeScript" },
+];

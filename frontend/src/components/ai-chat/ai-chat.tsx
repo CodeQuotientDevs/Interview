@@ -1,12 +1,10 @@
-import { Chat } from "@/components/ui/chat";
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Editor, EditorRefType } from "@/components/editor";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-
-
+import { Chat } from '@/components/ui/chat';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Editor, EditorRefType } from '@/components/editor';
+import { Button } from '@/components/ui/button';
+import { Loader2, GripVertical, Wand2 } from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { languagesAllowed } from '@/constants/interview';
 
 interface AiChatProp {
     // interviewId: string;
@@ -20,76 +18,115 @@ interface AiChatProp {
 
 export default function AiChat(props: AiChatProp) {
     const { messages, isGenerating, interviewEnded, handleSubmission, setIsInterviewEnded } = props;
-    const [input, setInput] = useState<string>("");
-    const [openCodeEditor, setOpenCodeEditor] = useState<boolean>(false);
-    const [languageSelections, setLanguageSelection] = useState<Array<{ label: string, value: string }>>([]);
-    const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+    const [input, setInput] = useState<string>('');
+    const [selectedLanguage, setSelectedLanguage] = useState<string>(languagesAllowed[0].value);
     const [editorValue, setEditorValue] = useState<string>('');
+    const [editorWidth, setEditorWidth] = useState<number>(600);
+    const [isResizing, setIsResizing] = useState<boolean>(false);
     const editorRef = useRef<EditorRefType>(null);
-   
+    const resizeRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 0 });
 
-    const handleInputChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
-        setInput(e.target.value);
-        props.handleIntervieweeIdle();
-    }, [ props.handleIntervieweeIdle]);
+    const handleInputChange = useCallback(
+        (e: ChangeEvent<HTMLTextAreaElement>) => {
+            setInput(e.target.value);
+            props.handleIntervieweeIdle();
+        },
+        [props.handleIntervieweeIdle]
+    );
 
-    const handleEditorInputChange = useCallback((value: string) => {
-        setEditorValue(value);
-        props.handleIntervieweeIdle();
-    }, [props.handleIntervieweeIdle]);
+    const handleEditorInputChange = useCallback(
+        (value: string) => {
+            setEditorValue(value);
+            props.handleIntervieweeIdle();
+        },
+        [props.handleIntervieweeIdle]
+    );
 
+    const handleUnifiedSubmission = useCallback(
+        async (options?: { skip?: boolean; preventDefault?: boolean }) => {
+            props.handleIntervieweeIdle();
 
-    const handleEditorSubmit = useCallback(async (skip?: boolean) => {
-         props.handleIntervieweeIdle();
-        const value = editorRef.current?.getValue();
-        let inputToSend = '';
-        if (skip) {
-            inputToSend = 'Lets skip this question.';
-            setOpenCodeEditor(false);
+            // Handle skip
+            if (options?.skip) {
+                setInput('');
+                setEditorValue('');
+                await handleSubmission('Lets skip this question.');
+                return;
+            }
+
+            // Build input to send
+            let inputToSend = input;
+            const editorContent = editorRef.current?.getValue();
+
+            // If there's editor content, format it as code block
+            if (editorContent && selectedLanguage) {
+                const codeFence = '```';
+                inputToSend = `${input ? input : ""}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
+                setEditorValue('');
+            }
+
+            setInput('');
+            await handleSubmission(inputToSend);
+        },
+        [props.handleIntervieweeIdle, input, selectedLanguage, handleSubmission]
+    );
+
+    const handleChatSubmit = useCallback(
+        async (event?: { preventDefault?: (() => void) | undefined }) => {
+            event?.preventDefault?.();
+            await handleUnifiedSubmission();
+        },
+        [handleUnifiedSubmission]
+    );
+
+    const handleFormatCode = useCallback(() => {
+        if (editorRef.current) {
+            editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
         }
-        if (value && selectedLanguage) {
-            inputToSend = `\`\`\`${selectedLanguage}\n${value}\n${input}\`\`\``;
-        }
-        setInput('');
-        await handleSubmission(inputToSend);
-        setEditorValue('');
-    }, [props.handleIntervieweeIdle, selectedLanguage, handleSubmission, setEditorValue, input]);
-
-    const handleSubmissionSimpleInput = useCallback(async (event?: { preventDefault?: (() => void) | undefined; }) => {
-        props.handleIntervieweeIdle();
-        event?.preventDefault?.();
-        setInput('');
-        let inputToSend = input;
-        const editorContent = editorRef.current?.getValue();
-        if (editorContent) {
-            inputToSend = `\`\`\`${selectedLanguage}\n${editorContent}\n${input}\n\`\`\``
-            setEditorValue('');
-        }
-        await handleSubmission(inputToSend);
-    }, [props.handleIntervieweeIdle,input, handleSubmission]);
+    }, []);
 
     useEffect(() => {
         for (let index = messages.length - 1; index >= 0; index--) {
             const currentMessage = messages[index];
-            if (currentMessage?.role === "model") {
-                setLanguageSelection(currentMessage.parsedData?.languagesAllowed ?? []);
-                setOpenCodeEditor(currentMessage.parsedData?.editorType === 'editor');
+            if (currentMessage?.role === 'model') {
                 if (currentMessage.parsedData && 'isInterviewGoingOn' in currentMessage.parsedData) {
-                    setIsInterviewEnded(!currentMessage.parsedData.isInterviewGoingOn)
+                    setIsInterviewEnded(!currentMessage.parsedData.isInterviewGoingOn);
                 }
                 break;
             }
         }
     }, [messages, setIsInterviewEnded]);
 
-    useEffect(() => {
-        if (!languageSelections.length) {
-            setSelectedLanguage("");
-            return;
-        }
-        setSelectedLanguage(languageSelections[0].value);
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        setIsResizing(true);
+        resizeRef.current = {
+            startX: e.clientX,
+            startWidth: editorWidth,
+        };
+    }, [editorWidth]);
 
-    }, [languageSelections]);
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isResizing) return;
+
+        const deltaX = resizeRef.current.startX - e.clientX;
+        const newWidth = Math.max(400, Math.min(1200, resizeRef.current.startWidth + deltaX));
+        setEditorWidth(newWidth);
+    }, [isResizing]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [isResizing, handleMouseMove, handleMouseUp]);
 
     return (
         <div className="flex gap-4 p-4 h-full">
@@ -100,67 +137,58 @@ export default function AiChat(props: AiChatProp) {
                 input={input}
                 handleInputChange={handleInputChange}
                 isGenerating={isGenerating}
-                handleSubmit={handleSubmissionSimpleInput}
+                handleSubmit={handleChatSubmit}
+                allowEmptySubmit={!!editorValue?.trim()}
             />
-            <AnimatePresence>
-                {openCodeEditor && !interviewEnded && (
-                    <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "66%" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="h-full flex flex-col border border-border rounded-lg shadow-md bg-gray-900"
+
+            {!interviewEnded && (
+                <div className='flex flex-col h-full relative' style={{ width: `${editorWidth}px` }}>
+                    {/* Resize handle */}
+                    <div
+                        className="absolute left-0 top-0 bottom-0 w-3 cursor-col-resize z-10 group flex items-center justify-center bg-gray-700 hover:bg-gray-600 transition-colors"
+                        onMouseDown={handleMouseDown}
                     >
-                        <div className="p-3 flex gap-2 bg-gray-800">
-                            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                                <SelectTrigger className="w-[180px] bg-white">
-                                    <SelectValue placeholder="Select a language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {languageSelections.map((ele) => (
-                                            <SelectItem key={ele.value} value={ele.value}>
-                                                {ele.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                        <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                    </div>
+
+                    <div className="p-4 pl-6 flex pb-[12px] gap-2 bg-gray-800 flex justify-between">
+                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                            <SelectTrigger className="w-[150px] bg-white">
+                                <SelectValue placeholder="Select a language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {languagesAllowed.map((ele) => (
+                                        <SelectItem key={ele.value} value={ele.value}>
+                                            {ele.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <div className="flex gap-2 items-center">
                             <Button
-                                className="ml-auto"
+                                variant="outline"
+                                onClick={handleFormatCode}
+                                title="Format Code"
+                            >
+                                <Wand2 className="w-4 h-4" />
+                            </Button>
+                            <Button
                                 variant="outline"
                                 disabled={isGenerating}
                                 onClick={() => {
-                                    handleEditorSubmit(true);
+                                    handleUnifiedSubmission({ skip: true });
                                 }}
                             >
-                                {isGenerating
-                                    && <Loader2 className="animate-spin" />
-                                }
+                                {isGenerating && <Loader2 className="animate-spin" />}
                                 Skip
                             </Button>
-                            <Button
-                                variant="outline"
-                                disabled={isGenerating}
-                                onClick={() => {
-                                    handleEditorSubmit(false);
-                                }}
-                            >
-                                {isGenerating
-                                    && <Loader2 className="animate-spin" />
-                                }
-                                Submit
-                            </Button>
                         </div>
-                        <Editor
-                            ref={editorRef}
-                            value={editorValue}
-                            language={selectedLanguage}
-                            onChange={handleEditorInputChange}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                    <Editor ref={editorRef} value={editorValue} language={selectedLanguage} onChange={handleEditorInputChange} />
+                </div>
+            )}
         </div>
     );
 }
