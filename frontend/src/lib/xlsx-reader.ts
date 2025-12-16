@@ -22,9 +22,16 @@ function convertRowToObject(
 		const key = headers[index];
 		if (!key) return;
 
+
 		// hyperlink-like objects (ExcelJS style)
 		if (typeof value === "object" && value && "text" in value) {
 			value = (value as any).text;
+		}
+
+		if (value instanceof Date) {
+			// Round to the nearest minute to handle floating point precision issues
+			// and off-by-one-minute errors
+			value = new Date(Math.round(value.getTime() / 60000) * 60000);
 		}
 
 		obj[key] = sanitizeCell(value);
