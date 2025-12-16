@@ -5,26 +5,46 @@ const types = {
     email: Zod.string().nonempty("Email must contain valid email"),
     phone: Zod.string(),
     yearOfExperience: Zod.preprocess(
-    (v) => {
-        if (v === "" || v === null || v === undefined) return undefined;
-        const n = Number(v);
-        if (Number.isNaN(n)) return undefined;
-        return n;
-    },
-    Zod.number().nonnegative().optional()
-),
+        (v) => {
+            if (v === "" || v === null || v === undefined) return undefined;
+            const n = Number(v);
+            if (Number.isNaN(n)) return undefined;
+            return n;
+        },
+        Zod.number().nonnegative().optional()
+    ),
     startTime: Zod.date(),
     endTime: Zod.date(),
     userSpecificDescription: Zod.string().nonempty("Description must contain at least 1 character(s)"),
 }
+
+const excelDateParser = (value: unknown) => {
+    if (value instanceof Date) return value;
+    if (typeof value !== "string") return value;
+
+    const [date, time, meridian] = value.trim().split(/\s+/);
+    const [dd, mm, yyyy] = date.split("/");
+
+    return new Date(`${yyyy}-${mm}-${dd} ${time} ${meridian}`);
+};
+
+
+
 
 export const candidateInviteSchema = Zod.object({
     name: types.name,
     email: types.email,
     phone: types.phone.optional(),
     yearOfExperience: types.yearOfExperience.optional(),
-    startTime: types.startTime,
-    endTime: Zod.union([types.endTime.optional(), Zod.null()]),
+    startTime: Zod.preprocess(
+        excelDateParser,
+        Zod.date()
+    ),
+
+    endTime: Zod.preprocess(
+        excelDateParser,
+        Zod.date().nullable().optional()
+    ),
     userSpecificDescription: types.userSpecificDescription,
 });
 
