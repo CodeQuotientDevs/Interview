@@ -210,7 +210,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.json({
                 idleWarningTime,
                 idleSubmitTime,
-                completedAt: candidateObj.completedAt, messages: history, candidate: { ...candidateObj, user: userObj }
+                completedAt: candidateObj.completedAt, messages: history, candidate: {  user: userObj }
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });

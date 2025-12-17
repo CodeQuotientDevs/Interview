@@ -23,9 +23,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
 {
   "timestamp": "string",                 // ISO 8601 UTC when this conversion happened
   "isInterviewGoingOn": true,            // whether this message indicates interview is in-progress   
-  "languagesAllowed": [                  // programming languages relevant for next response
-    { "label": "string", "value": "string" }
-  ],
   "intent": "string | null",             // short inferred intent
   "confidence": 0.95,                    // 0..1 confidence of interpretation
   "suggestedActions": [                  // optional suggestions for backend
@@ -50,13 +47,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
 - If the message contains code, ensure it's in a fenced code block.
 - If the message is pure code without explanation, still wrap it in markdown code fences.
 
-**\`language\` field:**
-- Specify the PRIMARY programming language used in the candidate's message.
-- Use lowercase values: "python", "javascript", "java", "cpp", "csharp", "go", "rust", "typescript", etc.
-- If multiple languages are present, choose the dominant one.
-- If no code is present but coding is expected, infer from \`languagesAllowed\` (use the first one).
-- Set to \`null\` if no code is used in response
-
 #### intent and confidence:
 - Infer a single concise intent from the candidate's message.
 - Common intents: "answer_question", "request_pause", "ask_clarification", "end_interview", "request_hint", "submit_code"
@@ -66,7 +56,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
 - Prefer the explicit "interview_state" data over guessing.
 - Use "history" to understand context and disambiguate pronouns or follow-up references.
 - DO NOT re-output history in your response.
-- ALWAYS check the last AI message to determine editorType.
 
 ### 5) VALIDATION:
 - Ensure JSON is valid and all required fields exist.
@@ -89,7 +78,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [{"type": "scoreCandidateDraft", "payload": {"questionId": "q1"}}],
   "shortSummary": "Candidate submitted Python solution for linked list reversal.",
   "markdown": "Here's my solution in Python:\n\n\`\`\`python\ndef reverse(head):\n    prev = None\n    current = head\n    while current:\n        next_node = current.next\n        current.next = prev\n        prev = current\n        current = next_node\n    return prev\n\`\`\`",
-  "language": "python"
 }
 \`\`\`
 
@@ -108,7 +96,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [{"type": "endInterview", "payload": {}}],
   "shortSummary": "Candidate ended interview.",
   "markdown": null,
-  "language": null
 }
 \`\`\`
 
@@ -127,7 +114,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [],
   "shortSummary": "Candidate stated Python preference.",
   "markdown": null,
-  "language": null
 }
 \`\`\`
 
@@ -146,7 +132,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [],
   "shortSummary": "Candidate explained time complexity as O(n).",
   "markdown": "It's O(n) because we traverse the list once. Here's why:\n\n\`\`\`python\nfor item in list:\n    process(item)\n\`\`\`\n\nEach element is visited exactly once, giving us linear time complexity.",
-  "language": "python"
 }
 \`\`\`
 
@@ -165,7 +150,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [{"type": "provideClarification", "payload": {"questionId": "q2"}}],
   "shortSummary": "Candidate asked if array is sorted.",
   "markdown": null,
-  "language": null
 }
 \`\`\`
 
@@ -184,7 +168,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
   "suggestedActions": [{"type": "scoreCandidateDraft", "payload": {"questionId": "q3"}}],
   "shortSummary": "Candidate submitted JavaScript solution for finding maximum element.",
   "markdown": "Here's my JavaScript implementation with explanation:\n\n\`\`\`javascript\nfunction findMax(arr) {\n  if (arr.length === 0) return null;\n  let max = arr[0];\n  for (let i = 1; i < arr.length; i++) {\n    if (arr[i] > max) max = arr[i];\n  }\n  return max;\n}\n\`\`\`\n\nThis solution has O(n) time complexity and O(1) space complexity.",
-  "language": "javascript"
 }
 \`\`\`
 
@@ -194,7 +177,6 @@ Return a single JSON object (no trailing text or code fences) matching this sche
 - ALWAYS analyze the last AI message to determine editorType correctly.
 - **ALWAYS populate \`markdown\` and \`language\` fields when code is present in the message and the message is substantial (>100 chars or contains code).**
 - For the \`markdown\` field, ensure proper formatting with code fences using triple backticks and language identifiers.
-- For the \`language\` field, use lowercase language identifiers compatible with common syntax highlighters (e.g., "python", "javascript", "java", "cpp", "go", "rust", "typescript").
 	`
 
 export const systemInstructionCurrentInterview = (

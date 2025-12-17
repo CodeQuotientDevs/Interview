@@ -1,8 +1,10 @@
 "use client"
 
+import "regenerator-runtime/runtime"
 import React, { useEffect, useRef, useState } from "react"
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 import { AnimatePresence, motion } from "framer-motion"
-import { ArrowUp, Paperclip, Square, X } from "lucide-react"
+import { ArrowUp, Mic, Paperclip, Square, X } from "lucide-react"
 import { omit } from "remeda"
 
 import { cn } from "@/lib/utils"
@@ -18,6 +20,9 @@ interface MessageInputBaseProps
   isGenerating: boolean
   enableInterrupt?: boolean
   allowEmptySubmit?: boolean
+  placeholders?: string[]
+  placeholderInterval?: number
+  placeholderAnimationType?: "none" | "fade" | "blur" | "scale" | "slide"
 }
 
 interface MessageInputWithoutAttachmentProps extends MessageInputBaseProps {
@@ -43,12 +48,75 @@ export function MessageInput({
   isGenerating,
   enableInterrupt = true,
   allowEmptySubmit = false,
+  placeholders,
+  placeholderInterval = 3000,
+  placeholderAnimationType = "fade",
   ...props
 }: MessageInputProps) {
   const trimmedValue = props.value.trim();
   const [isDragging, setIsDragging] = useState(false)
   const [showInterruptPrompt, setShowInterruptPrompt] = useState(false)
+  
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
 
+  // Speech Recognition Logic
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition()
+
+  const [initialValueBeforeSpeech, setInitialValueBeforeSpeech] = useState("")
+
+  useEffect(() => {
+    if (listening) {
+      // When speech starts/updates, append transcript to the initial value
+      // If initial value was empty, just transcript. If not, add space.
+      const prefix = initialValueBeforeSpeech ? `${initialValueBeforeSpeech} ` : ""
+      const newValue = prefix + transcript
+      
+      // Simulate React Change Event to update parent state
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        "value"
+      )?.set
+      
+      if (textAreaRef.current && nativeInputValueSetter) {
+        nativeInputValueSetter.call(textAreaRef.current, newValue)
+        const event = new Event("input", { bubbles: true })
+        textAreaRef.current.dispatchEvent(event)
+      }
+    }
+  }, [transcript, listening, initialValueBeforeSpeech])
+
+  const handleMicClick = () => {
+    if (listening) {
+      SpeechRecognition.stopListening()
+      resetTranscript()
+    } else {
+      setInitialValueBeforeSpeech(props.value) // Save current text
+      SpeechRecognition.startListening({ continuous: true })
+    }
+  }
+
+  useEffect(() => {
+    if (!placeholders || placeholders.length === 0) return
+
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
+    }, placeholderInterval)
+
+    return () => clearInterval(interval)
+  }, [placeholders, placeholderInterval])
+
+  const currentPlaceholder =
+    placeholders && placeholders.length > 0
+      ? placeholders[currentPlaceholderIndex]
+      : placeholder
+
+  const showPlaceholder = placeholders && placeholders.length > 0 && props.value.length === 0 && !isDragging
+ 
   useEffect(() => {
     if (!isGenerating) {
       setShowInterruptPrompt(false)
@@ -169,14 +237,46 @@ export function MessageInput({
         />
       )}
 
+      {showPlaceholder && (
+         <div className={cn("pointer-events-none absolute inset-0 z-20 p-3 pr-24 text-sm text-muted-foreground", showFileList && "pb-16")}>
+            <AnimatePresence mode="wait">
+               <motion.div
+                  key={currentPlaceholder}
+                  initial={
+                    placeholderAnimationType === "blur" ? { opacity: 0, filter: "blur(4px)" } :
+                    placeholderAnimationType === "scale" ? { opacity: 0, scale: 0.9 } :
+                    placeholderAnimationType === "slide" ? { opacity: 0, y: 5 } :
+                    { opacity: 0 }
+                  }
+                  animate={
+                     placeholderAnimationType === "blur" ? { opacity: 1, filter: "blur(0px)" } :
+                     placeholderAnimationType === "scale" ? { opacity: 1, scale: 1 } :
+                     placeholderAnimationType === "slide" ? { opacity: 1, y: 0 } :
+                     { opacity: 1 }
+                  }
+                  exit={
+                    placeholderAnimationType === "blur" ? { opacity: 0, filter: "blur(4px)" } :
+                     placeholderAnimationType === "scale" ? { opacity: 0, scale: 0.95 } :
+                     placeholderAnimationType === "slide" ? { opacity: 0, y: -5 } :
+                     { opacity: 0 }
+                  }
+                  transition={{ duration: 0.3 }}
+                  className="truncate"
+               >
+                 {currentPlaceholder}
+               </motion.div>
+            </AnimatePresence>
+         </div>
+      )}
       <textarea
         aria-label="Write your prompt here"
-        placeholder={placeholder}
+        placeholder={showPlaceholder ? "" : placeholder}
         ref={textAreaRef}
         onPaste={onPaste}
         onKeyDown={onKeyDown}
         className={cn(
-          "z-10 w-full grow resize-none rounded-xl border border-input bg-background p-3 pr-24 text-sm ring-offset-background transition-[border] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "z-10 w-full grow resize-none rounded-xl border border-input bg-background p-3 pr-24 text-sm ring-offset-background transition-[border] focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          !showPlaceholder && "placeholder:text-muted-foreground",
           showFileList && "pb-16",
           className
         )}
@@ -214,6 +314,18 @@ export function MessageInput({
       )}
 
       <div className="absolute right-3 bottom-3 z-20 flex gap-2">
+        {browserSupportsSpeechRecognition && (
+          <Button
+            type="button"
+            size="icon"
+            variant={listening ? "destructive" : "outline"}
+            className={cn("h-8 w-8", listening && "animate-pulse")}
+            aria-label={listening ? "Stop recording" : "Start recording"}
+            onClick={handleMicClick}
+          >
+           <Mic className="h-4 w-4" />
+          </Button>
+        )}
         {props.allowAttachments && (
           <Button
             type="button"

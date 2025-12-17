@@ -134,8 +134,16 @@ export function Chat({
             // files={files}
             // setFiles={setFiles}
             stop={stop}
+            placeholderInterval={10000}
             isGenerating={isGenerating}
             allowEmptySubmit={allowEmptySubmit}
+            placeholders={[
+              "Explain your answer with relevant examples...",
+              "Describe your approach and reasoning...",
+              "Share your thought process step by step...",
+              "Answer as you would in a real interview...",
+            ]}
+            placeholderAnimationType="slide"
           />
         )}
       </ChatForm>

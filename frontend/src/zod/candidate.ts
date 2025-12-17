@@ -61,15 +61,7 @@ export const messageSchema = Zod.object({
     parsedResponse: Zod.object({
         confidence: Zod.number().min(0).max(1),
         intent: Zod.string(),
-        editorType: Zod.enum(['editor', 'inputBox']),
         isInterviewGoingOn: Zod.boolean(),
-        languagesAllowed: Zod.array(Zod.object({
-            label: Zod.string(),
-            value: Zod.string(),
-        })).default([{
-            label: "Javascript",
-            value: "javascript",
-        }]),
         shortSummary: Zod.string(),
         timestamp: Zod.preprocess((args) => {
             if (typeof args === 'string' || args instanceof Date) {
@@ -94,7 +86,7 @@ export const interviewContentSchema = Zod.object({
     }, Zod.date().optional()),
     messages: messagesSchema,
     candidate: Zod.object({
-        _id: Zod.string(),
+        // _id: Zod.string(),
         user: Zod.object({
             _id: Zod.string(),
             name: Zod.string(),
