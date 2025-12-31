@@ -289,7 +289,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 												<div className="pb-0">
 													<h2 className="text-xl font-semibold">Instructions For AI</h2>
 													<p className="text-sm text-muted-foreground">
-														Specify instruction for AI agent. You can also add specific questions for the candidate.
+														Specify instruction for AI agent.
 													</p>
 												</div>
 												<FormField
@@ -380,9 +380,9 @@ export function InterviewCreation(props: CandidatePageProps) {
 																								<SelectContent>
 																									<SelectGroup>
 																										<SelectLabel>Difficulty</SelectLabel>
-																										<SelectItem value={"1"}>Easy</SelectItem>
-																										<SelectItem value={"2"}>Medium</SelectItem>
-																										<SelectItem value={"3"}>Hard</SelectItem>
+																										<SelectItem value={"1"}>Beginner</SelectItem>
+																										<SelectItem value={"2"}>Intermediate</SelectItem>
+																										<SelectItem value={"3"}>Expert</SelectItem>
 																									</SelectGroup>
 																								</SelectContent>
 																							</Select>
@@ -392,6 +392,21 @@ export function InterviewCreation(props: CandidatePageProps) {
 																			</TableRow>
 																		</TableBody>
 																	</Table>
+																	<div className="mt-4">
+																		<Label className="text-sm">Questions for {title}</Label>
+																		<Controller
+																			name={`difficulty.${topic}.questionList`}
+																			control={control}
+																			defaultValue=""
+																			render={({ field }) => (
+																				<Textarea
+																					{...field}
+																					placeholder={`Add specific questions for ${title} (one per line or in your preferred format)`}
+																					className="resize-none min-h-[100px] mt-2"
+																				/>
+																			)}
+																		/>
+																	</div>
 																</div >
 																{topicErrors?.weight && (
 																	<p className="text-sm font-medium text-destructive mt-2">Weight is required</p>

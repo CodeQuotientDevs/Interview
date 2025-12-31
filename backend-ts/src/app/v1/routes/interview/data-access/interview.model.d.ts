@@ -18,6 +18,7 @@ type Interview = {
         difficulty: number,
         weight: Number,
         duration: Number,
+        questionList: string,
     }>
 }
 

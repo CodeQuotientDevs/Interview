@@ -6,10 +6,11 @@ import { ShieldCloseIcon, Terminal } from 'lucide-react';
 import AiChat from '@/components/ai-chat/ai-chat';
 import { parseModelResponseToCompatibleForChat } from '@/lib/messageParser';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { placeHolderConversation } from '@/constants/interview';
 import { Navbar } from '@/components/navbar';
 import { AlertType } from '@/constants';
 import { formatDurationDayjs } from '@/lib/utils';
+import { EmailVerificationModal } from '@/components/email-verification-modal';
+import { MessageTypeEnum } from '@/constants/message';
 
 interface InterviewProps {
   id: string;
@@ -17,16 +18,18 @@ interface InterviewProps {
 
 export const Interview = (props: InterviewProps) => {
   const { id } = props;
-  const [messages, setMessages] = useState<Array<MessageType>>(placeHolderConversation);
+  const [messages, setMessages] = useState<Array<MessageType>>([]);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isInterviewEnded, setIsInterviewEnded] = useState<boolean>(false);
+  const [showEmailVerification, setShowEmailVerification] = useState<boolean>(false);
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const showAlert = useAppStore().showAlert;
 
   const setAppLoading = useAppStore().setAppLoader;
-  const { sendMessageAi: postMessage, concludeCandidateInterview } = useMainStore();
-  const getDataForInterview = useMainStore().getDataForInterview;
+  const { sendMessageAi: postMessage, concludeCandidateInterview,getPresignedUrl,getDataForInterview } = useMainStore();
 
   const interview = useQuery({
     queryFn: () => getDataForInterview(id),
@@ -67,8 +70,8 @@ export const Interview = (props: InterviewProps) => {
       return;
     }
     console.warn('IDLE TIMERS INITIATED');
-    let idleSubmitTime = interview.data.idleSubmitTime;
-    let idleWarningTime = interview.data.idleWarningTime;
+    const idleSubmitTime = interview.data.idleSubmitTime;
+    const idleWarningTime = interview.data.idleWarningTime;
 
     clearTimeout(idleTimeoutRef.current as NodeJS.Timeout);
     clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
@@ -93,6 +96,73 @@ export const Interview = (props: InterviewProps) => {
       }, parseInt(idleSubmitTime) * 1000);
     }, parseInt(idleWarningTime) * 1000);
   }, [interview.data, isInterviewEnded, concludeInterviewMutation, id, showAlert]);
+
+
+  const handleAudioSubmission = useCallback(async (audioFile: File, transcribedAudioText: string, audioDuration: number) => {
+    try {
+      setIsUploading(true);
+      
+      const presignedUrl = await getPresignedUrl(audioFile.type);
+      
+      const response = await fetch(presignedUrl.uploadUrl, {
+        method: 'PUT',
+        body: audioFile,
+        headers: {
+          'Content-Type': audioFile.type,
+        }
+      });
+
+      setIsUploading(false);
+
+      if (!response.ok) {
+        throw new Error('Failed to upload audio');
+      }
+
+      const optimisticMessageId = Date.now().toString();
+      // Optimistically add the user's audio message
+      const audioUrl = URL.createObjectURL(audioFile);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: optimisticMessageId,
+          role: 'user',
+          content: transcribedAudioText,
+          audioUrl: audioUrl,
+          audioDuration: audioDuration,
+          type: 'audio',
+          error: false,
+          createdAt: new Date(),
+        }
+      ]);
+
+      setIsGenerating(true);
+      const newMessages = await postMessage(id, transcribedAudioText, presignedUrl.fileUrl, MessageTypeEnum.AUDIO, audioDuration);
+      
+      // Update messages using functional update to avoid stale closures
+      setMessages((prev) => {
+        // Find the optimistic message in the current state
+        const optimisticIndex = prev.findIndex(m => m.id === optimisticMessageId);
+        
+        if (optimisticIndex !== -1) {
+          // Replace it with the server's version but KEEP the local audioUrl for continuity if needed
+          // or just append the new AI response if the server response only contains the new message.
+          // Based on user's recent edit, the server returns the full history or we just need the last one.
+          const lastServerMessage = parseModelResponseToCompatibleForChat(newMessages[newMessages.length - 1], newMessages.length - 1);
+          return [...prev, lastServerMessage];
+        }
+        
+        // Fallback: if optimistic message not found, just parse everything (less ideal for audio continuity)
+        return newMessages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+      });
+    } catch (error) {
+        logger.error(error);
+        setIsUploading(false);
+        setIsGenerating(false); 
+    } finally {
+        setIsUploading(false);
+        setIsGenerating(false);
+    }
+  }, [id, postMessage, getPresignedUrl, setIsGenerating, setIsUploading])
 
   const handleSubmission = useCallback(
     async (message: string) => {
@@ -133,10 +203,20 @@ export const Interview = (props: InterviewProps) => {
     console.log(interview.data);
     if (!interview.data) return;
 
-    if (messages.length === placeHolderConversation.length) {
-      const parsedMessages = interview.data.messages.slice(1).map((ele, idx) => parseModelResponseToCompatibleForChat(ele, idx));
-      setMessages(parsedMessages);
+    // Check if interview is started but not completed, and show email verification
+    if (interview.data.messages && interview.data.messages.length > 0 && !interview.data.completedAt && !isEmailVerified) {
+      setShowEmailVerification(true);
+      return;
     }
+
+    // Load messages when email is verified or if no verification needed
+    if (isEmailVerified || !showEmailVerification) {
+      if (messages.length === 0) {
+        const parsedMessages = interview.data.messages.slice(1).map((ele, idx) => parseModelResponseToCompatibleForChat(ele, idx));
+        setMessages(parsedMessages);
+      }
+    }
+
     if (!interview.data?.completedAt) {
       handleUserKeyAction();
     }
@@ -145,7 +225,7 @@ export const Interview = (props: InterviewProps) => {
       clearTimeout(idleTimeoutRef.current as NodeJS.Timeout);
       clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
     };
-  }, [interview.data]);
+  }, [interview.data, isEmailVerified, showEmailVerification]);
 
   if (interview.error) {
     return (
@@ -155,15 +235,17 @@ export const Interview = (props: InterviewProps) => {
           <AlertTitle className="h-6 content-center mt-1">{interview.error.message}</AlertTitle>
         </Alert>
         <main className={`h-full bg-background text-foreground blur-md pointer-events-none`}>
-          <AiChat
-            messages={messages}
-            // interviewId={interviewObj.id}
-            interviewEnded={isInterviewEnded}
-            handleSubmission={handleSubmission}
-            setIsInterviewEnded={setIsInterviewEnded}
-            isGenerating={isGenerating}
-            handleIntervieweeIdle={handleUserKeyAction}
-          />
+            <AiChat
+              messages={messages}
+              // interviewId={interviewObj.id}
+              interviewEnded={isInterviewEnded}
+              handleSubmission={handleSubmission}
+              setIsInterviewEnded={setIsInterviewEnded}
+              isGenerating={isGenerating}
+              isUploading={isUploading}
+              handleIntervieweeIdle={handleUserKeyAction}
+              handleAudioSubmission={handleAudioSubmission}
+            />
         </main>
       </>
     );
@@ -171,6 +253,15 @@ export const Interview = (props: InterviewProps) => {
 
   return (
     <>
+      <EmailVerificationModal
+        isOpen={showEmailVerification}
+        candidateEmail={interview.data?.candidate?.user?.email || ''}
+        onVerified={() => {
+          console.log("zolo")
+          setShowEmailVerification(false);
+          setIsEmailVerified(true);
+        }}
+      />
       {interview?.data?.completedAt && (
         <Alert className="fixed top-[50%] w-[300px] left-[50%] translate-x-[-50%] translate-y-[-50%] z-10">
           <Terminal className="h-4 w-4" />
@@ -183,7 +274,7 @@ export const Interview = (props: InterviewProps) => {
           <Navbar startedAt={startedAt} completedAt={interview?.data?.completedAt} user={interview.data?.candidate?.user} />
         </div>
         <div className="pt-[60px] h-full">
-          <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt ? 'blur-md' : ''}`}>
+          <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt || (showEmailVerification && !isEmailVerified) ? 'blur-md' : ''}`}>
             <AiChat
               messages={messages}
               // interviewId={interviewObj.id}
@@ -191,7 +282,9 @@ export const Interview = (props: InterviewProps) => {
               handleSubmission={handleSubmission}
               setIsInterviewEnded={setIsInterviewEnded}
               isGenerating={isGenerating}
+              isUploading={isUploading}
               handleIntervieweeIdle={handleUserKeyAction}
+              handleAudioSubmission={handleAudioSubmission}
             />
           </div>
         </div>

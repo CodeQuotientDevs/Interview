@@ -15,7 +15,7 @@ import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
-    sendMessageAi: (id: string, message: string) => Promise<typeof messagesSchema._type>;
+    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messagesSchema._type>;
     interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
         data: Array<typeof interviewListItemSchema._type>;
         pagination: {
@@ -42,6 +42,7 @@ interface MainStoreState {
     getDashboardStats: () => Promise<typeof DashboardSchema._type>;
     getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
     getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
+    getPresignedUrl: (contentType: string) => Promise<{ uploadUrl: string; fileUrl: string; key: string }>;
 }
 
 
@@ -63,8 +64,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.updateInterview(data);
             return res;
         },
-        async sendMessageAi(id, message) {
-            const res = await client.sendMessage(id, message);
+        async sendMessageAi(id, message, audioUrl, type, audioDuration) {
+            const res = await client.sendMessage(id, message, audioUrl, type, audioDuration);
             return res;
         },
         async getInterviewCandidateList(id) {
@@ -112,6 +113,10 @@ export const createMainStore = (client: MainApi) => {
         },
         async getInterviewsByDate(date: Date, type: 'hour' | 'date' | 'month') {
             const res = await client.getInterviewsByDate(date, type);
+            return res;
+        },
+        async getPresignedUrl(contentType: string) {
+            const res = await client.getPresignedUrl(contentType);
             return res;
         }
     };

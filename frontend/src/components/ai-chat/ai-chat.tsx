@@ -9,15 +9,17 @@ import { languagesAllowed } from '@/constants/interview';
 interface AiChatProp {
     // interviewId: string;
     isGenerating: boolean;
+    isUploading: boolean;
     interviewEnded: boolean;
     messages: Array<MessageType>;
     handleSubmission: (response: string) => Promise<void>;
     setIsInterviewEnded: (data: boolean) => void;
     handleIntervieweeIdle: () => void;
+    handleAudioSubmission: (audioFile: File, transcribedAudioText: string, audioDuration: number) => Promise<void>;
 }
 
 export default function AiChat(props: AiChatProp) {
-    const { messages, isGenerating, interviewEnded, handleSubmission, setIsInterviewEnded } = props;
+    const { messages, isGenerating, isUploading, interviewEnded, handleSubmission, setIsInterviewEnded, handleIntervieweeIdle, handleAudioSubmission: propsHandleAudioSubmission } = props;
     const [input, setInput] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>(languagesAllowed[0].value);
     const [editorValue, setEditorValue] = useState<string>('');
@@ -29,22 +31,22 @@ export default function AiChat(props: AiChatProp) {
     const handleInputChange = useCallback(
         (e: ChangeEvent<HTMLTextAreaElement>) => {
             setInput(e.target.value);
-            props.handleIntervieweeIdle();
+            handleIntervieweeIdle();
         },
-        [props.handleIntervieweeIdle]
+        [handleIntervieweeIdle]
     );
 
     const handleEditorInputChange = useCallback(
         (value: string) => {
             setEditorValue(value);
-            props.handleIntervieweeIdle();
+            handleIntervieweeIdle();
         },
-        [props.handleIntervieweeIdle]
+        [handleIntervieweeIdle]
     );
 
     const handleUnifiedSubmission = useCallback(
         async (options?: { skip?: boolean; preventDefault?: boolean }) => {
-            props.handleIntervieweeIdle();
+            handleIntervieweeIdle();
 
             // Handle skip
             if (options?.skip) {
@@ -60,15 +62,16 @@ export default function AiChat(props: AiChatProp) {
 
             // If there's editor content, format it as code block
             if (editorContent && selectedLanguage) {
+                const marker = `\n\n[Code Attachment (${selectedLanguage})]:`;
                 const codeFence = '```';
-                inputToSend = `${input ? input : ""}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
+                inputToSend = `${input ? input : ""}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
                 setEditorValue('');
             }
 
             setInput('');
             await handleSubmission(inputToSend);
         },
-        [props.handleIntervieweeIdle, input, selectedLanguage, handleSubmission]
+        [handleIntervieweeIdle, input, selectedLanguage, handleSubmission]
     );
 
     const handleChatSubmit = useCallback(
@@ -137,8 +140,20 @@ export default function AiChat(props: AiChatProp) {
                 input={input}
                 handleInputChange={handleInputChange}
                 isGenerating={isGenerating}
+                isUploading={isUploading}
                 handleSubmit={handleChatSubmit}
                 allowEmptySubmit={!!editorValue?.trim()}
+                handleAudioSubmission={async (file, transcribedText, duration) => {
+                    let textToSend = transcribedText;
+                    const editorContent = editorRef.current?.getValue();
+                    if (editorContent && selectedLanguage) {
+                        const marker = `\n\n[Code Attachment (${selectedLanguage})]:`;
+                        const codeFence = '```';
+                        textToSend = `${transcribedText}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
+                        setEditorValue('');
+                    }
+                    await propsHandleAudioSubmission(file, textToSend, duration);
+                }}
             />
 
             {!interviewEnded && (
@@ -151,7 +166,7 @@ export default function AiChat(props: AiChatProp) {
                         <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors" />
                     </div>
 
-                    <div className="p-4 pl-6 flex pb-[12px] gap-2 bg-gray-800 flex justify-between">
+                    <div className="p-4 pl-6 pb-[12px] gap-2 bg-gray-800 flex justify-between">
                         <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                             <SelectTrigger className="w-[150px] bg-white">
                                 <SelectValue placeholder="Select a language" />

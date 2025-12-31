@@ -90,4 +90,20 @@ export const interviewReportSchema = z.object({
 );
 
 
+export const candidateBehaviorSchema = z.object({
+    intelligenceLevel: z.enum(["beginner", "intermediate", "advanced", "expert"]).describe("Assessed intelligence level based on answer quality and depth"),
+    confidenceLevel: z.enum(["low", "medium", "high", "very_high"]).describe("Assessed confidence level based on certainty and tone"),
+    communicationClarity: z.enum(["poor", "fair", "good", "excellent"]).describe("How clearly the candidate explains their answers"),
+    problemSolvingApproach: z.enum(["scattered", "methodical", "strategic", "insightful"]).describe("How the candidate approaches problem-solving"),
+    technicalDepth: z.enum(["surface", "moderate", "deep", "expert"]).describe("How deep their technical knowledge goes"),
+    conceptualUnderstanding: z.number().int().min(0).max(100).describe("Score for theoretical concept understanding (0-100)"),
+    practicalExperience: z.number().int().min(0).max(100).describe("Score for hands-on practical experience (0-100)"),
+    strengths: z.array(z.string()).describe("Array of key strengths demonstrated"),
+    weaknesses: z.array(z.string()).describe("Array of areas to improve"),
+    adjustQuestionDifficulty: z.enum(["decrease", "maintain", "increase", "vary"]).describe("Recommended difficulty adjustment for next questions"),
+    brief_reasoning: z.string().describe("1-2 sentence summary of the assessment"),
+}).describe("Schema for analyzing candidate behavioral metrics and interview adaptation guidance");
+
+export type CandidateBehaviorType = z.infer<typeof candidateBehaviorSchema>;
+
 export type InterviewReportType = z.infer<typeof interviewParserSchema>;

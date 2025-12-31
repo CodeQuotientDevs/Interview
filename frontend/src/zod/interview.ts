@@ -17,6 +17,7 @@ const types = {
 		}, Zod.number().min(1).max(3)),
 		duration: Zod.number().min(1).default(1),
 		weight: Zod.number().min(1).default(1),
+		questionList: Zod.string().optional().default(""),
 	})),
 	startTime: Zod.date(),
 	endTime: Zod.date().optional().nullable(),

@@ -71,6 +71,9 @@ export const messageSchema = Zod.object({
         }, Zod.date()),
     }).optional(),
     toolCalls: Zod.array(Zod.any()).optional(),
+    type: Zod.string().optional(),
+    audioUrl: Zod.string().optional(),
+    audioDuration: Zod.number().optional(),
 });
 
 export const messagesSchema = Zod.array(messageSchema);

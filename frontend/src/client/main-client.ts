@@ -147,9 +147,12 @@ export default class MainClient {
         return obj.data;
     }
 
-    async sendMessage(id: string, message: string) {
+    async sendMessage(id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) {
         const response = await this.requestWrapper(this._mainAPI.post(`/api/v1/candidates/messages/${id}`, {
             userInput: message,
+            audioUrl,
+            type,
+            audioDuration
         }));
         const obj = messagesSchema.safeParse(response.data);
         if (!obj.success) {
@@ -235,5 +238,13 @@ export default class MainClient {
             }
         }));
         return response.data as Array<Zod.infer<typeof RecentInterviewSchema>>;
+    }
+    async getPresignedUrl(contentType: string):Promise<{ uploadUrl: string; fileUrl: string; key: string }> {
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/getPresignedUrl`, {
+            params: {
+                contentType
+            }
+        }));
+        return response.data as { uploadUrl: string; fileUrl: string; key: string };
     }
 }

@@ -6,6 +6,9 @@ type MessageType =
         role: string;
         error: boolean;
         parsedData?: undefined;
+        type?: string;
+        audioUrl?: string;
+        audioDuration?: number;
     }
     | {
         id: string;
@@ -20,4 +23,7 @@ type MessageType =
         createdAt?: Date;
         role: string;
         error?: undefined;
+        type?: string;
+        audioUrl?: string;
+        audioDuration?: number;
     };

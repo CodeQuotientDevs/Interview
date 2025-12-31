@@ -13,12 +13,14 @@ import { sendInvite } from '@services/mailer';
 import redis from '@services/redis';
 import InterviewAiModel from '@app/v1/agents/InterviewAgentGraph';
 import { userMessage } from '@app/v1/zod/interview';
+import { MessageTypeEnum } from '@root/constants/message';
 
 
 import type InterviewService from "../../interview/domain/interview.service";
 import type CandidateService from "../../candidate/domain/candidate.service";
 import type UserService from "../../user/domain/user.service";
 import type CandidateResponseService from "../../candidate-responses/domain/candidate-response.service";
+import { getPresignedUploadUrl } from '@root/services/s3';
 
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
@@ -30,6 +32,21 @@ interface createCandidateRoutesProps {
 
 export function createCandidateRoutes({ interviewServices, candidateServices, userServices, externalService, candidateResponseService }: createCandidateRoutesProps) {
     const router = Router();
+
+    router.get("/getPresignedUrl", async (req: Request, res: Response) => {
+        try {
+            const contentType = req.query.contentType as string;
+
+            if (!contentType) return res.status(400).json({ error: 'Content type is required' });
+
+            const { uploadUrl, fileUrl, key } = await getPresignedUploadUrl(contentType);
+
+            return res.json({ uploadUrl, fileUrl, key });
+        } catch (error: any) {
+            logger.error({ endpoint: `candidate GET /getPresignedUrl`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    })
 
     router.get('/metrics', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
         try {
@@ -205,12 +222,12 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
                 await agent.recreateLastMessage();
             }
-            let idleWarningTime = process.env.IDLE_WARNING_TIME
-            let idleSubmitTime = process.env.IDLE_SUBMIT_TIME
+            let idleWarningTime = process.env.IDLE_WARNING_TIME || 300;
+            let idleSubmitTime = process.env.IDLE_SUBMIT_TIME || 600;
             return res.json({
                 idleWarningTime,
                 idleSubmitTime,
-                completedAt: candidateObj.completedAt, messages: history, candidate: {  user: userObj }
+                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj }
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
@@ -259,7 +276,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.recreateLastMessage();
                 history = await agent.getHistory();
             }
-            const response = await agent.sendMessage(payload.userInput);
+            const response = await agent.sendMessage(payload.userInput, payload.audioUrl, payload.type as MessageTypeEnum, payload.audioDuration);
             if (response?.latestAiResponse?.structuredResponse?.isInterviewGoingOn === false) {
                 await candidateServices.saveToSubmissionQueue(id);
                 await candidateServices.updateOne({

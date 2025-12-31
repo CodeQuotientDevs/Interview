@@ -9,7 +9,6 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_error) { /* empty */ }
 
-    console.log("Data: ", data);
     if (data.role == 'model' || data.role === 'ai') {
         return {
             id: index.toString(),
@@ -24,6 +23,9 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
             },
             role: 'model',
             createdAt: data.createdAt,
+            type: data.type,
+            audioUrl: data.audioUrl,
+            audioDuration: data.audioDuration,
         };
     }
     return {
@@ -32,5 +34,8 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
         content: content,
         role: 'user',
         createdAt: data.createdAt,
+        type: data.type,
+        audioUrl: data.audioUrl,
+        audioDuration: data.audioDuration,
     }
 }

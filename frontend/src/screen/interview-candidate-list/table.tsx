@@ -50,6 +50,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
     loading: boolean
@@ -62,6 +63,14 @@ interface DataTableInterface {
     revaluationFunction: (id: string) => Promise<void>,
     onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
 }
+
+ const skillLevelNumberToString = {
+    1: 'beginner',
+    2: 'intermediate',
+    3: 'expert',
+} as Record<number, string>
+
+
 export function InterviewCandidateTable(props: DataTableInterface) {
 
     const { interviewId, onEditCandidate } = props;
@@ -540,12 +549,12 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                 <div key={skill} className="flex items-center gap-4 p-3 border rounded-xl w-auto">
                                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                                     <p className="font-medium">{skill}</p>
-                                    <Badge className="bg-gray-100 text-gray-700">{d.difficulty}</Badge>
+                                    <Badge className="bg-gray-100 text-gray-700 pointer-events-none">{skillLevelNumberToString[d.difficulty]}</Badge>
                                     <p className="text-sm text-gray-600">{d.weight}%</p>
                                     <p className="text-sm text-gray-600">• {d.duration}m</p>
                                 </div>
-                            ))
-                            }
+                                ))
+                                }
                         </div>
                     </div>
                 </Card>

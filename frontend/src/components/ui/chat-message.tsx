@@ -7,6 +7,8 @@ import { Code2, Loader2, Terminal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FilePreview } from "@/components/ui/file-preview"
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer"
+import { AudioPlayer } from "@/components/ui/audio-player"
+import { CodeBlock } from "@/components/ui/code-block"
 
 const chatBubbleVariants = cva(
   "group/message relative break-words rounded-lg p-3 text-sm sm:max-w-[70%]",
@@ -82,6 +84,9 @@ export interface Message {
   createdAt?: Date
   experimental_attachments?: Attachment[]
   toolInvocations?: ToolInvocation[],
+  type?: string;
+  audioUrl?: string;
+  audioDuration?: number;
 }
 
 export interface ChatMessageProps extends Message {
@@ -101,6 +106,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   className,
   experimental_attachments,
   toolInvocations,
+  type,
+  audioUrl,
+  audioDuration,
 }) => {
   const files = useMemo(() => {
     return experimental_attachments?.map((attachment) => {
@@ -109,6 +117,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       return file
     })
   }, [experimental_attachments])
+
+  const { displayText, attachedCode } = useMemo(() => {
+    const codeRegex = /\n\n\[Code Attachment \((.*?)\)\]:\n```(?:\w+)?\n([\s\S]*?)\n```/s
+    const match = content.match(codeRegex)
+    if (match) {
+      return {
+        displayText: content.replace(codeRegex, "").trim(),
+        attachedCode: {
+          language: match[1],
+          content: match[2]
+        }
+      }
+    }
+    return { displayText: content, attachedCode: null }
+  }, [content])
 
   if (toolInvocations && toolInvocations.length > 0) {
     return <ToolCall toolInvocations={toolInvocations} />
@@ -126,22 +149,42 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       {files ? (
         <div className="mb-1 flex flex-wrap gap-2">
           {files.map((file, index) => {
+            if (file.type.startsWith("audio/")) {
+                return (
+                 <div key={index} className="w-full max-w-sm flex">
+                    <AudioPlayer src={URL.createObjectURL(file)} />
+                 </div>
+                )
+            }
             return <FilePreview file={file} key={index} />
           })}
         </div>
       ) : null}
 
-      <div className={cn(chatBubbleVariants({ isUser, animation }), className)}>
-        <div>
-          <MarkdownRenderer type={isUser?'dark':'light'} >{content}</MarkdownRenderer>
-        </div>
+      {(type === 'audio' || audioUrl) && (
+             <div className="w-full max-w-sm mb-1">
+                <AudioPlayer src={audioUrl || ""} duration={audioDuration} variant="primary" />
+             </div>
+      )}
 
-        {role === "assistant" && actions ? (
-          <div className="absolute -bottom-4 right-2 flex space-x-1 rounded-lg border bg-background p-1 text-foreground opacity-0 transition-opacity group-hover/message:opacity-100">
-            {actions}
+      {(!files?.some(f => f.type.startsWith("audio/")) && type !== 'audio') && (
+          <div className={cn(chatBubbleVariants({ isUser, animation }), className,)}>
+             
+              <MarkdownRenderer type={isUser?'dark':'light'} >{displayText}</MarkdownRenderer>
+
+            {attachedCode && (
+              <div className="mt-2 w-full min-w-[300px]">
+                <CodeBlock code={attachedCode} />
+              </div>
+            )}
+
+            {role === "assistant" && actions ? (
+              <div className="absolute -bottom-4 right-2 flex space-x-1 rounded-lg border bg-background p-1 text-foreground opacity-0 transition-opacity group-hover/message:opacity-100">
+                {actions}
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
+      )}
 
       {showTimeStamp && createdAt ? (
         <time

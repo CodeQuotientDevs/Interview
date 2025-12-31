@@ -51,6 +51,7 @@ const schema = new Schema<Interview>({
             difficulty: Number,
             weight: Number,
             duration: Number,
+            questionList: String,
         }]
     },
     keywords: {

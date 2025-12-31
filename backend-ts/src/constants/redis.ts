@@ -8,6 +8,9 @@ const questionAskedCache = 'questionAsked';
 const getChatHistory = (interviewId: string) => {
     return `${chatHistory}:${interviewId}`;
 }
+const getInterviewQuestions: (interviewId: string) => string = (interviewId) => {
+    return `interviewQuestions:${interviewId}`;
+}
 
 const getScoreForChat = () => {
     return dayjs().add(1, 'day').toDate().getTime();
@@ -19,4 +22,5 @@ export default {
     getChatHistory,
     getScoreForChat,
     completedInterview,
+    getInterviewQuestions
 }

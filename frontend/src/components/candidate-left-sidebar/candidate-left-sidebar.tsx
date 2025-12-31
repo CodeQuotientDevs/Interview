@@ -1,294 +1,278 @@
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { DateTimePicker } from "../ui/datetimepicker";
-import { Textarea } from "../ui/textarea";
-import logger from "@/lib/logger";
-import { Loader2 } from "lucide-react";
-import { useAppStore } from "@/store";
-import { AlertType } from "@/constants";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { candidateInviteSchema } from "@/zod/candidate";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DateTimePicker } from '../ui/datetimepicker';
+import { Textarea } from '../ui/textarea';
+import logger from '@/lib/logger';
+import { Loader2 } from 'lucide-react';
+import { useAppStore } from '@/store';
+import { AlertType } from '@/constants';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { candidateInviteSchema } from '@/zod/candidate';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export interface CandidateInvite {
-    name: string;
-    email: string;
-    phone?: string;
-    yearOfExperience?: number,
-    startTime: Date,
-    endTime?: Date | null,
-    userSpecificDescription: string,
+  name: string;
+  email: string;
+  phone?: string;
+  yearOfExperience?: number;
+  startTime: Date;
+  endTime?: Date | null;
+  userSpecificDescription: string;
 }
 
 interface CandidateSidebarProps {
-    open: boolean;
-    defaultValues?: CandidateInvite,
-    setOpenDrawer: (value: boolean) => void
-    handleSaveData: (data: CandidateInvite) => Promise<void>
-    isEditing?: boolean;
+  open: boolean;
+  defaultValues?: CandidateInvite;
+  setOpenDrawer: (value: boolean) => void;
+  handleSaveData: (data: CandidateInvite) => Promise<void>;
+  isEditing?: boolean;
 }
 
 export default function CandidateSidebar(props: CandidateSidebarProps) {
-    const { open, defaultValues, setOpenDrawer, handleSaveData, isEditing = false } = props;
-    const [loading, setLoading] = useState<boolean>(false);
+  const { open, defaultValues, setOpenDrawer, handleSaveData, isEditing = false } = props;
+  const [loading, setLoading] = useState<boolean>(false);
 
-    const showAlert = useAppStore().showAlert;
-    const formRef = useRef<HTMLFormElement>(null);
-    const form = useForm<CandidateInvite>({
-        resolver: zodResolver(candidateInviteSchema),
-    });
+  const showAlert = useAppStore().showAlert;
+  const formRef = useRef<HTMLFormElement>(null);
+  const form = useForm<CandidateInvite>({
+    resolver: zodResolver(candidateInviteSchema)
+  });
 
-    // const {
-    //     register,
-    // } = form;
+  // const {
+  //     register,
+  // } = form;
 
-    const onSubmit = async (data: CandidateInvite) => {
-        try {
-            setLoading(true);
-            if(data.startTime < new Date()){
-                showAlert({
-                    time: 4,
-                    title: "Invalid Start Date",
-                    type: AlertType.error,
-                    message:
-                        "Start Date should be greater than or equal to current time",
-                });
-                return;
-            }
-            if(data.endTime && data.endTime < new Date()){
-                showAlert({
-                    time: 4,
-                    title: "Invalid Start Date",
-                    type: AlertType.error,
-                    message:
-                        "End Date should be greater than or equal to current time",
-                });
-                return;
-            }
-            await handleSaveData(data);
-        } catch (error) {
-            logger.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onClose = useCallback(() => {
-        form.reset({
-            name: "",
-            email: "",
-            phone: "",
-            yearOfExperience: "" as unknown as undefined,
-            startTime: new Date(),
-            endTime: null,
-            userSpecificDescription: "",
+  const onSubmit = async (data: CandidateInvite) => {
+    try {
+      setLoading(true);
+      if (data.startTime < new Date()) {
+        showAlert({
+          time: 4,
+          title: 'Invalid Start Date',
+          type: AlertType.error,
+          message: 'Start Date should be greater than or equal to current time'
         });
-        setOpenDrawer(false);
-    }, [setOpenDrawer, form]);
+        return;
+      }
+      if (data.endTime && data.endTime < new Date()) {
+        showAlert({
+          time: 4,
+          title: 'Invalid Start Date',
+          type: AlertType.error,
+          message: 'End Date should be greater than or equal to current time'
+        });
+        return;
+      }
+      await handleSaveData(data);
+    } catch (error) {
+      logger.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        if (!open) {
-            onClose();
-        }
-    }, [onClose, open]);
+  const onClose = useCallback(() => {
+    form.reset({
+      name: '',
+      email: '',
+      phone: '',
+      yearOfExperience: '' as unknown as undefined,
+      startTime: new Date(),
+      endTime: null,
+      userSpecificDescription: ''
+    });
+    setOpenDrawer(false);
+  }, [setOpenDrawer, form]);
 
-    useEffect(() => {
-        if (isEditing && defaultValues) {
-            form.reset(defaultValues);
-        }
-    }, [defaultValues?.email, open]);
+  useEffect(() => {
+    if (!open) {
+      onClose();
+    }
+  }, [onClose, open]);
 
-    return (
+  useEffect(() => {
+    if (isEditing && defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues?.email, open]);
+
+  return (
     <Dialog open={open} onOpenChange={setOpenDrawer}>
-        <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-[600px]">
-            <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Candidate' : 'Invite Candidate'}</DialogTitle>
-            <DialogDescription>{isEditing ? 'Update candidate details to create a new invitation.' : 'Enter candidate details below.'}</DialogDescription>
-            </DialogHeader>
+      <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-[600px] !w-[900px]">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Edit Candidate' : 'Invite Candidate'}</DialogTitle>
+          <DialogDescription>{isEditing ? 'Update candidate details to create a new invitation.' : 'Enter candidate details below.'}</DialogDescription>
+        </DialogHeader>
 
-            <Form {...form}>
-            <form
-                ref={formRef}
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-            >
+        <Form {...form}>
+          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <div className="flex gap-4 flex-1 overflow-y-auto pb-3">
+              {/* Invite Details Section */}
+              <div className="border rounded-lg p-4 space-y-4 flex-1 h-full">
+                <h3 className="font-semibold text-base text-foreground">Invite Details</h3>
+
                 <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
                         <Input type="text" placeholder="Name of candidate" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
 
                 <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                        <Input 
-                            type="email" 
-                            placeholder="Candidate email" 
-                            {...field} 
-                            readOnly={isEditing}
-                            className={isEditing ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""}
-                        />
-                    </FormControl>
-                    {isEditing && (
-                        <p className="text-sm text-muted-foreground">
-                            Email cannot be changed. To invite a different candidate, add a new candidate instead.
-                        </p>
-                    )}
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
-                <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Phone (optional)</FormLabel>
-                    <FormControl>
-                        <Input type="text" placeholder="Candidate phone" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
-                <FormField
-                control={form.control}
-                name="yearOfExperience"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Year of Experience (optional)</FormLabel>
-                    <FormControl>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
                         <Input
-                        type="number"
-                        placeholder="Candidate year of experience"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          type="email"
+                          placeholder="Candidate email"
+                          {...field}
+                          readOnly={isEditing}
+                          className={isEditing ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}
                         />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      {isEditing && <p className="text-sm text-muted-foreground">Email cannot be changed. To invite a different candidate, add a new candidate instead.</p>}
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
 
-                <div className="flex flex-col sm:flex-row gap-3">
                 <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="text" placeholder="Candidate phone" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex  col justify-between gap-3">
+                  <FormField
                     control={form.control}
                     name="startTime"
                     render={({ field }) => (
-                    <FormItem className="flex-1">
+                      <FormItem>
                         <FormLabel>Start Time</FormLabel>
                         <FormControl>
-                        <DateTimePicker
+                          <DateTimePicker
                             date={field.value}
                             placeHolder="Start Time"
                             setDate={(date) => {
-                                const clean = removeSeconds(date);
-                                if (clean && clean < new Date()) {
-                                    showAlert({
-                                        time: 4,
-                                        title: "Invalid Start Date",
-                                        type: AlertType.error,
-                                        message:
-                                            "Start Date should be greater than or equal to current time",
-                                    });
-                                }
+                              const clean = removeSeconds(date);
+                              if (clean && clean < new Date()) {
+                                showAlert({
+                                  time: 4,
+                                  title: 'Invalid Start Date',
+                                  type: AlertType.error,
+                                  message: 'Start Date should be greater than or equal to current time'
+                                });
+                              }
 
-                            field.onChange(clean);
-                        }}
-                        />
+                              field.onChange(clean);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
-                    </FormItem>
+                      </FormItem>
                     )}
-                />
+                  />
 
-                <FormField
+                  <FormField
                     control={form.control}
                     name="endTime"
                     render={({ field }) => (
-                    <FormItem className="flex-1">
+                      <FormItem>
                         <FormLabel>End Time</FormLabel>
                         <FormControl>
-                        <DateTimePicker
+                          <DateTimePicker
                             date={field.value ?? undefined}
                             placeHolder="End Time (optional)"
                             setDate={(date) => {
-                            if (date < new Date()) {
+                              if (date < new Date()) {
                                 showAlert({
-                                time: 4,
-                                title: "Invalid End Date",
-                                type: AlertType.error,
-                                message:
-                                    "End Date should be greater than or equal to current time",
+                                  time: 4,
+                                  title: 'Invalid End Date',
+                                  type: AlertType.error,
+                                  message: 'End Date should be greater than or equal to current time'
                                 });
-                            }
-                            field.onChange(date);
+                              }
+                              field.onChange(date);
                             }}
-                        />
+                          />
                         </FormControl>
                         <FormMessage />
-                    </FormItem>
+                      </FormItem>
                     )}
-                />
+                  />
                 </div>
+              </div>
+
+              {/* Candidate Details Section */}
+              <div className="border rounded-lg p-4 space-y-4 flex-1 h-full">
+                <h3 className="font-semibold text-base text-foreground">Candidate Details</h3>
 
                 <FormField
-                name="userSpecificDescription"
-                control={form.control}
-                render={({ field }) => (
+                  control={form.control}
+                  name="yearOfExperience"
+                  render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Candidate Details</FormLabel>
-                    <FormControl>
-                        <Textarea
-                        className="resize-none h-[100px]"
-                        placeholder="Candidate description"
-                        {...field}
+                      <FormLabel>Year of Experience (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Candidate year of experience"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                         />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
-            </form>
 
-            <DialogFooter className="pt-4">
-                <Button
-                onClick={() => formRef.current?.requestSubmit()}
-                disabled={loading}
-                >
+                <FormField
+                  name="userSpecificDescription"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea className="resize-none h-[100px]" placeholder="Candidate description" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-4 mt-4 flex justify-end">
+              <Button onClick={() => formRef.current?.requestSubmit()} disabled={loading}>
                 {loading && <Loader2 className="mr-2 animate-spin" />}
                 Submit
-                </Button>
-            </DialogFooter>
-            </Form>
-        </DialogContent>
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
     </Dialog>
-
-    );
+  );
 }
 
 function removeSeconds(date?: Date | string | null) {
