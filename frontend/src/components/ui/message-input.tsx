@@ -1,11 +1,10 @@
 "use client"
 
-import "regenerator-runtime/runtime"
+
 import React, { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ArrowUp, Mic, Paperclip, Square, X, Trash, Play, Pause, Send, Loader2 } from "lucide-react"
 import { omit } from "remeda"
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 import { cn } from "@/lib/utils"
 import { useAutosizeTextArea } from "@/hooks/use-autosize-textarea"
@@ -60,12 +59,7 @@ export function MessageInput({
   const trimmedValue = props.value.trim();
   const [isDragging, setIsDragging] = useState(false)
   const [showInterruptPrompt, setShowInterruptPrompt] = useState(false)
-  const {
-    transcript,
-    resetTranscript,
-  } = useSpeechRecognition();
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
-  const [accumulatedTranscript, setAccumulatedTranscript] = useState("")
 
   // Voice Recording Logic
   const [isRecording, setIsRecording] = useState(false)
@@ -78,13 +72,49 @@ export function MessageInput({
   const [audioURL, setAudioURL] = useState<string | null>(null)
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
   const [isPlayingPreview, setIsPlayingPreview] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Visualizer refs
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const dataArrayRef = useRef<Uint8Array | null>(null)
   const animationFrameRef = useRef<number | null>(null)
-  const [waveform, setWaveform] = useState<number[]>(new Array(65).fill(4)) // Initial flat line
+  const waveformContainerRef = useRef<HTMLDivElement>(null)
+  const [waveform, setWaveform] = useState<{ id: string; height: number }[]>([])
+  const [spikeCount, setSpikeCount] = useState(40)
+  const spikeCountRef = useRef(40)
+
+  // Calculate how many spikes can fit in the container
+  useEffect(() => {
+  if (!waveformContainerRef.current) return
+
+  const updateSpikeCount = () => {
+    const width = waveformContainerRef.current!.offsetWidth
+    const count = Math.floor(width / 4)
+
+    if (count > 0 && count !== spikeCountRef.current) {
+      setSpikeCount(count)
+      spikeCountRef.current = count
+
+      if (!isRecording) {
+        setWaveform(
+          Array.from({ length: count }, (_, i) => ({
+            id: `init-${i}`,
+            height: 4
+          }))
+        )
+      }
+    }
+  }
+
+  const observer = new ResizeObserver(updateSpikeCount)
+  observer.observe(waveformContainerRef.current)
+
+  updateSpikeCount()
+
+  return () => observer.disconnect()
+}, [isRecording])
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -199,10 +229,17 @@ export function MessageInput({
     const normalized = Math.min(100, Math.max(4, adjustedAverage * 2.2))
 
 
-    // Update waveform state: shift left, add new value
+    // Update waveform state: append new value, shift if full
     setWaveform(prev => {
-      const newWaveform = [...prev.slice(1), normalized]
-      return newWaveform
+      const newSpike = {
+        id: `${Date.now()}-${Math.random()}`,
+        height: normalized
+      }
+      
+      if (prev.length < spikeCountRef.current) {
+        return [...prev, newSpike]
+      }
+      return [...prev.slice(1), newSpike]
     })
 
     animationFrameRef.current = requestAnimationFrame(visualize)
@@ -243,7 +280,10 @@ export function MessageInput({
     setIsPaused(false)
     setRecordingDuration(0)
     setAudioStream(null)
-    setWaveform(new Array(65).fill(4))
+    setWaveform(Array.from({ length: spikeCountRef.current }, (_, i) => ({
+      id: `reset-${i}`,
+      height: 4
+    })))
   }
 
   const discardRecording = () => {
@@ -287,18 +327,19 @@ export function MessageInput({
         const file = new File(audioChunksRef.current, "voice_message.webm", { type: "audio/webm", lastModified: Date.now() })
 
 
-        const fullTranscript = (accumulatedTranscript + " " + transcript).trim()
-        handleAudioSubmission?.(file, fullTranscript, recordingDuration)
+       
+        handleAudioSubmission?.(file, "", recordingDuration)
 
         setTimeout(() => {
           textAreaRef.current?.form?.requestSubmit()
           setAudioURL(null)
           audioChunksRef.current = []
-          setWaveform(new Array(65).fill(4))
+          setWaveform(Array.from({ length: spikeCountRef.current }, (_, i) => ({
+            id: `submit-${i}`,
+            height: 4
+          })))
           setIsRecording(false) // Ensure UI resets
           setRecordingDuration(0)
-          setAccumulatedTranscript("")
-          resetTranscript()
         }, 100)
 
       }, 200)
@@ -309,16 +350,10 @@ export function MessageInput({
       if (isPaused) {
         resumeRecording()
       } else {
-        // Accumulate transcript from the current segment before pausing
-        if (transcript) {
-          setAccumulatedTranscript(prev => (prev + " " + transcript).trim())
-          resetTranscript()
-        }
+        
         pauseRecording()
       }
     } else {
-      setAccumulatedTranscript("")
-      resetTranscript()
       startRecording()
     }
   }
@@ -341,19 +376,6 @@ export function MessageInput({
         clearInterval(timerRef.current)
         timerRef.current = null
       }
-    }
-  }, [isRecording, isPaused])
-
-  // Reactive Speech Recognition
-  useEffect(() => {
-    if (isRecording && !isPaused) {
-      SpeechRecognition.startListening()
-    } else {
-      SpeechRecognition.stopListening()
-    }
-
-    return () => {
-      SpeechRecognition.stopListening()
     }
   }, [isRecording, isPaused])
 
@@ -518,7 +540,7 @@ export function MessageInput({
       )}
 
       {showPlaceholder && !isRecording && (
-        <div className={cn("pointer-events-none absolute inset-0 z-20 p-3 pr-24 text-sm text-muted-foreground", showFileList && "pb-16")}>
+        <div className={cn("pointer-events-none absolute inset-0 z-20 p-3 pr-24 text-sm text-muted-foreground", showFileList && "pb-16")} ref={containerRef}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPlaceholder}
@@ -567,12 +589,15 @@ export function MessageInput({
               {recordingDuration > 0 && <span>●</span>}
               <span className="ml-1 text-foreground font-sans text-base">{formatTime(recordingDuration)}</span>
             </div>
-            <div className="grid items-center grid-flow-col auto-cols-fr gap-1 justify-center overflow-hidden h-[30px] w-full mx-4">
-              {waveform.map((height, index) => (
+            <div 
+              ref={waveformContainerRef}
+              className="flex items-center justify-end flex-1 gap-[1px] overflow-hidden h-[30px] mx-4"
+            >
+              {waveform.map((spike) => (
                 <div
-                  key={index}
-                  className="h-1.5 bg-primary rounded-full transition-all duration-100 ease-linear max-w-[5px]"
-                  style={{ height: `${height}%`, minHeight: '4px' }}
+                  key={spike.id}
+                  className="bg-primary rounded-full transition-all duration-100 ease-linear w-[3px] shrink-0"
+                  style={{ height: `${spike.height}%`, minHeight: '4px' }}
                 />
               ))}
             </div>

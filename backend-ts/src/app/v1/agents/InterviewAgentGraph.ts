@@ -33,6 +33,7 @@ import { interviewParserSchema, interviewReportSchema, candidateBehaviorSchema, 
 import { logger } from "@root/libs";
 import { systemInstructionValidateModelResponse } from "./systemInstruction/validation";
 import { ModelResponseValidator } from "./schema/validator";
+import { transcribeAudio } from "./transcribeAudio";
 
 
 type MessageType = {
@@ -305,7 +306,6 @@ async function ensureGraphCompiled() {
                 model: model,
                 responseFormat: interviewParserSchema,
                 tools: [],
-
             });
             const response = await agent.invoke({
                 messages: messages,
@@ -478,7 +478,15 @@ async function ensureGraphCompiled() {
                 validate: "validateModelResponse",
             }
         )
-        .addEdge("validateModelResponse", "analyzeCandidateBehavior")
+        .addConditionalEdges("validateModelResponse",(state:InterviewStateType)=>{
+            if(state.correctionRequired){
+                return "askAndRespond";
+            }
+            return "analyzeCandidateBehavior";
+        },{
+            askAndRespond:"askAndRespond",
+            analyzeCandidateBehavior:"analyzeCandidateBehavior"
+        })
         .addEdge("analyzeCandidateBehavior", "convertToStructuredResponse")
         .addConditionalEdges("convertToStructuredResponse", (state: InterviewStateType) => {
             const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
@@ -555,17 +563,32 @@ export class InterviewAgent {
             },
         };
         const messages = [];
-        if (userInput) {
-            const humanMessage = new HumanMessage(userInput);
-            if (audioUrl && type) {
-                humanMessage.additional_kwargs = { audioUrl, type, audioDuration };
-            }
-            messages.push({
-                id: crypto.randomUUID(),
-                createdAt: new Date(),
-                message: humanMessage,
-            });
+        let finalTextInput = userInput
+        if (audioUrl && type == MessageTypeEnum.AUDIO) {
+            finalTextInput = await transcribeAudio(audioUrl)
         }
+
+        const humanMessage = new HumanMessage({
+            content: finalTextInput,
+        })
+        if(type == MessageTypeEnum.AUDIO){
+            humanMessage.additional_kwargs = {
+                audioUrl,
+                audioDuration,
+                type
+            }
+        }
+        else{
+            humanMessage.additional_kwargs = {
+                type
+            }
+        }
+        messages.push({
+            id: crypto.randomUUID(),
+            createdAt: new Date(),
+            message: humanMessage,
+        });
+
         const result = await graph.invoke(
             {
                 messages: messages,

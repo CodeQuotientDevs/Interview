@@ -15,7 +15,7 @@ interface AiChatProp {
     handleSubmission: (response: string) => Promise<void>;
     setIsInterviewEnded: (data: boolean) => void;
     handleIntervieweeIdle: () => void;
-    handleAudioSubmission: (audioFile: File, transcribedAudioText: string, audioDuration: number) => Promise<void>;
+    handleAudioSubmission: (audioFile: File, audioDuration: number) => Promise<void>;
 }
 
 export default function AiChat(props: AiChatProp) {
@@ -152,7 +152,7 @@ export default function AiChat(props: AiChatProp) {
                         textToSend = `${transcribedText}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
                         setEditorValue('');
                     }
-                    await propsHandleAudioSubmission(file, textToSend, duration);
+                    await propsHandleAudioSubmission(file, duration);
                 }}
             />
 

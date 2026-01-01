@@ -98,7 +98,7 @@ export const Interview = (props: InterviewProps) => {
   }, [interview.data, isInterviewEnded, concludeInterviewMutation, id, showAlert]);
 
 
-  const handleAudioSubmission = useCallback(async (audioFile: File, transcribedAudioText: string, audioDuration: number) => {
+  const handleAudioSubmission = useCallback(async (audioFile: File, audioDuration: number) => {
     try {
       setIsUploading(true);
       
@@ -126,7 +126,7 @@ export const Interview = (props: InterviewProps) => {
         {
           id: optimisticMessageId,
           role: 'user',
-          content: transcribedAudioText,
+          content: "",
           audioUrl: audioUrl,
           audioDuration: audioDuration,
           type: 'audio',
@@ -136,7 +136,7 @@ export const Interview = (props: InterviewProps) => {
       ]);
 
       setIsGenerating(true);
-      const newMessages = await postMessage(id, transcribedAudioText, presignedUrl.fileUrl, MessageTypeEnum.AUDIO, audioDuration);
+      const newMessages = await postMessage(id,"", presignedUrl.fileUrl, MessageTypeEnum.AUDIO, audioDuration);
       
       // Update messages using functional update to avoid stale closures
       setMessages((prev) => {

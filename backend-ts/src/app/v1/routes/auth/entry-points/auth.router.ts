@@ -58,7 +58,6 @@ export function createAuthRouter({ authService }: { authService: AuthService }) 
     });
 
     if (googleClientId) {
-        console.log('Google Post Request Registered');
         const client = new OAuth2Client(googleClientId);
         console.log('Google Post Request Registered');
 

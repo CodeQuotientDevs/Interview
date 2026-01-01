@@ -1,7 +1,7 @@
 import Zod from 'zod';
 
 export const userMessage = Zod.object({
-	userInput: Zod.string().nonempty(),
+	userInput: Zod.string(),
     type: Zod.string().optional(),
     audioUrl: Zod.string().optional(),
     audioDuration: Zod.number().optional(),

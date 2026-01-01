@@ -143,18 +143,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     hour: "2-digit",
     minute: "2-digit",
   })
-
+console.log()
   return (
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
       {files ? (
         <div className="mb-1 flex flex-wrap gap-2">
           {files.map((file, index) => {
             if (file.type.startsWith("audio/")) {
-                return (
-                 <div key={index} className="w-full max-w-sm flex">
-                    <AudioPlayer src={URL.createObjectURL(file)} />
-                 </div>
-                )
+              return (
+                <div key={index} className="w-full max-w-sm flex">
+                  <AudioPlayer src={URL.createObjectURL(file)} />
+                </div>
+              )
             }
             return <FilePreview file={file} key={index} />
           })}
@@ -162,28 +162,29 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       ) : null}
 
       {(type === 'audio' || audioUrl) && (
-             <div className="w-full max-w-sm mb-1">
-                <AudioPlayer src={audioUrl || ""} duration={audioDuration} variant="primary" />
-             </div>
+        <div className="w-full max-w-sm mb-1">
+          <AudioPlayer src={audioUrl || ""} duration={audioDuration} variant="primary" />
+        </div>
       )}
 
       {(!files?.some(f => f.type.startsWith("audio/")) && type !== 'audio') && (
-          <div className={cn(chatBubbleVariants({ isUser, animation }), className,)}>
-             
-              <MarkdownRenderer type={isUser?'dark':'light'} >{displayText}</MarkdownRenderer>
+        <div className={cn(chatBubbleVariants({ isUser, animation }), className,)}>
+          
+            <MarkdownRenderer type={isUser ? 'dark' : 'light'} >{displayText}</MarkdownRenderer>
+          
 
-            {attachedCode && (
-              <div className="mt-2 w-full min-w-[300px]">
-                <CodeBlock code={attachedCode} />
-              </div>
-            )}
+          {attachedCode && (
+            <div className="mt-2 w-full min-w-[300px]">
+              <CodeBlock code={attachedCode} />
+            </div>
+          )}
 
-            {role === "assistant" && actions ? (
-              <div className="absolute -bottom-4 right-2 flex space-x-1 rounded-lg border bg-background p-1 text-foreground opacity-0 transition-opacity group-hover/message:opacity-100">
-                {actions}
-              </div>
-            ) : null}
-          </div>
+          {role === "assistant" && actions ? (
+            <div className="absolute -bottom-4 right-2 flex space-x-1 rounded-lg border bg-background p-1 text-foreground opacity-0 transition-opacity group-hover/message:opacity-100">
+              {actions}
+            </div>
+          ) : null}
+        </div>
       )}
 
       {showTimeStamp && createdAt ? (
