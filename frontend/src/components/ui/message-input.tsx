@@ -81,7 +81,7 @@ export function MessageInput({
   const animationFrameRef = useRef<number | null>(null)
   const waveformContainerRef = useRef<HTMLDivElement>(null)
   const [waveform, setWaveform] = useState<{ id: string; height: number }[]>([])
-  const [spikeCount, setSpikeCount] = useState(40)
+
   const spikeCountRef = useRef(40)
 
   // Calculate how many spikes can fit in the container
@@ -93,7 +93,7 @@ export function MessageInput({
     const count = Math.floor(width / 4)
 
     if (count > 0 && count !== spikeCountRef.current) {
-      setSpikeCount(count)
+      
       spikeCountRef.current = count
 
       if (!isRecording) {

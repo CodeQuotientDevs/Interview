@@ -144,14 +144,14 @@ export default function AiChat(props: AiChatProp) {
                 handleSubmit={handleChatSubmit}
                 allowEmptySubmit={!!editorValue?.trim()}
                 handleAudioSubmission={async (file, transcribedText, duration) => {
-                    let textToSend = transcribedText;
-                    const editorContent = editorRef.current?.getValue();
-                    if (editorContent && selectedLanguage) {
-                        const marker = `\n\n[Code Attachment (${selectedLanguage})]:`;
-                        const codeFence = '```';
-                        textToSend = `${transcribedText}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
-                        setEditorValue('');
-                    }
+                    // let textToSend = transcribedText;
+                    // const editorContent = editorRef.current?.getValue();
+                    // if (editorContent && selectedLanguage) {
+                    //     const marker = `\n\n[Code Attachment (${selectedLanguage})]:`;
+                    //     const codeFence = '```';
+                    //     textToSend = `${transcribedText}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
+                    //     setEditorValue('');
+                    // }
                     await propsHandleAudioSubmission(file, duration);
                 }}
             />
