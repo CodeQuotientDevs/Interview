@@ -31,6 +31,7 @@ interface ChatPropsBase {
   allowEmptySubmit?: boolean
   isUploading: boolean;
   handleAudioSubmission?: (audioFile: File, transcribedAudioText: string, audioDuration: number) => Promise<void>;
+  handleIntervieweeIdle?: () => void;
 }
 
 interface ChatPropsWithoutSuggestions extends ChatPropsBase {
@@ -60,6 +61,7 @@ export function Chat({
   handleAudioSubmission,
   isUploading,
   allowEmptySubmit,
+  handleIntervieweeIdle,
 }: ChatProps) {
   const lastMessage = messages.at(-1)
   const isEmpty = messages.length === 0
@@ -150,6 +152,7 @@ export function Chat({
               "Answer as you would in a real interview...",
             ]}
             placeholderAnimationType="slide"
+            handleActivity={handleIntervieweeIdle}
           />
         )}
       </ChatForm>

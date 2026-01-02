@@ -24,6 +24,7 @@ interface MessageInputBaseProps
   placeholderInterval?: number
   placeholderAnimationType?: "none" | "fade" | "blur" | "scale" | "slide"
   handleAudioSubmission?: (file: File, transcribedAudioText: string, audioDuration: number) => Promise<void>
+  handleActivity?: () => void
 }
 
 interface MessageInputWithoutAttachmentProps extends MessageInputBaseProps {
@@ -54,6 +55,7 @@ export function MessageInput({
   placeholderAnimationType = "fade",
   handleAudioSubmission,
   isUploading,
+  handleActivity,
   ...props
 }: MessageInputProps) {
   const trimmedValue = props.value.trim();
@@ -164,6 +166,7 @@ export function MessageInput({
 
       // Start recording duration
       setRecordingDuration(0)
+      handleActivity?.();
 
       // Setup AudioContext for visualizer
       const audioContext = new AudioContext()
@@ -250,6 +253,7 @@ export function MessageInput({
       mediaRecorderRef.current.requestData()
       mediaRecorderRef.current.pause()
       setIsPaused(true)
+      handleActivity?.();
 
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
     }
@@ -261,10 +265,12 @@ export function MessageInput({
       setIsPaused(false)
 
       visualize(0)
+      handleActivity?.();
     }
   }
 
   const stopRecording = () => {
+    handleActivity?.();
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop()
@@ -306,6 +312,7 @@ export function MessageInput({
         }
       }
       setIsPlayingPreview(!isPlayingPreview)
+      handleActivity?.();
     }
   }
 
@@ -321,6 +328,8 @@ export function MessageInput({
 
       if (audioContextRef.current) audioContextRef.current.close()
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      
+      handleActivity?.();
 
       setTimeout(() => {
         // const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
@@ -362,6 +371,7 @@ export function MessageInput({
   useEffect(() => {
     if (isRecording && !isPaused) {
       timerRef.current = setInterval(() => {
+        handleActivity?.();
         setRecordingDuration(prev => prev + 1)
       }, 1000)
     } else {
@@ -377,7 +387,7 @@ export function MessageInput({
         timerRef.current = null
       }
     }
-  }, [isRecording, isPaused])
+  }, [isRecording, isPaused, handleActivity])
 
   // Effect to clean up
   useEffect(() => {

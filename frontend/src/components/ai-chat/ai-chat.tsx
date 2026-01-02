@@ -154,6 +154,7 @@ export default function AiChat(props: AiChatProp) {
                     // }
                     await propsHandleAudioSubmission(file, duration);
                 }}
+                handleIntervieweeIdle={handleIntervieweeIdle}
             />
 
             {!interviewEnded && (
