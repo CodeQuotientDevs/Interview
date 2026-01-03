@@ -15,8 +15,11 @@ type Candidate = {
     yearOfExperience: number,
     externalUserUniquenessKey?: string,
     isActive: boolean,
+    inviteStatus: 'pending' | 'processing' | 'completed' | 'failed',
+    attachments: { url: string, content: string, originalName: string }[],
     summaryReport?: string,
     revaluationStartDate?: Date,
+    revaluationPrompt?: string,
     detailedReport: Array<{
         topic: string,
         score: number,

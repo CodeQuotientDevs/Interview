@@ -54,6 +54,9 @@ const schema = new Schema<Candidate>({
     revaluationStartDate: {
         type: Date,
     },
+    revaluationPrompt: {
+        type: String,
+    },
     detailedReport: [{
         topic: String,
         score: Number,
@@ -65,6 +68,16 @@ const schema = new Schema<Candidate>({
             remarks: String,
             score: Number,
         }]
+    }],
+    inviteStatus: {
+        type: String,
+        enum: ['pending', 'processing', 'sent', 'failed'],
+        default: 'pending',
+    },
+    attachments: [{
+        url: String,
+        content: String,
+        originalName: String,
     }],
 }, {
     timestamps: true,

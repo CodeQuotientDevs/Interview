@@ -13,11 +13,12 @@ const s3 = new S3Client({
 })
 
 export async function getPresignedUploadUrl(
-  contentType: string
+  contentType: string,
+  folder: string = 'audio'
 ) {
   const fileId = crypto.randomUUID()
   const extension = contentType.split('/')[1] || 'bin'
-  const key = `audio/${fileId}.${extension}`
+  const key = `${folder}/${fileId}.${extension}`
 
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET_NAME!,

@@ -33,6 +33,7 @@
     "@types/mongoose": "^5.11.97",
     "@types/nodemailer": "^7.0.3",
     "axios": "^1.13.2",
+    "bullmq": "^5.66.4",
     "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

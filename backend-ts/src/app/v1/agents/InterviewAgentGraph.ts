@@ -34,6 +34,7 @@ import { logger } from "@root/libs";
 import { systemInstructionValidateModelResponse } from "./systemInstruction/validation";
 import { ModelResponseValidator } from "./schema/validator";
 import { transcribeAudio } from "./transcribeAudio";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 
 type MessageType = {
@@ -161,10 +162,8 @@ async function ensureGraphCompiled() {
                             ...msg,
                         });
                     }
-
                 }
             }
-
             let updates: any = {};
 
             const isFirstMessage = messagesToAdd.length == 1;
@@ -221,7 +220,7 @@ async function ensureGraphCompiled() {
                     });
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                 }
-            }
+            } 
             logger.info('Ai Response Came');
             const newAiMessage: MessageType = {
                 id: crypto.randomUUID(),
@@ -243,43 +242,103 @@ async function ensureGraphCompiled() {
                 correctionRequired: false,
             };
         })
-        .addNode("validateModelResponse", async (state: InterviewStateType, config: any) => {
-            const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
-            if (!lastMessageWrapper) {
-                return;
-            }
-            const ctx = config?.configurable?.context ?? {};
-            const { model, user } = ctx;
-            const validatorAgent = createAgent({
-                model,
-                systemPrompt: systemInstructionValidateModelResponse(),
-                responseFormat: ModelResponseValidator,
-            });
-            if (!lastMessageWrapper.message.text) {
-                return {
-                    correctionRequired: true,
-                }
-            }
-            const response = await validatorAgent.invoke({
-                messages: [new HumanMessage(lastMessageWrapper.message.text)],
-            });
-            if (!response.structuredResponse.valid) {
-                logger.info({
-                    message: "Response From AI not valid",
-                    reason: response.structuredResponse.reason,
-                    aiMessage: lastMessageWrapper.message.text,
-                });
-                return {
-                    correctionRequired: true,
-                }
-            };
-            logger.info({
-                message: "Valid response came from model",
-            });
-            return {
-                correctionRequired: false,
-            };
-        })
+        // .addNode("validateModelResponse", async (state: InterviewStateType, config: any) => {
+        //     const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
+        //     if (!lastMessageWrapper) {
+        //         return;
+        //     }
+        //     const ctx = config?.configurable?.context ?? {};
+        //     const { model, user } = ctx;
+        //     const validatorAgent = createAgent({
+        //         model,
+        //         systemPrompt: systemInstructionValidateModelResponse(),
+        //         responseFormat: ModelResponseValidator,
+        //     });
+        //     if (!lastMessageWrapper.message.text) {
+        //         return {
+        //             correctionRequired: true,
+        //         }
+        //     }
+        //     const response = await validatorAgent.invoke({
+        //         messages: [new HumanMessage(lastMessageWrapper.message.text)],
+        //     });
+        //     if (!response.structuredResponse.valid) {
+        //         logger.info({
+        //             message: "Response From AI not valid",
+        //             reason: response.structuredResponse.reason,
+        //             aiMessage: lastMessageWrapper.message.text,
+        //         });
+        //         return {
+        //             correctionRequired: true,
+        //         }
+        //     };
+        //     logger.info({
+        //         message: "Valid response came from model",
+        //     });
+        //     return {
+        //         correctionRequired: false,
+        //     };
+        // })
+        // .addNode("analyzeCandidateBehavior", async (state: InterviewStateType, config: any) => {
+        //     const ctx = config?.configurable?.context ?? {};
+        //     const { model } = ctx;
+
+        //     // Only analyze if we have substantive candidate responses
+        //     const candidateMessages = state.messages
+        //         .filter(msg => msg.message instanceof HumanMessage)
+        //         .slice(-1); // Get last candidate message
+
+        //     if (candidateMessages.length === 0) {
+        //         return {};
+        //     }
+
+        //     const lastCandidateMessage = candidateMessages[0];
+        //     const candidateResponse = lastCandidateMessage.message.content;
+
+        //     if (candidateResponse == 'Lets start the interview' || candidateResponse == "Let's skip this question") {
+        //         return {}
+        //     }
+
+        //     // Skip analysis for minimal responses (too short)
+        //     if (typeof candidateResponse === 'string' && candidateResponse.length < 15) {
+        //         return {};
+        //     }
+
+        //     try {
+        //         const behaviorAnalysisAgent = createAgent({
+        //             model,
+        //             systemPrompt: systemInstructionAnalyzeCandidateBehavior(state.CandidateBehaviorType || undefined),
+        //             responseFormat: candidateBehaviorSchema,
+        //         });
+        //         const behaviorResponse = await behaviorAnalysisAgent.invoke({
+        //             messages: [new HumanMessage(`\n\nCandidate Response to Analyze:\n"${candidateResponse}"`)],
+        //         });
+
+        //         // Extract the parsed content
+        //         const behaviorData = behaviorResponse.structuredResponse;
+
+        //         logger.info({
+        //             message: 'Candidate behavior analyzed',
+        //             intelligenceLevel: behaviorData.intelligenceLevel,
+        //             confidenceLevel: behaviorData.confidenceLevel,
+        //             reasoning: behaviorData.brief_reasoning,
+        //             hasPreviousContext: !!state.CandidateBehaviorType,
+        //         });
+
+        //         return {
+        //             CandidateBehaviorType: {
+        //                 ...behaviorData,
+        //                 lastUpdatedAt: new Date(),
+        //             },
+        //         };
+        //     } catch (error) {
+        //         logger.error({
+        //             message: 'Error analyzing candidate behavior',
+        //             error,
+        //         });
+        //         return {};
+        //     }
+        // })
         .addNode("convertToStructuredResponse", async (state: InterviewStateType, config: any) => {
             const instruction = systemInstructionConvertSimpleStringToStructuredOutput();
             const ctx = config.configurable?.context ?? {};
@@ -303,7 +362,7 @@ async function ensureGraphCompiled() {
                 new HumanMessage(`PARSE THIS MESSAGE CONTENT:\n${lastAIMessageWrapper.message.content ?? ""}`),
             ];
             const agent = createAgent({
-                model: model,
+                model: createModel("gemini-2.5-flash-lite"),
                 responseFormat: interviewParserSchema,
                 tools: [],
             });
@@ -343,66 +402,6 @@ async function ensureGraphCompiled() {
                     conversionAttempts: state.conversionAttempts + 1,
                     messages: [updatedMessage],
                 };
-            }
-        })
-        .addNode("analyzeCandidateBehavior", async (state: InterviewStateType, config: any) => {
-            const ctx = config?.configurable?.context ?? {};
-            const { model } = ctx;
-
-            // Only analyze if we have substantive candidate responses
-            const candidateMessages = state.messages
-                .filter(msg => msg.message instanceof HumanMessage)
-                .slice(-1); // Get last candidate message
-
-            if (candidateMessages.length === 0) {
-                return {};
-            }
-
-            const lastCandidateMessage = candidateMessages[0];
-            const candidateResponse = lastCandidateMessage.message.content;
-
-            if (candidateResponse == 'Lets start the interview' || candidateResponse == "Let's skip this question") {
-                return null
-            }
-
-            // Skip analysis for minimal responses (too short)
-            if (typeof candidateResponse === 'string' && candidateResponse.length < 15) {
-                return null;
-            }
-
-            try {
-                const behaviorAnalysisAgent = createAgent({
-                    model,
-                    systemPrompt: systemInstructionAnalyzeCandidateBehavior(state.CandidateBehaviorType || undefined),
-                    responseFormat: candidateBehaviorSchema,
-                });
-                const behaviorResponse = await behaviorAnalysisAgent.invoke({
-                    messages: [new HumanMessage(`\n\nCandidate Response to Analyze:\n"${candidateResponse}"`)],
-                });
-
-                // Extract the parsed content
-                const behaviorData = behaviorResponse.structuredResponse;
-
-                logger.info({
-                    message: 'Candidate behavior analyzed',
-                    intelligenceLevel: behaviorData.intelligenceLevel,
-                    confidenceLevel: behaviorData.confidenceLevel,
-                    reasoning: behaviorData.brief_reasoning,
-                    hasPreviousContext: !!state.CandidateBehaviorType,
-                });
-
-                return {
-                    CandidateBehaviorType: {
-                        ...behaviorData,
-                        lastUpdatedAt: new Date(),
-                    },
-                };
-            } catch (error) {
-                logger.error({
-                    message: 'Error analyzing candidate behavior',
-                    error,
-                });
-                return {};
             }
         })
         .addNode("executeTools", async (state: InterviewStateType) => {
@@ -456,6 +455,8 @@ async function ensureGraphCompiled() {
 
             return { messages: newToolMessages };
         })
+        .addEdge(START, "askAndRespond")
+        .addEdge("executeTools", "askAndRespond")
         .addConditionalEdges(
             "askAndRespond",
             (state: InterviewStateType) => {
@@ -469,25 +470,25 @@ async function ensureGraphCompiled() {
                 if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
                     return "tools";
                 }
-                return "validate";
+                return "structured_conversion";
             },
             {
                 tools: "executeTools",
                 structured_conversion: "convertToStructuredResponse",
                 end: END,
-                validate: "validateModelResponse",
+                // analyzeCandidateBehavior: "analyzeCandidateBehavior",
             }
         )
-        .addConditionalEdges("validateModelResponse",(state:InterviewStateType)=>{
-            if(state.correctionRequired){
-                return "askAndRespond";
-            }
-            return "analyzeCandidateBehavior";
-        },{
-            askAndRespond:"askAndRespond",
-            analyzeCandidateBehavior:"analyzeCandidateBehavior"
-        })
-        .addEdge("analyzeCandidateBehavior", "convertToStructuredResponse")
+        // .addConditionalEdges("validateModelResponse", (state: InterviewStateType) => {
+        //     if (state.correctionRequired) {
+        //         return "askAndRespond";
+        //     }
+        //     return "analyzeCandidateBehavior";
+        // }, {
+        //     askAndRespond: "askAndRespond",
+        //     analyzeCandidateBehavior: "analyzeCandidateBehavior"
+        // })
+        // .addEdge("analyzeCandidateBehavior", "convertToStructuredResponse")
         .addConditionalEdges("convertToStructuredResponse", (state: InterviewStateType) => {
             const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
             if (!lastMessageWrapper?.structuredResponse?.confidence) {
@@ -504,10 +505,7 @@ async function ensureGraphCompiled() {
             retry: "convertToStructuredResponse",
             end: END,
         })
-        .addEdge(START, "askAndRespond")
-        .addEdge("executeTools", "askAndRespond")
-        .addEdge("validateModelResponse", "convertToStructuredResponse")
-        .addEdge("convertToStructuredResponse", END);
+
 
     compiledGraph = builder.compile({ checkpointer: checkPointer });
     return compiledGraph;
@@ -525,10 +523,10 @@ export class InterviewAgent {
         candidate: Candidate;
         user: BasicUserDetails | null;
         modelToUse: llmModels;
-        temperature?: number;
+        config?: Omit<ConstructorParameters<typeof ChatGoogleGenerativeAI>[0], 'model'>,
     }) {
         await ensureGraphCompiled();
-        return new InterviewAgent(opts.interview, opts.candidate, opts.user, opts.modelToUse, opts.temperature);
+        return new InterviewAgent(opts.interview, opts.candidate, opts.user, opts.modelToUse, opts.config);
     }
 
     private constructor(
@@ -536,14 +534,12 @@ export class InterviewAgent {
         candidate: Candidate,
         user: BasicUserDetails | null,
         model: llmModels,
-        temperature?: number,
+        config?: Omit<ConstructorParameters<typeof ChatGoogleGenerativeAI>[0], 'model'>,
     ) {
         this.interview = interview;
         this.candidate = candidate;
         this.user = user;
-        this.model = createModel(model, {
-            temperature: temperature || 1,
-        });
+        this.model = createModel(model, config);
         this.threadId = candidate.id.toString();
     }
 
@@ -571,14 +567,14 @@ export class InterviewAgent {
         const humanMessage = new HumanMessage({
             content: finalTextInput,
         })
-        if(type == MessageTypeEnum.AUDIO){
+        if (type == MessageTypeEnum.AUDIO) {
             humanMessage.additional_kwargs = {
                 audioUrl,
                 audioDuration,
                 type
             }
         }
-        else{
+        else {
             humanMessage.additional_kwargs = {
                 type
             }

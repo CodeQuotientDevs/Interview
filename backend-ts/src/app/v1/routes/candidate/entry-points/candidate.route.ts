@@ -14,6 +14,7 @@ import redis from '@services/redis';
 import InterviewAiModel from '@app/v1/agents/InterviewAgentGraph';
 import { userMessage } from '@app/v1/zod/interview';
 import { MessageTypeEnum } from '@root/constants/message';
+import { addInviteJob } from '@services/queue';
 
 
 import type InterviewService from "../../interview/domain/interview.service";
@@ -133,6 +134,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     const userObj = userMapExternal.get(ele.userId.toString());
                     ele.name = userObj.displayname;
                     ele.email = userObj.email;
+                    ele.attachments = userObj.attachments;
                     return;
                 }
                 const userObj = userMap.get(ele.userId.toString());
@@ -173,13 +175,29 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
             data.externalUser = false;
             data.userId = userObj.id;
+            // Transform { url, originalName }[] to object[] for model creation
+            data.attachments = data.attachments.map((att: { url: string, originalName: string }) => ({ url: att.url, originalName: att.originalName, content: '' }));
+
             const candidateObj = await candidateServices.createCandidateInterview(interviewObj, data);
 
-            await sendInvite({
-                id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateObj.startTime, endDate: candidateObj.endTime,
+            // await sendInvite({
+            //     id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateObj.startTime, endDate: candidateObj.endTime,
+            // });
+
+            await addInviteJob({
+                candidateId: candidateObj.id,
+                attachments: data.attachments, // Pass simple URLs to worker
+                inviteData: {
+                    id: candidateObj.id,
+                    name: userObj.name,
+                    email: userObj.email,
+                    duration: interviewObj.duration,
+                    startDate: candidateObj.startTime,
+                    endDate: candidateObj.endTime,
+                }
             });
 
-            return res.status(200).json({ id: candidateObj.id });
+            return res.status(200).json({ id: candidateObj.id, status: 'processing' });
         } catch (error: any) {
             logger.error({ endpoint: `candidate POST /${id}`, error: error?.message, trace: error?.stack });
             return res.status(500).json({ error: 'Internal Server Error' });
@@ -262,7 +280,13 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 candidate: candidateObj,
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
-                temperature: 1.25,
+                config: {
+                    temperature: 1.0,
+                    thinkingConfig: {
+                        includeThoughts: true,
+                        thinkingBudget: 2048,
+                    },
+                },
             });
             let history = await agent.getHistory();
             if (!history.length) {
@@ -297,6 +321,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
 
     router.patch('/revaluate/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
         const { id } = req.params;
+        const { prompt } = req.body;
         try {
             const candidateObj = await candidateServices.findById(id);
             if (!candidateObj) return res.status(404).json({ error: 'Interview Attempt Not Found' });
@@ -311,6 +336,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }, {
                 $set: {
                     revaluationStartDate: new Date(),
+                    revaluationPrompt: prompt,
                 },
             });
             return res.status(200).json({ id: candidateObj.id });
@@ -436,6 +462,25 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (payload.data.yearOfExperience !== undefined) candidateUpdateData.yearOfExperience = payload.data.yearOfExperience;
             if (payload.data.userSpecificDescription !== undefined) candidateUpdateData.userSpecificDescription = payload.data.userSpecificDescription;
 
+            let shouldProcessAttachments = false;
+            if (payload.data.attachments) {
+                const existingAttachmentsMap = new Map<string, any>((candidateObj.attachments || []).map((att: any) => [att.url, att]));
+                const mergedAttachments = payload.data.attachments.map((att: { url: string, originalName: string }) => {
+                    const existing = existingAttachmentsMap.get(att.url);
+                    return {
+                        url: att.url,
+                        originalName: att.originalName,
+                        content: existing ? existing.content : ''
+                    };
+                });
+                candidateUpdateData.attachments = mergedAttachments;
+
+                if (mergedAttachments.some(att => !existingAttachmentsMap.has(att.url))) {
+                    candidateUpdateData.inviteStatus = 'pending';
+                    shouldProcessAttachments = true;
+                }
+            }
+
             logger.info(`Updating candidate ${id} with data: ${JSON.stringify(candidateUpdateData)}`);
             if (Object.keys(candidateUpdateData).length > 0) {
                 const updateResult = await candidateServices.updateOne({ id }, { $set: candidateUpdateData });
@@ -443,6 +488,21 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const userObj = await userServices.getUserById(candidateObj.userId);
+
+            if (shouldProcessAttachments && userObj) {
+                await addInviteJob({
+                    candidateId: candidateObj.id,
+                    attachments: candidateUpdateData.attachments,
+                    inviteData: {
+                        id: candidateObj.id,
+                        name: userObj.name,
+                        email: userObj.email,
+                        duration: interviewObj.duration,
+                        startDate: candidateUpdateData.startTime || candidateObj.startTime,
+                        endDate: candidateUpdateData.endTime || candidateObj.endTime,
+                    }
+                });
+            }
 
             if (userObj) {
                 await sendInvite({

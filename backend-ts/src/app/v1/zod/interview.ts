@@ -19,19 +19,4 @@ export const interviewCreationSchema = Zod.object({
 		duration: Zod.number().min(1),
 		questionList: Zod.string()
 	})).optional(),
-}).refine((arg) => {
-	const totalDuration = Object.values(arg?.difficulty ?? {}).reduce((result, currentValue) => result += currentValue.duration, 0);
-	return totalDuration <= arg.duration;
-}, {
-	message: "Duration must be greater than the sum of all difficulty durations",
-    path: ["duration"],
-}).refine((arg) => {
-	if (!arg.difficulty) {
-		return true;
-	}
-	const totalWeight = Object.values(arg.difficulty).reduce((result, currentValue) => result += currentValue.weight, 0);
-	return Math.round(totalWeight) === 100
-}, {
-	message: "Total weight percentage should round off to 100%",
-	path: ["difficulty.weight"],
 });

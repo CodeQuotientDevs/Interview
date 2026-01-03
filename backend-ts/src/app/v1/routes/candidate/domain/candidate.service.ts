@@ -53,6 +53,8 @@ export class Candidate {
             summaryReport: 1,
             detailedReport: 1,
 			concludedAt: 1,
+            inviteStatus: 1,
+            attachments: 1,
         });
         return data;
     }
@@ -77,6 +79,7 @@ export class Candidate {
             yearOfExperience: data.yearOfExperience,
             startTime: data.startTime,
             endTime: data.endTime,
+            attachments: data.attachments,
         }
         const candidateObj = await this.#model.create(objToSave as any);
         return candidateObj;

@@ -15,25 +15,23 @@ export const transcribeAudio = async (audioUrl: string) => {
   let modelResponse: any = null
 
   // Initial message
-  const messagesForModel: HumanMessage[] = [
-    new HumanMessage({
-      content: [
-        {
-          type: "text",
-          text: transcribeAudioSystemInstruction,
-        },
-        {
-          type: "media",
-          fileUri: audioUrl,
-          mimeType: "audio/webm",
-        },
-      ],
-    }),
-  ]
+  const message = new HumanMessage({
+    content: [
+      {
+        type: "text",
+        text: transcribeAudioSystemInstruction,
+      },
+      {
+        type: "media",
+        fileUri: audioUrl,
+        mimeType: "audio/webm",
+      },
+    ],
+  })
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      modelResponse = await model.invoke(messagesForModel)
+      modelResponse = await model.invoke([message])
 
       if (!modelResponse || !modelResponse.content) {
         throw new Error("Empty transcription response from model")
@@ -59,9 +57,8 @@ export const transcribeAudio = async (audioUrl: string) => {
       const uniqueSuffix = crypto.randomUUID()
 
       // 🔥 Modify last text message slightly to avoid model cache issues
-      const lastMessage = messagesForModel[messagesForModel.length - 1]
-      if (Array.isArray(lastMessage.content)) {
-        lastMessage.content = lastMessage.content.map((item: any) =>
+      if (Array.isArray(message.content)) {
+        message.content = message.content.map((item: any) =>
           item.type === "text"
             ? {
                 ...item,

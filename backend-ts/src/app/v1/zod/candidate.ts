@@ -20,6 +20,10 @@ export const candidateCreateSchema = Zod.object({
         return args;
     }, Zod.date().optional()),
     yearOfExperience: Zod.number().nonnegative().optional(),
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
     userSpecificDescription: Zod.string().nonempty(),
 });
 
@@ -38,6 +42,10 @@ export const candidateUpdateSchema = Zod.object({
     }, Zod.date().optional()),
     yearOfExperience: Zod.number().nonnegative().optional(),
     userSpecificDescription: Zod.string().nonempty().optional(),
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
 });
 
 export const userReportSchema = Zod.object({
