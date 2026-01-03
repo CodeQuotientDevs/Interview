@@ -170,7 +170,7 @@ export const Interview = (props: InterviewProps) => {
 
   const handleSubmission = useCallback(
     async (message: string) => {
-      if (isGenerating || message.trim()==="") {
+      if (isGenerating || message.trim()==="" || isUploading) {
         return;
       }
       try {
@@ -197,7 +197,7 @@ export const Interview = (props: InterviewProps) => {
         setIsGenerating(false);
       }
     },
-    [props.id, isGenerating, setIsGenerating, setMessages, postMessage]
+    [props.id, isGenerating, setIsGenerating, setMessages, postMessage ,isUploading]
   );
 
   useEffect(() => {
