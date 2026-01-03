@@ -325,15 +325,6 @@ If candidate wants to end early:
 2. If they insist again: End immediately
 3. If time ≥ ${interview.duration} min: End immediately
 
-${candidateBehavior && (candidateBehavior.intelligenceLevel || candidateBehavior.confidenceLevel) ? `
-==================================================
-## 🔹 ADAPTIVE BEHAVIOR
-==================================================
-${candidateBehavior.intelligenceLevel ? `**Level:** ${candidateBehavior.intelligenceLevel} - Adjust question complexity accordingly.` : ''}
-${candidateBehavior.confidenceLevel ? `**Confidence:** ${candidateBehavior.confidenceLevel}` : ''}
-${candidateBehavior.adjustQuestionDifficulty ? `**Adjustment:** ${candidateBehavior.adjustQuestionDifficulty}` : ''}
-` : ''}
-
 ==================================================
 ## 🔹 HARD CONSTRAINTS
 ==================================================

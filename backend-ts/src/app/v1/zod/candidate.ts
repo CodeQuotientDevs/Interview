@@ -23,7 +23,7 @@ export const candidateCreateSchema = Zod.object({
     attachments: Zod.array(Zod.object({
         url: Zod.string(),
         originalName: Zod.string(),
-    })).optional(),
+    })).default([]),
     userSpecificDescription: Zod.string().nonempty(),
 });
 
@@ -45,7 +45,7 @@ export const candidateUpdateSchema = Zod.object({
     attachments: Zod.array(Zod.object({
         url: Zod.string(),
         originalName: Zod.string(),
-    })).optional(),
+    })).default([]),
 });
 
 export const userReportSchema = Zod.object({

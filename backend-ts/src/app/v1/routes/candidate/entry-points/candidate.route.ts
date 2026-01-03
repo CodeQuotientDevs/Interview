@@ -176,7 +176,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             data.externalUser = false;
             data.userId = userObj.id;
             // Transform { url, originalName }[] to object[] for model creation
-            data.attachments = data.attachments.map((att: { url: string, originalName: string }) => ({ url: att.url, originalName: att.originalName, content: '' }));
+            data.attachments = data?.attachments?.map((att: { url: string, originalName: string }) => ({ url: att.url, originalName: att.originalName, content: '' }));
 
             const candidateObj = await candidateServices.createCandidateInterview(interviewObj, data);
 

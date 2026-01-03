@@ -100,6 +100,9 @@ export const Interview = (props: InterviewProps) => {
 
   const handleAudioSubmission = useCallback(async (audioFile: File, audioDuration: number) => {
     try {
+      if(isGenerating || isUploading){
+        return;
+      }
       setIsUploading(true);
       
       const presignedUrl = await getPresignedUrl(audioFile.type);
