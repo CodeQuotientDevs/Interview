@@ -58,7 +58,6 @@ export function MessageList({
           typeof messageOptions === "function"
             ? messageOptions(message)
             : messageOptions
-console.log(message)
         return (
           <ChatMessage
             key={index}

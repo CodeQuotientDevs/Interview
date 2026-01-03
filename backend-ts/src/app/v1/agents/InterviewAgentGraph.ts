@@ -144,7 +144,6 @@ async function ensureGraphCompiled() {
                 state.CandidateBehaviorType
             );
             let enhancedSystemPrompt = systemPrompt;
-            console.log("System Prompt: ", enhancedSystemPrompt);
 
             const messagesToDelete: Array<MessageType> = [];
 

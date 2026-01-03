@@ -256,7 +256,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     router.post('/messages/:id', async (req: Request, res: Response) => {
         const { id } = req.params;
         try {
-            const zodResponse = userMessage.safeParse(req.body);
+        const zodResponse = userMessage.safeParse(req.body);
             if (!zodResponse.success) {
                 return res.status(400).json({ message: 'Bad request', details: zodResponse.error });
             }

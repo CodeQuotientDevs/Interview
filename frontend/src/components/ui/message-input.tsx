@@ -23,7 +23,7 @@ interface MessageInputBaseProps
   placeholders?: string[]
   placeholderInterval?: number
   placeholderAnimationType?: "none" | "fade" | "blur" | "scale" | "slide"
-  handleAudioSubmission?: (file: File, transcribedAudioText: string, audioDuration: number) => Promise<void>
+  handleAudioSubmission?: (file: File, audioDuration: number) => Promise<void>
   handleActivity?: () => void
 }
 
@@ -337,7 +337,7 @@ export function MessageInput({
 
 
        
-        handleAudioSubmission?.(file, "", recordingDuration)
+        handleAudioSubmission?.(file, recordingDuration)
 
         setTimeout(() => {
           textAreaRef.current?.form?.requestSubmit()
@@ -727,7 +727,7 @@ export function MessageInput({
             size="icon"
             className="h-8 w-8 transition-opacity"
             aria-label="Send message"
-            disabled={(!allowEmptySubmit && trimmedValue === "" && !isRecording) || isGenerating}
+            disabled={isGenerating || isUploading || (isRecording && !isPaused)}
             onClick={() => {
               if (isRecording) {
                 submitRecording()

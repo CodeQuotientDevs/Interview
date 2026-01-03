@@ -99,12 +99,13 @@ export const Interview = (props: InterviewProps) => {
 
 
   const handleAudioSubmission = useCallback(async (audioFile: File, audioDuration: number) => {
+    if(isGenerating || isUploading){
+      console.log("Generating or Uploading");
+      return;
+    }
     try {
-      if(isGenerating || isUploading){
-        return;
-      }
       setIsUploading(true);
-      
+      setIsGenerating(true);
       const presignedUrl = await getPresignedUrl(audioFile.type);
       
       const response = await fetch(presignedUrl.uploadUrl, {
@@ -165,15 +166,16 @@ export const Interview = (props: InterviewProps) => {
         setIsUploading(false);
         setIsGenerating(false);
     }
-  }, [id, postMessage, getPresignedUrl, setIsGenerating, setIsUploading])
+  }, [isGenerating, isUploading, getPresignedUrl, postMessage, id])
 
   const handleSubmission = useCallback(
     async (message: string) => {
+      if (isGenerating || message.trim()==="") {
+        return;
+      }
       try {
-        if (isGenerating) {
-          return;
-        }
         setIsGenerating(true);
+        console.log("SETTING IS GENERATING TRUE");
         setMessages((prevMessages) => {
           return [
             ...prevMessages,

@@ -30,7 +30,7 @@ interface ChatPropsBase {
   ) => void
   allowEmptySubmit?: boolean
   isUploading: boolean;
-  handleAudioSubmission?: (audioFile: File, transcribedAudioText: string, audioDuration: number) => Promise<void>;
+  handleAudioSubmission?: (audioFile: File, audioDuration: number) => Promise<void>;
   handleIntervieweeIdle?: () => void;
 }
 
