@@ -23,7 +23,7 @@ interface MultiSelectProps {
 }
 
 const createNewTag: Option = {
-  label: 'Create New Tag',
+  label: 'Create New Topic',
   value: '#123123123',
 }
 
@@ -146,6 +146,12 @@ export default function MultiSelect({
               placeholder="Search..."
               value={search}
               onValueChange={setSearch}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  createNewOption(search);
+                  setSearch("");
+                }
+              }}
             />
             <CommandList>
               {filteredOptions.length === 0 && (
@@ -157,7 +163,7 @@ export default function MultiSelect({
                       setSearch("");
                     }}
                   >
-                    Create New Tag
+                    Create New Topic
                   </Button>
                 </CommandEmpty>
               )}

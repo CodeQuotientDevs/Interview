@@ -34,12 +34,6 @@ export const interviewCreateSchema = Zod.object({
 	keywords: types.keywords.optional().default([]),
 	difficulty: types.difficulty.optional().default({}),
 	generalDescriptionForAi: types.generalDescriptionForAi,
-}).refine((arg) => {
-	const totalDuration = Object.values(arg.difficulty).reduce((result, currentValue) => result += currentValue.duration, 0);
-	return totalDuration <= arg.duration;
-}, {
-	message: "Duration must be greater than the sum of all difficulty durations",
-    path: ["duration"],
 });
 
 export const interviewUpdateSchema = Zod.object({
@@ -152,6 +146,11 @@ export const interviewCandidateListSchema = Zod.object({
 	summaryReport: interviewCandidate.summaryReport.optional(),
 	detailedReport: interviewCandidate.detailedReport.optional(),
 	userSpecificDescription: interviewCandidate.userSpecificDescription.optional(),
+    inviteStatus: Zod.enum(['pending', 'processing', 'sent', 'failed']).optional(),
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
 });
 
 export const interviewCandidateReportSchema = Zod.intersection(

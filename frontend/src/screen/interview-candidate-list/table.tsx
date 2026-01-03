@@ -14,8 +14,20 @@ import {
 import {
     UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
     Download, FileText, MailPlus, MoreHorizontal, Upload, Clock,
-    Calendar
+    Calendar, AlertCircle, Loader2
 } from "lucide-react"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
 import { formatDateTime } from "@/lib/utils";
@@ -49,6 +61,7 @@ import { useNavigate } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { inviteStatusConfig } from "@/constants/interview";
 
 
 interface DataTableInterface {
@@ -60,7 +73,7 @@ interface DataTableInterface {
     concludeInterview: (attemptId?: string) => Promise<void>,
     openCandidateDrawer: (value: boolean) => void
     openBulkUploadDrawer: (value: boolean) => void,
-    revaluationFunction: (id: string) => Promise<void>,
+    revaluationFunction: (id: string, prompt?: string) => Promise<void>,
     onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
 }
 
@@ -144,17 +157,24 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     }, [alertModel, props]);
 
     const handleReEvaluate = React.useCallback(async (id: string) => {
-        alertModel({
-            title: 'Are you sure you want to re evaluate interview?',
-            description: 'This is reevaluate the user test, score will be effected.',
-            cancelButtonTitle: 'Cancel',
-            okButtonTitle: 'Ok',
-            onCancel: async () => { },
-            onOk: async () => {
-                await props.revaluationFunction(id);
-            }
-        });
-    }, [props, alertModel]);
+        setReEvaluateId(id);
+    }, []);
+
+    const [reEvaluateId, setReEvaluateId] = React.useState<string | null>(null);
+    const [reEvaluatePrompt, setReEvaluatePrompt] = React.useState("");
+    const [isReEvaluating, setIsReEvaluating] = React.useState(false);
+
+    const onConfirmReEvaluate = async () => {
+        if (!reEvaluateId) return;
+        setIsReEvaluating(true);
+        try {
+            await props.revaluationFunction(reEvaluateId, reEvaluatePrompt);
+            setReEvaluateId(null);
+            setReEvaluatePrompt("");
+        } finally {
+            setIsReEvaluating(false);
+        }
+    };
 
     function rowFormatter(item: typeof interviewCandidateListSchema._type, columns: ExcelColumn[]): Record<string, string | number | Date> {
         const row: Record<string, string | number | Date> = {};
@@ -231,8 +251,33 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         </button>
                     );
                 }
-
-                return <div className="px-4 py-2">{name}</div>;
+                return (
+                    <div className="px-4 py-2 flex items-center gap-2">
+                        {name}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "inviteStatus",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Status
+                        <ArrowUpDown />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => {
+                const status = row.original.inviteStatus;
+                return (
+                    <div className="px-4 py-2">
+                        <Badge variant={inviteStatusConfig[status as InviteStatus || "pending"]?.variant}>{inviteStatusConfig[status as InviteStatus || "pending"]?.label}</Badge>
+                    </div>
+                );
             },
         },
         {
@@ -618,10 +663,18 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                                 <div className="text-muted-foreground">
                                                     <UsersIcon className="w-8 h-8 mx-auto" />
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="space-y-1 pb-2">
                                                     <p className="text-sm font-medium">No candidates yet</p>
                                                     <p className="text-xs text-muted-foreground">Start by inviting candidates to this interview</p>
                                                 </div>
+                                                <Button 
+                                                    onClick={() => openCandidateDrawer(true)} 
+                                                    size="sm"
+                                                    className="rounded-md px-6"
+                                                >
+                                                    <MailPlus className="w-4 h-4 mr-2" />
+                                                    Invite Candidate
+                                                </Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -654,6 +707,57 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </Button>
                 </div>
             </div>
+            <AlertDialog open={!!reEvaluateId} onOpenChange={() => !isReEvaluating && setReEvaluateId(null)}>
+                <AlertDialogContent className="sm:max-w-[500px]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Re-evaluate Interview</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to re-evaluate this interview? The existing scores will be updated based on new AI evaluation.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="prompt" className="text-sm font-semibold flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-primary" />
+                                Prompt to Re evaluate
+                            </Label>
+                            <Textarea 
+                                id="prompt"
+                                placeholder="Add specific instructions for the AI e.g. 'Focus more on coding logic' or 'Be more lenient with communication skills'" 
+                                className="min-h-[120px] resize-none focus-visible:ring-primary/20"
+                                value={reEvaluatePrompt}
+                                onChange={(e) => setReEvaluatePrompt(e.target.value)}
+                                disabled={isReEvaluating}
+                            />
+                            <p className="text-[11px] text-muted-foreground italic">
+                                * Leave empty for standard evaluation
+                            </p>
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isReEvaluating}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onConfirmReEvaluate();
+                            }}
+                            disabled={isReEvaluating}
+                            className="bg-primary hover:bg-primary/90"
+                        >
+                            {isReEvaluating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Re-evaluating...
+                                </>
+                            ) : (
+                                "Confirm Re-evaluation"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

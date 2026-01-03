@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,14 +15,16 @@ import { useNavigate } from "react-router";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, Form } from "@/components/ui/form";
 import { useQuery } from "@tanstack/react-query";
 import { AlertType } from "@/constants";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
+// import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
 import logger from "@/lib/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Separator } from "@/components/ui/separator";
 // import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+// import { QuestionListEditor } from "@/components/question-list-editor/question-list-editor";
+import { TopicCard } from "@/components/interview-creation/topic-card";
 
 interface CandidatePageProps {
 	id?: string
@@ -48,12 +50,9 @@ export function InterviewCreation(props: CandidatePageProps) {
 		watch,
 	} = form;
 
-	// Clear weight validation error when user makes changes
-	const difficultyValues = watch("difficulty");
-	
-	useEffect(() => {
-		form.clearErrors("root.topicsWeight");
-	}, [difficultyValues, form]);
+
+
+
 
 	const showAlert = useAppStore().showAlert;
 	const setAppLoader = useAppStore().setAppLoader;
@@ -108,7 +107,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 	const onSubmit = useCallback(async (data: unknown) => {
 		logger.info("Data");
 		logger.info(data);
-		
+
 		const d = data as any ?? {};
 		const cleanedData = {
 			...d,
@@ -116,16 +115,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 			generalDescriptionForAi: typeof d.generalDescriptionForAi === 'string' ? d.generalDescriptionForAi.trim() : d.generalDescriptionForAi,
 		};
 		const parsedData = interviewCreateSchema.safeParse(cleanedData);
-		if (parsedData.data?.difficulty) {
-			const totalWeight = Object.values(parsedData.data?.difficulty).reduce((result, current) => result += current.weight, 0);
-			if (Math.abs(totalWeight) !== 100) {
-				form.setError("root.topicsWeight", {
-					type: "manual",
-					message: "Total weight percentage should equal 100%"
-				});
-				return;
-			}
-		}
+
 		if (parsedData.error) {
 			showAlert({
 				time: 4,
@@ -246,34 +236,65 @@ export function InterviewCreation(props: CandidatePageProps) {
 											<div className="space-y-8 py-6">
 												{/* Basic Details Section */}
 												<div className="space-y-4">
-												<div className="pb-0">
-													<h2 className="text-xl font-semibold">Basic Details</h2>
-													<p className="text-sm text-muted-foreground">
-														Specify basic details of this interview.
-													</p>
+													<div className="pb-0">
+														<h2 className="text-xl font-semibold">Basic Details</h2>
+														<p className="text-sm text-muted-foreground">
+															Specify basic details of this interview.
+														</p>
+													</div>
+													<div className="space-y-6">
+														<FormField
+															control={form.control}
+															name="title"
+															render={({ field }) => (
+																<FormItem>
+																	<FormLabel>Title</FormLabel>
+																	<FormControl>
+																		<Input type="text" placeholder="Title for the interview" {...field} />
+																	</FormControl>
+																	<FormMessage />
+																</FormItem>
+															)}
+														/>
+														<FormField
+															control={form.control}
+															name="duration"
+															render={() => (
+																<FormItem>
+																	<FormLabel>Duration (in minutes)</FormLabel>
+																	<FormControl>
+																		<Input type="number" placeholder="Duration in minutes" {...register("duration", { valueAsNumber: true, required: true })} />
+																	</FormControl>
+																	<FormMessage />
+																</FormItem>
+															)}
+														/>
+													</div>
 												</div>
+
+												<Separator className="mx-4 lg:mx-6 my-8" />
+
+												{/* AI Instructions Section */}
 												<div className="space-y-6">
+													<div className="pb-0">
+														<h2 className="text-xl font-semibold">Instructions For AI</h2>
+														<p className="text-sm text-muted-foreground">
+															Specify instruction for AI agent.
+														</p>
+													</div>
 													<FormField
+														name="generalDescriptionForAi"
 														control={form.control}
-														name="title"
 														render={({ field }) => (
 															<FormItem>
-																<FormLabel>Title</FormLabel>
+																<FormLabel>AI Instructions</FormLabel>
 																<FormControl>
-																	<Input type="text" placeholder="Title for the interview" {...field} />
-																</FormControl>
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-													<FormField
-														control={form.control}
-														name="duration"
-														render={() => (
-															<FormItem>
-																<FormLabel>Duration (in minutes)</FormLabel>
-																<FormControl>
-																	<Input type="number" placeholder="Duration in minutes" {...register("duration", { valueAsNumber: true, required: true })} />
+																	<Textarea
+																		{...field}
+																		placeholder={`Enter specific instructions for the AI interviewer...
+Example: Focus on evaluating problem-solving skills, code quality, and edge-case handling.`}
+																		className="resize-none min-h-[300px]"
+																	/>
 																</FormControl>
 																<FormMessage />
 															</FormItem>
@@ -281,36 +302,6 @@ export function InterviewCreation(props: CandidatePageProps) {
 													/>
 												</div>
 											</div>
-
-											<Separator className="mx-4 lg:mx-6 my-8" />
-
-											{/* AI Instructions Section */}
-											<div className="space-y-6">
-												<div className="pb-0">
-													<h2 className="text-xl font-semibold">Instructions For AI</h2>
-													<p className="text-sm text-muted-foreground">
-														Specify instruction for AI agent.
-													</p>
-												</div>
-												<FormField
-													name="generalDescriptionForAi"
-													control={form.control}
-													render={({ field }) => (
-														<FormItem>
-															<FormLabel>AI Instructions</FormLabel>
-															<FormControl>
-																<Textarea
-																	{...field}
-																	placeholder="AI Instructions"
-																	className="resize-none min-h-[300px]"
-																/>
-															</FormControl>
-															<FormMessage />
-														</FormItem>
-													)}
-												/>
-											</div>
-										</div>
 										</form>
 									</Form>
 								</div>
@@ -323,108 +314,45 @@ export function InterviewCreation(props: CandidatePageProps) {
 								{/* Right Column */}
 								<div className="px-4 lg:px-6">
 									<div className="space-y-8 py-6">
-											{/* Set Topics Section */}
+										{/* Set Topics Section */}
+										<div className="space-y-6">
+											<div className="pb-0">
+												<h2 className="text-xl font-semibold">Set Topics and Their Difficulty Level</h2>
+												<p className="text-sm text-muted-foreground">
+													Specify which topics to focus on and set their difficulty.
+												</p>
+											</div>
 											<div className="space-y-6">
-												<div className="pb-0">
-													<h2 className="text-xl font-semibold">Set Topics and Their Difficulty Level</h2>
-													<p className="text-sm text-muted-foreground">
-														Specify which topics to focus on and set their difficulty.
-													</p>
+												<div>
+													<Label className="mb-3 block">Key Topics / Skills</Label>
+													<MultiSelect
+														options={defaultOptions}
+														defaultSelected={selectedOptions}
+														onChange={handleSelectedTopics}
+														placeholder="Select relevant topics"
+													/>
 												</div>
-												<div className="space-y-6">
-													<div>
-														<Label>Key Topics / Skills</Label>
-														<MultiSelect
-															options={defaultOptions}
-															defaultSelected={selectedOptions}
-															onChange={handleSelectedTopics}
-															placeholder="Select relevant topics"
-														/>
-													</div>
+												<div className="space-y-4">
 													{selectedTopics.map((topic, topicIndex) => {
 														const title = defaultOptionsValueToNameObj[topic] ?? topic;
 														const topicErrors = (form.formState.errors as any)?.difficulty?.[topic];
 														return (
-															<>
-																<div key={topic} className="border p-2 rounded-md">
-																	<div className="border-b-2 text-center mb-2">
-																		<span className="w-24 font-medium">{title}</span>
-																	</div>
-																	<Table className="table-fixed w-full">
-																		<TableHeader>
-																			<TableRow>
-																				<TableHead className="min-w-[100px] w-[100px]">Weight</TableHead>
-																				<TableHead className="min-w-[100px] w-[100px]">Duration (min)</TableHead>
-																				<TableHead className="min-w-[100px] w-[100px]">Difficulty</TableHead>
-																			</TableRow>
-																		</TableHeader>
-																		<TableBody>
-																			<TableRow>
-																				<TableCell className="w-[100px]">
-																					<Input type="number" placeholder="Weight" {...register(`difficulty.${topic}.weight`, { required: true, valueAsNumber: true })} defaultValue={topicIndex === 0 ? 100 : undefined} />
-																				</TableCell>
-																				<TableCell className="w-[100px]">
-																					<Input type="number" placeholder="Duration (min)" {...register(`difficulty.${topic}.duration`, { required: true, valueAsNumber: true })} />
-																				</TableCell>
-																				<TableCell className="w-[100px]">
-																					<Controller
-																						name={`difficulty.${topic}.difficulty`}
-																						control={control}
-																						defaultValue={1}
-																						rules={{ required: true }}
-																						render={({ field }) => (
-																							<Select onValueChange={field.onChange} value={field?.value?.toString()}>
-																								<SelectTrigger className="w-full">
-																									<SelectValue placeholder="Difficulty" />
-																								</SelectTrigger>
-																								<SelectContent>
-																									<SelectGroup>
-																										<SelectLabel>Difficulty</SelectLabel>
-																										<SelectItem value={"1"}>Beginner</SelectItem>
-																										<SelectItem value={"2"}>Intermediate</SelectItem>
-																										<SelectItem value={"3"}>Expert</SelectItem>
-																									</SelectGroup>
-																								</SelectContent>
-																							</Select>
-																						)}
-																					/>
-																				</TableCell>
-																			</TableRow>
-																		</TableBody>
-																	</Table>
-																	<div className="mt-4">
-																		<Label className="text-sm">Questions for {title}</Label>
-																		<Controller
-																			name={`difficulty.${topic}.questionList`}
-																			control={control}
-																			defaultValue=""
-																			render={({ field }) => (
-																				<Textarea
-																					{...field}
-																					placeholder={`Add specific questions for ${title} (one per line or in your preferred format)`}
-																					className="resize-none min-h-[100px] mt-2"
-																				/>
-																			)}
-																		/>
-																	</div>
-																</div >
-																{topicErrors?.weight && (
-																	<p className="text-sm font-medium text-destructive mt-2">Weight is required</p>
-																)}
-																{topicErrors?.duration && (
-																	<p className="text-sm font-medium text-destructive mt-2">Duration is required</p>
-																)}
-															</>
+															<TopicCard
+																key={topic}
+																topic={topic}
+																title={title}
+																topicIndex={topicIndex}
+																register={register}
+																control={control}
+																errors={topicErrors}
+																watch={watch}
+															/>
 														)
 													})}
-													{/* Topics weight validation error */}
-													{form.formState.errors.root?.topicsWeight && (
-														<p className="text-sm font-medium text-destructive">
-															{form.formState.errors.root.topicsWeight.message}
-														</p>
-													)}
 												</div>
+
 											</div>
+										</div>
 									</div>
 								</div>
 							</div> {/* Close main grid container */}

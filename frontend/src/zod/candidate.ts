@@ -46,6 +46,10 @@ export const candidateInviteSchema = Zod.object({
         Zod.date().nullable().optional()
     ),
     userSpecificDescription: types.userSpecificDescription,
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
 });
 
 export const messageSchema = Zod.object({

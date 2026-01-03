@@ -1,4 +1,5 @@
 import type mongoose from "mongoose"
+type inviteStatus = 'pending' | 'processing' | 'sent' | 'failed'
 
 type Candidate = {
     id: mongoose.Types.ObjectId,
@@ -11,6 +12,11 @@ type Candidate = {
     startTime: Date,
     completedAt: Date,
     userSpecificDescription: string,
+    attachments: Array<{
+        url: string,
+        content: string,
+    }>,
+    inviteStatus: inviteStatus,
     yearOfExperience: number,
     detailedReport: Array<{
         topic: string,

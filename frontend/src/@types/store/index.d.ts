@@ -27,3 +27,5 @@ type MessageType =
         audioUrl?: string;
         audioDuration?: number;
     };
+
+type InviteStatus = 'processing' | 'pending' | 'failed' | 'sent';

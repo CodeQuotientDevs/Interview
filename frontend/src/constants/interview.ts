@@ -27,3 +27,21 @@ export const languagesAllowed = [
     { value: "cpp", label: "C++" },
     { value: "typescript", label: "TypeScript" },
 ];
+export const inviteStatusConfig: Record<InviteStatus, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {
+  processing: {
+    label: "Processing",
+    variant: "secondary",
+  },
+  pending: {
+    label: "Pending",
+    variant: "outline",
+  },
+  failed: {
+    label: "Failed",
+    variant: "destructive",
+  },
+  sent: {
+    label: "Sent",
+    variant: "default",
+  },
+}

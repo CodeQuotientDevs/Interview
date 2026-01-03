@@ -43,7 +43,9 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         queryFn: () => {
             return getInterviewCandidate(id)
         },
-        enabled: !!interviewObj.data
+        enabled: !!interviewObj.data,
+        refetchInterval: 4000, // refetch every 5 seconds
+        refetchIntervalInBackground: true,
     });
 
     const saveCandidate = useMutation({
@@ -59,18 +61,23 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
 
     const revaluateQuery = useMutation({
         mutationKey: ['revaluate'],
-        mutationFn: async (id: string) => {
-            const updatedId = await revaluate(id);
+        mutationFn: async ({ id, prompt }: { id: string, prompt?: string }) => {
+            const updatedId = await revaluate(id, prompt);
             if (updatedId) {
                 showAlert({
                     time: 5,
-                    title: 'Interview Attempt Revaluated',
+                    title: 'Interview Attempt Re-evaluation Started',
                     type: AlertType.success,
+                    message: prompt ? `Re-evaluating with custom instructions: "${prompt}"` : 'Evaluation has been added to the queue.',
                 });
                 candidateLists.refetch();
             }
         }
     })
+
+    const revaluationFunction = useCallback(async (id: string, prompt?: string) => {
+        await revaluateQuery.mutateAsync({ id, prompt });
+    }, [revaluateQuery]);
 
 
     const concludeInterviewMutation = useMutation({
@@ -268,7 +275,8 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                     yearOfExperience: editingCandidate.yearOfExperience,
                     startTime: new Date(editingCandidate.startTime),
                     endTime: editingCandidate.endTime ? new Date(editingCandidate.endTime) : undefined,
-                    userSpecificDescription: editingCandidate.userSpecificDescription || ""
+                    userSpecificDescription: editingCandidate.userSpecificDescription || "",
+                    attachments: editingCandidate.attachments,
                 } : undefined}
                 isEditing={!!editingCandidate}
             />
@@ -285,7 +293,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                 onFilesUploaded={readBulkUpload}
             />
                             <InterviewCandidateTable
-                                revaluationFunction={revaluateQuery.mutateAsync}
+                                revaluationFunction={revaluationFunction}
                                 openBulkUploadDrawer={setOpenBulkUpload}
                                 openCandidateDrawer={setOpenDrawable}
                                 data={candidateLists.data ?? []}

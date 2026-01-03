@@ -35,7 +35,7 @@ interface MainStoreState {
     getInterviewCandidateList: (id: string) => Promise<Array<typeof interviewCandidateListSchema._type>>;
     getDataForInterview: (id: string) => Promise<typeof interviewContentSchema._type>;
     cloneInterview: (id: string) => Promise<string>
-    revaluate: (id: string) => Promise<string>
+    revaluate: (id: string, prompt?: string) => Promise<string>
     getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
     concludeCandidateInterview: (attemptId: string) => Promise<void>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
@@ -89,8 +89,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.cloneInterview(id);
             return res.id;
         },
-        async revaluate(id) {
-            const res = await client.revaluateInterviewAttempt(id);
+        async revaluate(id, prompt) {
+            const res = await client.revaluateInterviewAttempt(id, prompt);
             return res.id;
         },
         async getCandidateAttempt(interviewId, attemptId) {

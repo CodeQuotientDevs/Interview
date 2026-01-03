@@ -4,23 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Invitation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eef2f7;
+        }
+        .header {
+            padding: 40px 30px 20px 30px;
+            text-align: center;
+        }
+        .header img {
+            height: 45px;
+            width: auto;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }
+        .details-card {
+            background-color: #fffaf0;
+            border: 1px solid #ffe8cc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .detail-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .detail-item:last-child {
+            margin-bottom: 0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #1a1a1a;
+            width: 100px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-value {
+            color: #4b5563;
+            font-size: 15px;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .button {
+            background-color: #FF6B00;
+            color: #ffffff !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(255, 107, 0, 0.2);
+        }
+        .footer {
+            padding: 30px;
+            background-color: #f8fafc;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .brand {
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Invitation for Coding Interview</h2>
-    <p>Dear <%= locals.name %>,</p>
-    
-    <p>
-        We are pleased to invite you to participate in our coding interview. Please use the link provided to start your test.
-    </p>
-    <% if (locals.startTime) {%>
-    <p><strong>Start Date:</strong> <%= locals.startTime %></p>
-    <% } %>
-    <% if (locals.endTime) {%>
-    <p><strong>End Date:</strong> <%= locals.endDate %></p>
-    <% } %>
-    <p>If you have any questions, feel free to reach out.</p>
-    <p>Please use this <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" >link</a>. To start your interview</p>
-    <p>Best regards,</p>
-    <p>Team CodeQuotient</p>
+    <div class="container">
+        <div class="header">
+            <img src="<%=locals.currentHost%>/logo.png" alt="CodeQuotient Logo">
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello <%= locals.name %>,</div>
+            
+            <div class="message">
+                We are excited to invite you to participate in an interview with CodeQuotient. This is an opportunity for you to showcase your skills and  expertise.
+            </div>
+            
+            <div class="details-card">
+                <% if (locals.startTime) { %>
+                <div class="detail-item">
+                    <span class="detail-label">Start By:</span>
+                    <span class="detail-value"><%= locals.startTime %></span>
+                </div>
+                <% } %>
+                <% if (locals.endTime) { %>
+                <div class="detail-item">
+                    <span class="detail-label">End By:</span>
+                    <span class="detail-value"><%= locals.endDate %></span>
+                </div>
+                <% } %>
+            </div>
+            
+            <div class="message" style="margin-bottom: 10px;">
+                Please click the button below to access your interview dashboard and begin the assessment.
+            </div>
+            
+            <div class="cta-container">
+                <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" class="button">Start Your Interview</a>
+            </div>
+            
+            <div class="message" style="font-size: 14px; font-style: italic; color: #94a3b8;">
+                If you have any questions or experience technical difficulties, please reply to this email for assistance.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,</p>
+            <p class="brand">Team CodeQuotient</p>
+            <div style="margin-top: 15px; font-size: 12px; color: #94a3b8;">
+                &copy; 2026 CodeQuotient. All rights reserved.
+            </div>
+        </div>
+    </div>
 </body>
 </html>

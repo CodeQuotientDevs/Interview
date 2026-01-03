@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/site-header";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { formatDateTime, formatDurationDayjs } from "@/lib/utils";
 
 // Type definitions based on Zod schema
 type DetailedReport = {
@@ -163,6 +164,28 @@ export function CandidateDetailedReport() {
         return <XCircle className="w-4 h-4" />;
     };
 
+    // Helper for individual question score styling (score 0-10)
+    const getQuestionScoreStyle = (score: number) => {
+        if (score >= 8) return {
+            text: "text-green-700",
+            bg: "bg-green-50",
+            border: "border-green-200",
+            icon: <CheckCircle className="w-3 h-3" />
+        };
+        if (score >= 4) return {
+            text: "text-yellow-700",
+            bg: "bg-yellow-50",
+            border: "border-yellow-200",
+            icon: <AlertCircle className="w-3 h-3" />
+        };
+        return {
+            text: "text-red-700",
+            bg: "bg-red-50",
+            border: "border-red-200",
+            icon: <XCircle className="w-3 h-3" />
+        };
+    };
+
     return (
         <>
             <SiteHeader
@@ -205,25 +228,33 @@ export function CandidateDetailedReport() {
                                             </div>
                                             <Progress value={reportData.score} fillColor={getProgressColor(reportData.score ?? 0)} className="h-3" />
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
                                             <div className="text-center">
-                                                <div className="text-2xl font-bold text-blue-600">
+                                                <div className="text-xl font-bold text-blue-600">
                                                     {(reportData.detailedReport ?? []).length}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Topics Covered</div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-2xl font-bold text-green-600">
+                                                <div className="text-xl font-bold text-green-600">
                                                     {(reportData.detailedReport ?? []).reduce((acc: number, report: DetailedReport) =>
                                                         acc + (report.questionsAsked?.length || 0), 0)}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Questions Asked</div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-2xl font-bold text-purple-600">
-                                                    {reportData.completedAt ? new Date(reportData.completedAt).toLocaleString() : 'N/A'}
+                                                <div className="text-xl font-bold text-orange-600">
+                                                    {reportData.startTime && reportData.completedAt ? 
+                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.startTime).getTime()) / 1000)) 
+                                                        : 'N/A'}
                                                 </div>
-                                                <div className="text-sm text-muted-foreground">Completed At</div>
+                                                <div className="text-sm text-muted-foreground">Total Time Taken</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-xl font-bold text-purple-600">
+                                                    {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Completion Time</div>
                                             </div>
                                         </div>
                                     </div>
@@ -289,55 +320,58 @@ export function CandidateDetailedReport() {
                                                             Questions & Answers ({report.questionsAsked.length})
                                                         </h4>
                                                         <Accordion type="single" collapsible className="w-full">
-                                                            {report.questionsAsked.map((question: DetailedReport['questionsAsked'][0], qIndex: number) => (
-                                                                <AccordionItem key={qIndex} value={`q-${index}-${qIndex}`}>
-                                                                    <AccordionTrigger className="text-left">
-                                                                        <div className="flex items-start gap-3 w-full">
-                                                                            <Badge variant="secondary" className="mt-0.5">
-                                                                                {qIndex + 1}
-                                                                            </Badge>
-                                                                            <div className="flex-1">
-                                                                                <p className="text-sm font-medium leading-tight">
-                                                                                    {question.question}
-                                                                                </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                    Score: {question.score}/10
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent>
-                                                                        <div className="space-y-4 pl-11">
-                                                                            <div>
-                                                                                <h5 className="text-sm font-medium text-green-700 mb-2 flex items-center gap-1">
-                                                                                    <CheckCircle className="w-3 h-3" />
-                                                                                    Candidate's Answer
-                                                                                </h5>
-                                                                                <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                                                                                    {question.userAnswer ? (
-                                                                                        <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
-                                                                                    ) : (
-                                                                                        <p className="text-sm text-green-800">No answer provided</p>
-                                                                                    )}
+                                                            {report.questionsAsked.map((question: DetailedReport['questionsAsked'][0], qIndex: number) => {
+                                                                const qStyle = getQuestionScoreStyle(question.score);
+                                                                return (
+                                                                    <AccordionItem key={qIndex} value={`q-${index}-${qIndex}`}>
+                                                                        <AccordionTrigger className="text-left">
+                                                                            <div className="flex items-start gap-3 w-full">
+                                                                                <Badge variant="secondary" className="mt-0.5">
+                                                                                    {qIndex + 1}
+                                                                                </Badge>
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm font-medium leading-tight">
+                                                                                        {question.question}
+                                                                                    </p>
+                                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Score: {question.score}/10
+                                                                                    </p>
                                                                                 </div>
                                                                             </div>
-                                                                            <div>
-                                                                                <h5 className="text-sm font-medium text-blue-700 mb-2 flex items-center gap-1">
-                                                                                    <AlertCircle className="w-3 h-3" />
-                                                                                    AI Evaluation & Remarks
-                                                                                </h5>
-                                                                                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                                                                                    {question.remarks ? (
-                                                                                        <MarkdownRenderer type="light">{question.remarks}</MarkdownRenderer>
-                                                                                    ) : (
-                                                                                        <p className="text-sm text-blue-800">No remarks provided</p>
-                                                                                    )}
+                                                                        </AccordionTrigger>
+                                                                        <AccordionContent>
+                                                                            <div className="space-y-4 pl-11">
+                                                                                <div>
+                                                                                    <h5 className={`text-sm font-medium ${qStyle.text} mb-2 flex items-center gap-1`}>
+                                                                                        {qStyle.icon}
+                                                                                        Candidate's Answer
+                                                                                    </h5>
+                                                                                    <div className={`${qStyle.bg} border ${qStyle.border} rounded-md p-3`}>
+                                                                                        {question.userAnswer ? (
+                                                                                            <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
+                                                                                        ) : (
+                                                                                            <p className={`text-sm ${qStyle.text}`}>No answer provided</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 className={`text-sm font-medium ${qStyle.text} mb-2 flex items-center gap-1`}>
+                                                                                        {qStyle.icon}
+                                                                                        AI Evaluation & Remarks
+                                                                                    </h5>
+                                                                                    <div className={`${qStyle.bg} border ${qStyle.border} rounded-md p-3`}>
+                                                                                        {question.remarks ? (
+                                                                                            <MarkdownRenderer type="light">{question.remarks}</MarkdownRenderer>
+                                                                                        ) : (
+                                                                                            <p className={`text-sm ${qStyle.text}`}>No remarks provided</p>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            ))}
+                                                                        </AccordionContent>
+                                                                    </AccordionItem>
+                                                                );
+                                                            })}
                                                         </Accordion>
                                                     </div>
                                                 </div>

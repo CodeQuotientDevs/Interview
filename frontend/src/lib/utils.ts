@@ -41,9 +41,9 @@ export function formatDurationDayjs(seconds:number) {
   const d = dayjs.duration(seconds, "seconds");
 
   const parts = [];
-  if (d.hours()) parts.push(`${d.hours()} hours`);
-  if (d.minutes()) parts.push(`${d.minutes()} minutes`);
-  if (d.seconds()) parts.push(`${d.seconds()} seconds`);
+  if (d.hours()) parts.push(`${d.hours()} hr`);
+  if (d.minutes()) parts.push(`${d.minutes()} min`);
+  if (d.seconds()) parts.push(`${d.seconds()} sec`);
 
   return parts.join(" ");
 }

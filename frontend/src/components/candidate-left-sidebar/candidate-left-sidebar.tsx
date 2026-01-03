@@ -6,12 +6,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DateTimePicker } from '../ui/datetimepicker';
 import { Textarea } from '../ui/textarea';
 import logger from '@/lib/logger';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2, Paperclip } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { AlertType } from '@/constants';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { candidateInviteSchema } from '@/zod/candidate';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import axios from 'axios';
+import { useMainStore } from '@/store';
 
 export interface CandidateInvite {
   name: string;
@@ -21,6 +23,7 @@ export interface CandidateInvite {
   startTime: Date;
   endTime?: Date | null;
   userSpecificDescription: string;
+  attachments?: Array<{ url: string, originalName: string }>;
 }
 
 interface CandidateSidebarProps {
@@ -34,6 +37,9 @@ interface CandidateSidebarProps {
 export default function CandidateSidebar(props: CandidateSidebarProps) {
   const { open, defaultValues, setOpenDrawer, handleSaveData, isEditing = false } = props;
   const [loading, setLoading] = useState<boolean>(false);
+  const [attachments, setAttachments] = useState<Array<{ name: string, url: string, loading: boolean }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const getPresignedUrl = useMainStore().getPresignedUrl;
 
   const showAlert = useAppStore().showAlert;
   const formRef = useRef<HTMLFormElement>(null);
@@ -74,6 +80,52 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+        const file = e.target.files[0];
+        
+        setAttachments(prev => [...prev, { name: file.name, url: '', loading: true }]);
+
+        try {
+            // Get presigned URL
+            const { uploadUrl, fileUrl } = await getPresignedUrl(file.type);
+
+            // Upload to S3
+            await axios.put(uploadUrl, file, {
+                headers: { 'Content-Type': file.type }
+            });
+
+            // Update state with URL
+            setAttachments(prev => prev.map(att => 
+                att.name === file.name ? { ...att, url: fileUrl, loading: false } : att
+            ));
+
+            // Populate form
+            const currentAttachments = form.getValues('attachments') || [];
+            form.setValue('attachments', [...currentAttachments, { url: fileUrl, originalName: file.name }]);
+
+        } catch (error) {
+            logger.error(error as Error);
+            showAlert({
+                time: 5,
+                title: "Upload Failed",
+                message: "Could not upload file",
+                type: AlertType.error
+            });
+             setAttachments(prev => prev.filter(att => att.name !== file.name));
+        }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+      const newAttachments = [...attachments];
+      const removed = newAttachments.splice(index, 1);
+      setAttachments(newAttachments);
+      
+      const currentAttachmentsList = form.getValues('attachments') || [];
+      form.setValue('attachments', currentAttachmentsList.filter(att => att.url !== removed[0].url));
+  };
+
   const onClose = useCallback(() => {
     form.reset({
       name: '',
@@ -84,6 +136,7 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
       endTime: null,
       userSpecificDescription: ''
     });
+    setAttachments([]);
     setOpenDrawer(false);
   }, [setOpenDrawer, form]);
 
@@ -96,6 +149,13 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
   useEffect(() => {
     if (isEditing && defaultValues) {
       form.reset(defaultValues);
+      if (defaultValues.attachments) {
+        setAttachments(defaultValues.attachments.map(att => ({
+            name: att.originalName || att.url.split('/').pop() || 'Attachment',
+            url: att.url,
+            loading: false
+        })));
+      }
     }
   }, [defaultValues?.email, open]);
 
@@ -111,8 +171,8 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
           <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <div className="flex gap-4 flex-1 overflow-y-auto pb-3">
               {/* Invite Details Section */}
-              <div className="border rounded-lg p-4 space-y-4 flex-1 h-full">
-                <h3 className="font-semibold text-base text-foreground">Invite Details</h3>
+              <div className="relative border rounded-lg p-4 pt-6 space-y-4 flex-1 mt-2">
+                <h3 className="absolute -top-3 left-1/2 -translate-x-1/2 bg-background px-2 font-semibold text-base text-foreground">Invite Details</h3>
 
                 <FormField
                   control={form.control}
@@ -224,8 +284,8 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
               </div>
 
               {/* Candidate Details Section */}
-              <div className="border rounded-lg p-4 space-y-4 flex-1 h-full">
-                <h3 className="font-semibold text-base text-foreground">Candidate Details</h3>
+              <div className="relative border rounded-lg p-4 pt-6 space-y-4 flex-1 mt-2">
+                <h3 className="absolute -top-3 left-1/2 -translate-x-1/2 bg-background px-2 font-semibold text-base text-foreground">Candidate Details</h3>
 
                 <FormField
                   control={form.control}
@@ -250,11 +310,62 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
                   name="userSpecificDescription"
                   control={form.control}
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
+                    <FormItem className="space-y-3">
+                      <div className="flex justify-between items-center group">
+                        <FormLabel className="group-hover:text-primary transition-colors">Description</FormLabel>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => fileInputRef.current?.click()} 
+                                className="h-7 px-2 text-[11px] font-medium border-dashed border-primary/50 text-primary hover:bg-primary/5 hover:border-primary transition-all flex items-center gap-1"
+                            >
+                                <Paperclip className="h-3 w-3" />
+                                Attach PDF/Image
+                            </Button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="application/pdf,image/*" 
+                                onChange={handleFileSelect}
+                            />
+                        </div>
+                      </div>
                       <FormControl>
-                        <Textarea className="resize-none h-[100px]" placeholder="Candidate description" {...field} />
+                        <Textarea className="resize-none h-[120px] focus-visible:ring-primary/20 transition-all border-muted-foreground/20" placeholder="Enter candidate description or additional notes...&#10;&#10;Example:&#10;A candidate resume is attached.&#10;Use it to assess qualifications, experience, and role fit." {...field} />
                       </FormControl>
+                      
+                      {/* Attachments List */}
+                      <div className="space-y-2 pt-1">
+                        {attachments.length > 0 && (
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase pl-1">Attached Supporting Documents</div>
+                        )}
+                        <div className="grid gap-2">
+                        {attachments.map((att, index) => (
+                            <div key={index} className="flex justify-between items-center text-xs border bg-muted/20 hover:bg-muted/40 p-2 rounded-lg border-muted/30 transition-colors group/item">
+                                <span className="truncate max-w-[320px] flex items-center gap-2 font-medium">
+                                    <div className="w-full rounded-full bg-primary" />
+                                    {att.name}
+                                </span>
+                                {att.loading ? (
+                                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                ) : (
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => removeAttachment(index)} 
+                                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover/item:opacity-100"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

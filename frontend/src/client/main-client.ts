@@ -170,8 +170,8 @@ export default class MainClient {
         return obj.data;
     }
 
-    async revaluateInterviewAttempt(id: string) {
-        const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/revaluate/${id}`));
+    async revaluateInterviewAttempt(id: string, prompt?: string) {
+        const response = await this.requestWrapper(this._mainAPI.patch(`/api/v1/candidates/revaluate/${id}`, { prompt }));
         const obj = Zod.object({ id: Zod.string() }).safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
