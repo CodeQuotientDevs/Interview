@@ -59,7 +59,7 @@ export function MessageList({
             ? messageOptions(message)
             : messageOptions
            
-        return  message.content!=="" && message.type!=="audio" ? (
+        return  message.content!=="" || message.type =="audio" ? (
           <ChatMessage
             key={index}
             showTimeStamp={showTimeStamps}
