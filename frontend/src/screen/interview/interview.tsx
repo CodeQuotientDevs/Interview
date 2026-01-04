@@ -69,13 +69,13 @@ export const Interview = (props: InterviewProps) => {
     if (isInterviewEnded) {
       return;
     }
-    console.warn('IDLE TIMERS INITIATED');
+ 
     const idleSubmitTime = interview.data.idleSubmitTime;
     const idleWarningTime = interview.data.idleWarningTime;
 
     clearTimeout(idleTimeoutRef.current as NodeJS.Timeout);
     clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
-    console.log('clearing timeouts');
+ 
     idleTimeoutRef.current = setTimeout(() => {
       showAlert({
         time: 5,
@@ -100,7 +100,6 @@ export const Interview = (props: InterviewProps) => {
 
   const handleAudioSubmission = useCallback(async (audioFile: File, audioDuration: number) => {
     if(isGenerating || isUploading){
-      console.log("Generating or Uploading");
       return;
     }
     try {
@@ -144,18 +143,13 @@ export const Interview = (props: InterviewProps) => {
       
       // Update messages using functional update to avoid stale closures
       setMessages((prev) => {
-        // Find the optimistic message in the current state
         const optimisticIndex = prev.findIndex(m => m.id === optimisticMessageId);
         
         if (optimisticIndex !== -1) {
-          // Replace it with the server's version but KEEP the local audioUrl for continuity if needed
-          // or just append the new AI response if the server response only contains the new message.
-          // Based on user's recent edit, the server returns the full history or we just need the last one.
           const lastServerMessage = parseModelResponseToCompatibleForChat(newMessages[newMessages.length - 1], newMessages.length - 1);
           return [...prev, lastServerMessage];
         }
         
-        // Fallback: if optimistic message not found, just parse everything (less ideal for audio continuity)
         return newMessages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
       });
     } catch (error) {
@@ -175,7 +169,6 @@ export const Interview = (props: InterviewProps) => {
       }
       try {
         setIsGenerating(true);
-        console.log("SETTING IS GENERATING TRUE");
         setMessages((prevMessages) => {
           return [
             ...prevMessages,
@@ -205,7 +198,6 @@ export const Interview = (props: InterviewProps) => {
   }, [interview.isFetching, setAppLoading]);
 
   useEffect(() => {
-    console.log(interview.data);
     if (!interview.data) return;
 
     // Check if interview is started but not completed, and show email verification
@@ -222,7 +214,9 @@ export const Interview = (props: InterviewProps) => {
       }
     }
 
-    if (!interview.data?.completedAt) {
+    if (interview.data?.completedAt) {
+      setIsInterviewEnded(true);
+    } else {
       handleUserKeyAction();
     }
 

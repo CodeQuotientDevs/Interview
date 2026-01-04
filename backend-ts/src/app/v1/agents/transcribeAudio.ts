@@ -4,7 +4,7 @@ import { createGeminiModel } from "./models/gemini"
 import { logger } from "@root/libs"
 
 
-const transcribeModelName = "gemini-2.5-flash"
+const transcribeModelName = "gemini-2.5-flash-lite"
 const transcribeAudioSystemInstruction = `you are a interview audio transcriber below audio is of an interviewee transcribe the audio to text without any extra information, no timestamps, no extra information , reduce the frequeent words like hmm ,umm etc`
 
 export const transcribeAudio = async (audioUrl: string) => {

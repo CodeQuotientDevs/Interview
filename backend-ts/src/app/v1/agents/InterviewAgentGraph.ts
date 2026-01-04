@@ -25,7 +25,6 @@ import {
 } from "./systemInstruction";
 import { systemInstructionAnalyzeCandidateBehavior } from "./systemInstruction/behaviorAnalysis";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { getServerTime } from "./tools/serverTime";
 import createModel from "./models";
 import { createAgent } from "langchain";
 
@@ -96,10 +95,10 @@ const InterviewState = Annotation.Root({
         reducer: (current, update) => update ?? current,
         default: () => null,
     }),
-    CandidateBehaviorType: Annotation<CandidateBehaviorType | null>({
-        reducer: (current, update) => update ?? current,
-        default: () => null,
-    })
+    // CandidateBehaviorType: Annotation<CandidateBehaviorType | null>({
+    //     reducer: (current, update) => update ?? current,
+    //     default: () => null,
+    // })
 });
 
 
@@ -125,12 +124,21 @@ async function ensureGraphCompiled() {
                 for (let diff of interview.difficulty) {
                     questionList += diff.skill + "\n" + diff.questionList + "\n\n";
                 }
-                logger.info('Compressing question list for interview id: ' + interview.id.toString());
-                const compressQuestionListPrompt = compressQuestionListSystemInstruction + questionList
-                const modelResponse = await model.invoke(compressQuestionListPrompt);
-                compressedQuestionList = typeof modelResponse === 'string' ? modelResponse : modelResponse.content;
-                await redis.set(questionListKey, compressedQuestionList);
-                logger.info('Compressed question list stored in redis for interview id: ' + interview.id.toString());
+                if (questionList == "") {
+                    compressedQuestionList = "";
+                }
+                else {
+                    logger.info('Compressing question list for interview id: ' + interview.id.toString());
+                    const agent = createAgent({
+                        model: createModel("gemini-2.5-flash-lite"),
+                        tools: [],
+                    });
+                    const modelResponse = await agent.invoke({ messages: [new SystemMessage(compressQuestionListSystemInstruction), new HumanMessage(questionList)] });
+                    compressedQuestionList = modelResponse.messages[modelResponse.messages.length - 1].content as string
+                    console.log(modelResponse.messages[modelResponse.messages.length - 1].content)
+                    await redis.set(questionListKey, compressedQuestionList);
+                    logger.info('Compressed question list stored in redis for interview id: ' + interview.id.toString());
+                }
             }
             else {
                 logger.info('Found question list in redis for interview id: ' + interview.id.toString());
@@ -141,7 +149,7 @@ async function ensureGraphCompiled() {
                 candidate as Candidate,
                 user as BasicUserDetails,
                 compressedQuestionList,
-                state.CandidateBehaviorType
+                // state.CandidateBehaviorType
             );
             let enhancedSystemPrompt = systemPrompt;
 
@@ -167,11 +175,23 @@ async function ensureGraphCompiled() {
             let updates: any = {};
 
             const isFirstMessage = messagesToAdd.length == 1;
+            let currentTime = Date.now();
+
+            // Set start time on first message
             if (isFirstMessage) {
-                enhancedSystemPrompt += `\n\nIMPORTANT: This is the FIRST message. You MUST call get_server_time immediately to establish the interview start time.`;
+                updates.interviewStartTime = currentTime;
+                enhancedSystemPrompt += `\n\nIMPORTANT: This is the FIRST message. Interview start time has been set to: ${new Date(currentTime).toISOString()}.`;
             } else if (state.interviewStartTime) {
-                enhancedSystemPrompt += `\n\nInterview Start Time: ${state.interviewStartTime} (timestamp in ms). Current message count: ${messagesToAdd.length}. Remember to call get_server_time to calculate elapsed time.`;
+                // Calculate elapsed time
+                const startTimeMs = typeof state.interviewStartTime === 'number'
+                    ? state.interviewStartTime
+                    : state.interviewStartTime.getTime();
+                const elapsedMs = currentTime - startTimeMs;
+                const elapsedMinutes = Math.floor(elapsedMs / 60000);
+                const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+                enhancedSystemPrompt += `\n\nInterview Start Time: ${new Date(startTimeMs).toISOString()}. Current Time: ${new Date(currentTime).toISOString()}. Elapsed Time: ${elapsedMinutes} minutes and ${elapsedSeconds} seconds. Current message count: ${messagesToAdd.length}.`;
             }
+
             let messagesForModel: BaseMessage[] = [
                 new SystemMessage(enhancedSystemPrompt),
                 ...messagesToAdd,
@@ -183,15 +203,15 @@ async function ensureGraphCompiled() {
 
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    modelResponse = await model.invoke(messagesForModel, {
-                        tools: [getServerTime],
-                    });
+                    modelResponse = await model.invoke(messagesForModel);
 
                     if (!modelResponse) {
                         throw new Error("Model returned empty response");
                     }
 
-                    // Success - break out of retry loop
+                    // Success
+                    const lastMsg = messagesForModel[messagesForModel.length - 1];
+
                     break;
                 } catch (error: any) {
                     lastError = error;
@@ -208,19 +228,16 @@ async function ensureGraphCompiled() {
                     }
 
                     // Wait before retrying (exponential backoff: 1s, 2s, 4s)
-                    let uniqueSuffix = crypto.randomUUID();
                     const waitTime = Math.pow(2, attempt - 1) * 1000;
-                    let lastMessage = messagesForModel[messagesForModel.length - 1]
-                    messagesForModel[messagesForModel.length - 1].content += `${lastMessage.content}\n\n${uniqueSuffix}`;
+
                     logger.info({
                         message: `Retrying model invocation in ${waitTime}ms`,
                         attempt: attempt + 1,
-                        uniqueSuffix,
                         lastMessageContent: messagesForModel[messagesForModel.length - 1].content,
                     });
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                 }
-            } 
+            }
             logger.info('Ai Response Came');
             const newAiMessage: MessageType = {
                 id: crypto.randomUUID(),
@@ -231,12 +248,7 @@ async function ensureGraphCompiled() {
 
             updates.messages = [newAiMessage, ...messagesToDelete];
             updates.latestAiResponse = newAiMessage;
-            if (isFirstMessage && modelResponse.tool_calls && modelResponse.tool_calls.length > 0) {
-                const timeCall = modelResponse.tool_calls.find((tc: any) => tc.name === 'get_server_time');
-                if (timeCall) {
-                    updates.interviewStartTime = Date.now();
-                }
-            }
+
             return {
                 ...updates,
                 correctionRequired: false,
@@ -356,10 +368,11 @@ async function ensureGraphCompiled() {
             if (!lastAIMessageWrapper) {
                 return {};
             }
+            const lastAIMessage = lastAIMessageWrapper.message.content[lastAIMessageWrapper.message.content.length - 1];
             const messages = [
                 new SystemMessage(instruction),
                 ...(messagesToGive.map(ele => ele.message)),
-                new HumanMessage(`PARSE THIS MESSAGE CONTENT:\n${lastAIMessageWrapper.message.content ?? ""}`),
+                new HumanMessage(`PARSE THIS MESSAGE CONTENT:\n${lastAIMessage?.text ?? ""}`),
             ];
             const agent = createAgent({
                 model: createModel("gemini-2.5-flash-lite"),
@@ -419,12 +432,7 @@ async function ensureGraphCompiled() {
                 try {
                     let result: any;
                     switch (toolCall.name) {
-                        case "get_server_time":
-                            result = await getServerTime.invoke({
-                                args: {},
-                                name: "get_server_time",
-                            });
-                            break;
+                        // Future tools can be added here
                         default:
                             result = `Tool ${toolCall.name} not found`;
                     }
@@ -643,7 +651,7 @@ export class InterviewAgent {
                 id: msg.id,
                 createdAt: msg.createdAt,
                 role: msg.message._getType(),
-                rowText: typeof msg.message.content === 'string' ? msg.message.content : JSON.stringify(msg.message.content),
+                rowText: typeof msg.message.content === 'string' ? msg.message.content : msg.message.content[msg.message.content.length - 1]?.text,
                 parsedResponse: msg.structuredResponse,
                 audioUrl: msg.message.additional_kwargs?.audioUrl,
                 type: msg.message.additional_kwargs?.type,

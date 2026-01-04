@@ -224,7 +224,14 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 candidate: candidateObj,
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
-            });
+                config: {
+                    temperature: 0.5,
+                    thinkingConfig: {
+                        includeThoughts: true,
+                        thinkingBudget: 2048,
+                    },
+                },
+            })
             let history = await agent.getHistory();
             if (!history.length) {
                 if (candidateObj.endTime && candidateObj.endTime.getTime() < Date.now()) {
@@ -281,7 +288,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
                 config: {
-                    temperature: 1.0,
+                    temperature: 0.5,
                     thinkingConfig: {
                         includeThoughts: true,
                         thinkingBudget: 2048,

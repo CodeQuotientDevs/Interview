@@ -58,14 +58,15 @@ export function MessageList({
           typeof messageOptions === "function"
             ? messageOptions(message)
             : messageOptions
-        return (
+           
+        return  message.content!=="" ? (
           <ChatMessage
             key={index}
             showTimeStamp={showTimeStamps}
             {...message}
             {...additionalOptions}
           />
-        )
+        ) : null
       })}
       {isTyping && <TypingIndicator />}
     </div>

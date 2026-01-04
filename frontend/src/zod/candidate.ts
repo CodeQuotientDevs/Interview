@@ -61,7 +61,7 @@ export const messageSchema = Zod.object({
         return args;
     }, Zod.date()),
     role: Zod.string(),
-    rowText: Zod.string(),
+    rowText: Zod.string().default(""),
     parsedResponse: Zod.object({
         confidence: Zod.number().min(0).max(1),
         intent: Zod.string(),

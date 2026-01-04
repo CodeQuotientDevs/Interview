@@ -143,7 +143,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     hour: "2-digit",
     minute: "2-digit",
   })
-console.log()
+
   return (
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
       {files ? (

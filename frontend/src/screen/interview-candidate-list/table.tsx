@@ -452,6 +452,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             columnFilters,
             columnVisibility,
         },
+        autoResetPageIndex: false,
     });
     return (
         <div className="w-full">
