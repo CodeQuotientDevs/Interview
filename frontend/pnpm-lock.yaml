@@ -102,8 +102,8 @@ importers:
         specifier: 1.0.0
         version: 1.0.0(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       date-fns:
-        specifier: ^4.1.0
-        version: 4.1.0
+        specifier: ^2.28.0
+        version: 2.30.0
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
@@ -133,7 +133,7 @@ importers:
         version: 18.3.1
       react-day-picker:
         specifier: 8.10.1
-        version: 8.10.1(date-fns@4.1.0)(react@18.3.1)
+        version: 8.10.1(date-fns@2.30.0)(react@18.3.1)
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
@@ -152,9 +152,15 @@ importers:
       react-router:
         specifier: ^7.2.0
         version: 7.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-speech-recognition:
+        specifier: ^4.0.1
+        version: 4.0.1(react@18.3.1)
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      regenerator-runtime:
+        specifier: ^0.14.1
+        version: 0.14.1
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -201,6 +207,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.5(@types/react@18.3.18)
+      '@types/react-speech-recognition':
+        specifier: ^3.9.6
+        version: 3.9.6
       '@vitejs/plugin-react-swc':
         specifier: ^3.5.0
         version: 3.8.0(vite@6.1.1(@types/node@22.13.5)(jiti@1.21.7)(yaml@2.7.0))
@@ -1902,6 +1911,9 @@ packages:
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
 
+  '@types/dom-speech-recognition@0.0.7':
+    resolution: {integrity: sha512-NjiUoJbBlKhyufNsMZLSp+pbPNtPAFnR738RCJvtZy/HVQ2TZjmqpMyaeOSMXgxdfZM60nt8QGbtfmQrJAH2sw==}
+
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
 
@@ -1930,6 +1942,9 @@ packages:
     resolution: {integrity: sha512-P4t6saawp+b/dFrUr2cvkVsfvPguwsxtH6dNIYRllMsefqFzkZk5UIjzyDOv5g1dXIPdG4Sp1yCR4Z6RCUsG/Q==}
     peerDependencies:
       '@types/react': ^18.0.0
+
+  '@types/react-speech-recognition@3.9.6':
+    resolution: {integrity: sha512-cdzwXIZXWyp8zfM2XI7APDW1rZf4Nz73T4SIS2y+cC7zHnZluCdumYKH6HacxgxJH+zemAq2oXbHWXcyW0eT3A==}
 
   '@types/react@18.3.18':
     resolution: {integrity: sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ==}
@@ -2260,8 +2275,9 @@ packages:
     resolution: {integrity: sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==}
     engines: {node: '>=12'}
 
-  date-fns@4.1.0:
-    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+  date-fns@2.30.0:
+    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
+    engines: {node: '>=0.11'}
 
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
@@ -2736,6 +2752,9 @@ packages:
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
+
+  lodash.debounce@4.0.8:
+    resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
@@ -3236,6 +3255,11 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  react-speech-recognition@4.0.1:
+    resolution: {integrity: sha512-0fIqzLtfY8vuYA6AmJVK7qiabZx0oFKOO+rbiBgFI3COWVGREy0A+gdU16hWXmFebeyrI8JsOLYsWk6WaHUXRw==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   react-style-singleton@2.2.3:
     resolution: {integrity: sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==}
@@ -5222,6 +5246,8 @@ snapshots:
     dependencies:
       '@types/ms': 2.1.0
 
+  '@types/dom-speech-recognition@0.0.7': {}
+
   '@types/estree-jsx@1.0.5':
     dependencies:
       '@types/estree': 1.0.6
@@ -5249,6 +5275,10 @@ snapshots:
   '@types/react-dom@18.3.5(@types/react@18.3.18)':
     dependencies:
       '@types/react': 18.3.18
+
+  '@types/react-speech-recognition@3.9.6':
+    dependencies:
+      '@types/dom-speech-recognition': 0.0.7
 
   '@types/react@18.3.18':
     dependencies:
@@ -5583,7 +5613,9 @@ snapshots:
 
   d3-timer@3.0.1: {}
 
-  date-fns@4.1.0: {}
+  date-fns@2.30.0:
+    dependencies:
+      '@babel/runtime': 7.26.9
 
   dayjs@1.11.13: {}
 
@@ -6110,6 +6142,8 @@ snapshots:
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
+
+  lodash.debounce@4.0.8: {}
 
   lodash.merge@4.6.2: {}
 
@@ -6693,9 +6727,9 @@ snapshots:
 
   quick-format-unescaped@4.0.4: {}
 
-  react-day-picker@8.10.1(date-fns@4.1.0)(react@18.3.1):
+  react-day-picker@8.10.1(date-fns@2.30.0)(react@18.3.1):
     dependencies:
-      date-fns: 4.1.0
+      date-fns: 2.30.0
       react: 18.3.1
 
   react-dom@18.3.1(react@18.3.1):
@@ -6802,6 +6836,11 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       react-transition-group: 4.4.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
+  react-speech-recognition@4.0.1(react@18.3.1):
+    dependencies:
+      lodash.debounce: 4.0.8
+      react: 18.3.1
 
   react-style-singleton@2.2.3(@types/react@18.3.18)(react@18.3.1):
     dependencies:

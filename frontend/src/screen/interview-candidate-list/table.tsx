@@ -258,28 +258,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 );
             },
         },
-        {
-            accessorKey: "inviteStatus",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Status
-                        <ArrowUpDown />
-                    </Button>
-                )
-            },
-            cell: ({ row }) => {
-                const status = row.original.inviteStatus;
-                return (
-                    <div className="px-4 py-2">
-                        <Badge variant={inviteStatusConfig[status as InviteStatus || "pending"]?.variant}>{inviteStatusConfig[status as InviteStatus || "pending"]?.label}</Badge>
-                    </div>
-                );
-            },
-        },
+
         {
             accessorKey: "email",
             header: ({ column }) => {
@@ -293,9 +272,19 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </Button>
                 )
             },
-            cell: ({ row }) => (
-                <div className="lowercase px-4 py-2">{row.getValue("email")}</div>
-            ),
+            cell: ({ row }) => {
+                const status = row.original.inviteStatus;
+                const currentStatus = inviteStatusConfig[status as InviteStatus] || inviteStatusConfig['pending'];
+
+                return (
+                    <div className="px-4 py-2 flex items-center gap-2">
+                        <div className="lowercase">{row.getValue("email")}</div>
+                        <Badge variant={currentStatus.variant} className="text-[10px] px-1.5 py-0 h-5">
+                            {currentStatus.label}
+                        </Badge>
+                    </div>
+                )
+            },
         },
         {
             accessorKey: "startTime",
@@ -363,6 +352,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 const isCompleted = row.original.completedAt !== undefined;
                 const isConcluding = row.original.isBeingConcluded === true;
                 const isConcluded = row.original.concludedAt !== undefined;
+                const isInviteSent = row.original.inviteStatus === "sent";
 
                 const canEdit = !isCompleted && !isConcluding && !isConcluded;
                 const canConclude = !isConcluded && !isConcluding;
@@ -395,7 +385,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                 >
                                     Edit
                                 </DropdownMenuItem> : null}
-                                {canEdit ? <DropdownMenuItem
+                                {canEdit && isInviteSent ? <DropdownMenuItem
                                     onClick={() => handleCopyInterview(row.original.id)}
                                 >
                                     Interview Link
@@ -417,7 +407,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                         </>
                                     )
                                 }
-                                {canConclude
+                                {canConclude && isInviteSent
                                     && (
                                         <>
                                             <DropdownMenuSeparator />

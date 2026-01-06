@@ -91,6 +91,7 @@ export const interviewContentSchema = Zod.object({
         }
         return args;
     }, Zod.date().optional()),
+    inviteStatus: Zod.enum(['pending', 'processing', 'sent', 'failed']).optional(),
     messages: messagesSchema,
     candidate: Zod.object({
         // _id: Zod.string(),
@@ -99,5 +100,11 @@ export const interviewContentSchema = Zod.object({
             name: Zod.string(),
             email: Zod.string(),
         }),
+        startTime: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date()),
     }).optional(),
 });

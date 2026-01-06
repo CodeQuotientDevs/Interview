@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import logger from '@/lib/logger';
 import { useAppStore, useMainStore } from '@/store';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { ShieldCloseIcon, Terminal } from 'lucide-react';
 import AiChat from '@/components/ai-chat/ai-chat';
 import { parseModelResponseToCompatibleForChat } from '@/lib/messageParser';
@@ -11,6 +11,7 @@ import { AlertType } from '@/constants';
 import { formatDurationDayjs } from '@/lib/utils';
 import { EmailVerificationModal } from '@/components/email-verification-modal';
 import { MessageTypeEnum } from '@/constants/message';
+import { BlockingOverlay } from '@/components/ui/blocking-overlay';
 
 interface InterviewProps {
   id: string;
@@ -250,6 +251,11 @@ export const Interview = (props: InterviewProps) => {
     );
   }
 
+  const isProcessing = interview.data?.inviteStatus && interview.data?.inviteStatus !== 'sent';
+  const isNotStarted = interview.data?.inviteStatus === 'sent' && interview.data?.candidate?.startTime && new Date(interview.data.candidate.startTime) > new Date();
+  const isCompleted = interview.data?.completedAt;
+  const isBlocked = isCompleted || (showEmailVerification && !isEmailVerified) || isProcessing || isNotStarted;
+  
   return (
     <>
       <EmailVerificationModal
@@ -261,20 +267,40 @@ export const Interview = (props: InterviewProps) => {
           setIsEmailVerified(true);
         }}
       />
-      {interview?.data?.completedAt && (
-        <Alert className="fixed top-[50%] w-[300px] left-[50%] translate-x-[-50%] translate-y-[-50%] z-10">
-          <Terminal className="h-4 w-4" />
-          <AlertTitle>Interview completed!</AlertTitle>
-          <AlertDescription>Thanks for interview with us.</AlertDescription>
-        </Alert>
+      
+      {isProcessing && (
+        <BlockingOverlay 
+            imageSrc="/interview-not-started.svg" 
+            title="Interview is being still processed" 
+        />
       )}
+      
+      {isNotStarted && (
+         <BlockingOverlay 
+            imageSrc="/interview-not-started.svg" 
+            title="Interview is not started yet, come after sometime" 
+        />
+      )}
+
+      {isCompleted && (
+         <BlockingOverlay 
+            imageSrc="/Interview-completed.png" 
+         >
+           <div className="text-center">
+             <Terminal className="h-12 w-12 mx-auto mb-4" />
+             <h2 className="text-2xl font-bold mb-2">Interview completed!</h2>
+             <p className="text-muted-foreground">Thanks for interviewing with us.</p>
+           </div>
+         </BlockingOverlay>
+      )}
+
       <div className="h-full">
         <div className="fixed top-0 left-0 w-full h-[60px] z-50">
           <Navbar startedAt={startedAt} completedAt={interview?.data?.completedAt} user={interview.data?.candidate?.user} />
         </div>
         <div className="pt-[60px] h-full">
-          <div className={`h-full bg-background text-foreground ${interview?.data?.completedAt || (showEmailVerification && !isEmailVerified) ? 'blur-md' : ''}`}>
-            <AiChat
+          <div className={`h-full bg-background text-foreground ${isBlocked ? 'blur-md pointer-events-none' : ''}`}>
+             <AiChat
               messages={messages}
               // interviewId={interviewObj.id}
               interviewEnded={isInterviewEnded}

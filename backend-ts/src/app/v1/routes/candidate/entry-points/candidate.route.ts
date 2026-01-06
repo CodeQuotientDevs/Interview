@@ -14,6 +14,7 @@ import redis from '@services/redis';
 import InterviewAiModel from '@app/v1/agents/InterviewAgentGraph';
 import { userMessage } from '@app/v1/zod/interview';
 import { MessageTypeEnum } from '@root/constants/message';
+import { InviteStatusEnum } from '@root/constants/candidate';
 import { addInviteJob } from '@services/queue';
 
 
@@ -211,13 +212,31 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!candidateObj) {
                 return res.status(404).json({ error: 'Interview attempt link not found' });
             }
-            if (candidateObj.startTime.getTime() > Date.now()) {
-                return res.status(409).json({ error: 'Interview has not started yet.' });
-            }
             const userObj = await userServices.getUserById(candidateObj.userId);
             if (!userObj) {
                 throw new Error("User not found");
             }
+
+            let idleWarningTime = process.env.IDLE_WARNING_TIME || 300;
+            let idleSubmitTime = process.env.IDLE_SUBMIT_TIME || 600;
+
+            if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
+                 return res.json({
+                    idleWarningTime,
+                    idleSubmitTime,
+                    inviteStatus: candidateObj.inviteStatus,
+                    completedAt: candidateObj.completedAt, messages: [], candidate: { user: userObj, startTime: candidateObj.startTime }
+                });
+            }
+            if (candidateObj.startTime.getTime() > Date.now()) {
+                 return res.json({
+                    idleWarningTime,
+                    idleSubmitTime,
+                    inviteStatus: candidateObj.inviteStatus,
+                    completedAt: candidateObj.completedAt, messages: [], candidate: { user: userObj, startTime: candidateObj.startTime }
+                });
+            }
+            
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
             const agent = await InterviewAiModel.create({
                 interview: interviewObj,
@@ -247,12 +266,11 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
                 await agent.recreateLastMessage();
             }
-            let idleWarningTime = process.env.IDLE_WARNING_TIME || 300;
-            let idleSubmitTime = process.env.IDLE_SUBMIT_TIME || 600;
             return res.json({
                 idleWarningTime,
                 idleSubmitTime,
-                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj }
+                inviteStatus: candidateObj.inviteStatus,
+                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj, startTime: candidateObj.startTime }
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });

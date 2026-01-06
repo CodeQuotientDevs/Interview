@@ -52,6 +52,7 @@ export function DateTimePicker(props: DateTimeProps) {
             setDate(newDate);
         }
     };
+    const scrollRef = React.useRef<HTMLDivElement>(null);
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -67,11 +68,11 @@ export function DateTimePicker(props: DateTimeProps) {
                     {date ? (
                         format(date, "MM/dd/yyyy hh:mm aa")
                     ) : (
-                        <span>{placeHolder?placeHolder:'MM/DD/YYYY hh:mm aa'}</span>
+                        <span>{placeHolder ? placeHolder : 'MM/DD/YYYY hh:mm aa'}</span>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent className="w-auto p-0 ">
                 <div className="sm:flex">
                     <Calendar
                         mode="single"
@@ -80,8 +81,12 @@ export function DateTimePicker(props: DateTimeProps) {
                         initialFocus
                     />
                     <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                        <ScrollArea className="w-64 sm:w-auto">
-                            <div className="flex sm:flex-col p-2">
+                        <ScrollArea className="w-64 sm:w-auto" >
+                            <div className="flex sm:flex-col p-2" ref={scrollRef}
+                                onWheel={(e) => {
+                                    e.stopPropagation()          // VERY IMPORTANT
+                                }}
+                            >
                                 {hours.reverse().map((hour) => (
                                     <Button
                                         key={hour}
@@ -101,7 +106,11 @@ export function DateTimePicker(props: DateTimeProps) {
                             <ScrollBar orientation="horizontal" className="sm:hidden" />
                         </ScrollArea>
                         <ScrollArea className="w-64 sm:w-auto">
-                            <div className="flex sm:flex-col p-2">
+                            <div className="flex sm:flex-col p-2"
+                                onWheel={(e) => {
+                                    e.stopPropagation()          // VERY IMPORTANT 
+                                }}
+                            >
                                 {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
                                     <Button
                                         key={minute}

@@ -29,19 +29,19 @@ export const languagesAllowed = [
 ];
 export const inviteStatusConfig: Record<InviteStatus, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {
   processing: {
-    label: "Processing",
-    variant: "secondary",
-  },
-  pending: {
-    label: "Pending",
+    label: "document processing",
     variant: "outline",
   },
+  pending: {
+    label: "queued",
+    variant: "secondary",
+  },
   failed: {
-    label: "Failed",
+    label: "failed",
     variant: "destructive",
   },
   sent: {
-    label: "Sent",
+    label: "Invite Sent",
     variant: "default",
   },
 }
