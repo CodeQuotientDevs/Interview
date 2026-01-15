@@ -1,12 +1,14 @@
 import * as React from "react"
 import {
   FileText,
+  KeyIcon,
   LayoutDashboardIcon,
 } from "lucide-react"
 import { CodeQuotientIcon, CodeQuotientText } from "@/components/logo"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { TokenDialog } from "@/components/token-dialog"
 import {
   Sidebar,
   SidebarContent,
@@ -52,6 +54,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <SidebarMenu className="px-2 mt-[-12px]">
+          <SidebarMenuItem>
+            <TokenDialog>
+              <SidebarMenuButton>
+                <KeyIcon />
+                <span>API Tokens</span>
+              </SidebarMenuButton>
+            </TokenDialog>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

@@ -8,7 +8,6 @@ import cookieParser from "cookie-parser"
 
 import { api } from './app'
 
-const app = express();
 
 type ServerConfig = {
     enableMetrics?: boolean,

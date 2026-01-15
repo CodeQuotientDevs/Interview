@@ -7,6 +7,7 @@ import { authMiddleware } from '@app/v1/middleware';
 import { loginGoogleSchema } from '@app/v1/zod/auth';
 import type { FilterQuery } from 'mongoose';
 import type AuthService from '../domain/auth.service';
+import type TokenService from '../domain/token.service';
 import type { AuthUser, CreateAuthUser } from '../data-access/auth.model';
 
 type SessionStore = session.Session & Partial<session.SessionData> & Record<string, any>;
@@ -24,7 +25,7 @@ async function assignSession(sessionObj: SessionStore, user: SessionUser) {
     sessionObj.orgId = user.orgId;
 }
 
-export function createAuthRouter({ authService }: { authService: AuthService }) {
+export function createAuthRouter({ authService, tokenService }: { authService: AuthService; tokenService: TokenService }) {
     const router = Router();
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
     console.log(googleClientId);
@@ -134,6 +135,74 @@ export function createAuthRouter({ authService }: { authService: AuthService }) 
                 return res.status(500).json({
                     error: 'Internal server error',
                 });
+            }
+        }
+    );
+
+    router.post(
+        '/token/generate',
+        authMiddleware.checkIfLogin,
+        async (req: Request, res: Response) => {
+            try {
+                const session = req.session as SessionStore;
+                if (!session?.userId) {
+                    return res.status(401).json({ error: 'Unauthorized' });
+                }
+                const token = await tokenService.generateToken(session.userId as string);
+                return res.json(token);
+            } catch (error) {
+                logger.error({
+                    endpoint: 'Auth POST /token/generate',
+                    error: error instanceof Error ? error.message : String(error),
+                    trace: error instanceof Error ? error.stack : undefined,
+                });
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+    );
+
+    router.get(
+        '/tokens',
+        authMiddleware.checkIfLogin,
+        async (req: Request, res: Response) => {
+            try {
+                const session = req.session as SessionStore;
+                if (!session?.userId) {
+                    return res.status(401).json({ error: 'Unauthorized' });
+                }
+                const tokens = await tokenService.getTokens(session.userId as string);
+                return res.json(tokens);
+            } catch (error) {
+                logger.error({
+                    endpoint: 'Auth GET /tokens',
+                    error: error instanceof Error ? error.message : String(error),
+                    trace: error instanceof Error ? error.stack : undefined,
+                });
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+    );
+
+    router.delete(
+        '/token/:token',
+        authMiddleware.checkIfLogin,
+        async (req: Request, res: Response) => {
+            try {
+                const { token } = req.params;
+                const session = req.session as SessionStore;
+                if (!session?.userId) {
+                     return res.status(401).json({ error: 'Unauthorized' });
+                }
+                
+                await tokenService.deleteToken(token, session.userId as string);
+                return res.json({ success: true });
+            } catch (error) {
+                logger.error({
+                    endpoint: 'Auth DELETE /token/:token',
+                    error: error instanceof Error ? error.message : String(error),
+                    trace: error instanceof Error ? error.stack : undefined,
+                });
+                return res.status(500).json({ error: 'Internal server error' });
             }
         }
     );

@@ -10,3 +10,4 @@ const loginClient = new LoginClient(loginClientURL);
 
 export const useAppStore = createAppStore(loginClient);
 export const useMainStore = createMainStore(mainClient);
+export { loginClient };
