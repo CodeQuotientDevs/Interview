@@ -83,18 +83,18 @@ const InterviewState = Annotation.Root({
         reducer: (current, update) => update ?? current,
         default: () => new Date(),
     }),
-    correctionRequired: Annotation<boolean>({
-        reducer: (current, update) => update ?? current,
-        default: () => false,
-    }),
-    detectCandidateIntent: Annotation<boolean>({
-        reducer: (current, update) => update ?? current,
-        default: () => true,
-    }),
-    candidateIntent: Annotation<Intent | null>({
-        reducer: (current, update) => update ?? current,
-        default: () => null,
-    }),
+    // correctionRequired: Annotation<boolean>({
+    //     reducer: (current, update) => update ?? current,
+    //     default: () => false,
+    // }),
+    // detectCandidateIntent: Annotation<boolean>({
+    //     reducer: (current, update) => update ?? current,
+    //     default: () => true,
+    // }),
+    // candidateIntent: Annotation<Intent | null>({
+    //     reducer: (current, update) => update ?? current,
+    //     default: () => null,
+    // }),
     // CandidateBehaviorType: Annotation<CandidateBehaviorType | null>({
     //     reducer: (current, update) => update ?? current,
     //     default: () => null,
@@ -156,22 +156,22 @@ async function ensureGraphCompiled() {
             const messagesToDelete: Array<MessageType> = [];
 
             const messagesToAdd = state.messages.map(ele => ele.message);
-            if (state.correctionRequired) {
-                for (let index = messagesToAdd.length - 1; index >= 0; index--) {
-                    const message = messagesToAdd[index];
-                    if (message instanceof HumanMessage) {
-                        break;
-                    }
-                    messagesToAdd.pop();
-                    const msg = state.messages.pop();
-                    if (msg) {
-                        messagesToDelete.push({
-                            toDelete: true,
-                            ...msg,
-                        });
-                    }
-                }
-            }
+            // if (state.correctionRequired) {
+            //     for (let index = messagesToAdd.length - 1; index >= 0; index--) {
+            //         const message = messagesToAdd[index];
+            //         if (message instanceof HumanMessage) {
+            //             break;
+            //         }
+            //         messagesToAdd.pop();
+            //         const msg = state.messages.pop();
+            //         if (msg) {
+            //             messagesToDelete.push({
+            //                 toDelete: true,
+            //                 ...msg,
+            //             });
+            //         }
+            //     }
+            // }
             let updates: any = {};
 
             const isFirstMessage = messagesToAdd.length == 1;
@@ -391,7 +391,7 @@ async function ensureGraphCompiled() {
                     structuredResponse: structuredData,
                 };
                 if (structuredData.isInterviewGoingOn === false) {
-                    updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
+                    // updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
                 }
                 return {
                     messages: [updatedMessage],

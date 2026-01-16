@@ -7,10 +7,10 @@ type Content = {
 }
 
 export function checkPermissionForContentModification(content: Content , session: Session) {
-    if (session.role === parseInt(roleNumberFromString.admin)) {
+    if (parseInt(session.role) === parseInt(roleNumberFromString.admin)) {
         return true;
     }
-    if (session.role === parseInt(roleNumberFromString.subAdmin)) {
+    if (parseInt(session.role) === parseInt(roleNumberFromString.subAdmin)) {
         return content.orgId?.toString() === session.orgId;
     }
     return content.createdBy?.toString() === session.userId;

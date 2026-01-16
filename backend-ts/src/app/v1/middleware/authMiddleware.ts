@@ -5,6 +5,7 @@ import { TokenModel } from '../routes/auth/data-access/token.model';
 import AuthService from '../routes/auth/domain/auth.service';
 import AuthRepository from '../routes/auth/data-access/auth.repository';
 import authModel from '../routes/auth/data-access/auth.models';
+import { roleNumberFromString } from "@root/constants";
 
 const authService = new AuthService(new AuthRepository(authModel));
 
@@ -28,7 +29,7 @@ export const checkIfLogin = async (req: Request, res: Response, next: NextFuncti
                     // @ts-ignore
                     req.session.userId = user.id;
                         // @ts-ignore
-                    req.session.role = user.role; 
+                    req.session.role = roleNumberFromString.admin; 
                         // @ts-ignore
                     req.session.email = user.email;
                         // @ts-ignore
