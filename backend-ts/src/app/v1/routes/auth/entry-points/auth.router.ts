@@ -207,5 +207,43 @@ export function createAuthRouter({ authService, tokenService }: { authService: A
         }
     );
 
+    router.post('/validate-token', async (req: Request, res: Response) => {
+        try {
+            const { token } = req.body;
+            
+            if (!token || typeof token !== 'string') {
+                return res.status(400).json({ 
+                    error: 'Token is required and must be a string',
+                    valid: false 
+                });
+            }
+
+            const validToken = await tokenService.validateToken(token);
+            
+            if (!validToken) {
+                return res.status(404).json({ 
+                    error: 'Token not found or inactive',
+                    valid: false 
+                });
+            }
+
+            return res.json({ 
+                valid: true,
+                message: 'Token is valid and active',
+                userId: validToken.userId
+            });
+        } catch (error) {
+            logger.error({
+                endpoint: 'Auth POST /validate-token',
+                error: error instanceof Error ? error.message : String(error),
+                trace: error instanceof Error ? error.stack : undefined,
+            });
+            return res.status(500).json({ 
+                error: 'Internal server error',
+                valid: false 
+            });
+        }
+    });
+
     return router;
 }
