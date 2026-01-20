@@ -371,7 +371,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         }
     });
 
-    router.patch('/conclude-interviews/:interviewId', async (req: Request, res: Response) => {
+    router.patch('/conclude-interviews/:interviewId', middleware.authMiddleware.checkIfLogin, async (req: Request, res: Response) => {
         try {
             const attemptIds = (req.body as any).attemptIds;
             const findObj: any = {
@@ -388,7 +388,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
-    router.patch('/conclude-interview/:attemptId', async (req: Request, res: Response) => {
+    router.patch('/conclude-interview/:attemptId', middleware.authMiddleware.checkIfLogin, async (req: Request, res: Response) => {
         try {
             const attemptId = req.params.attemptId
             await candidateServices.concludeCandidateInterview([attemptId]);
@@ -398,7 +398,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
-    router.patch('/conclude-interviews/:interviewId', async (req: Request, res: Response) => {
+    router.patch('/conclude-interviews/:interviewId', middleware.authMiddleware.checkIfLogin, async (req: Request, res: Response) => {
         try {
             const attemptIds = (req.body as any).attemptIds;
             const findObj: any = {
@@ -416,13 +416,12 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         }
     });
 
-    router.get('/:interviewId/:id', async (req: Request & { session?: Session }, res: Response) => {
+    router.get('/:interviewId/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
         const { interviewId, id } = req.params;
         try {
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
             if (!checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
-
             const attempt = await candidateServices.findById(id);
             if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
 
@@ -439,6 +438,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
 
             return res.json(attempt);
         } catch (error: any) {
+            console.log(error);
             logger.error({ endpoint: `/interviewAttempt interviewId: ${interviewId} id: ${id}`, trace: error?.stack, error: error?.message });
             return res.status(500).json({ error: 'Internal server error' });
         }
