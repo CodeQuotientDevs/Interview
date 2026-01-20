@@ -17,6 +17,6 @@ export const interviewCreationSchema = Zod.object({
 		difficulty: Zod.number().min(1).max(3),
 		weight: Zod.number().min(1).default(1),
 		duration: Zod.number().min(1),
-		questionList: Zod.string()
+		questionList: Zod.string().default(""),
 	})).optional(),
 });
