@@ -35,3 +35,8 @@ export const listener = server.listen(port, (err) => {
 process.on('SIGTERM', () => {
 	listener.close();
 });
+
+
+import { startInviteWorker } from "./workers/invite.worker";
+
+startInviteWorker();

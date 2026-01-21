@@ -6,8 +6,4 @@ config(envFilePath);
 
 const bootstrapModule = await import("./bootstrap");
 
-import { startInviteWorker } from "./workers/invite.worker";
-
 export const listener = bootstrapModule.listener;
-
-startInviteWorker();
