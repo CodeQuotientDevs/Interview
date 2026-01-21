@@ -24,7 +24,6 @@ export function RecordingPreview({
   onActivity,
   formatTime,
   spikeCountRef,
-  isRecording
 }: RecordingPreviewProps) {
   const [isPlayingPreview, setIsPlayingPreview] = useState(false)
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null)

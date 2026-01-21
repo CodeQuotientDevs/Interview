@@ -27,7 +27,7 @@ interface QuestionListEditorProps {
 
 const DELIMITER = "\n[---]\n";
 
-export function QuestionListEditor({ value, onChange, topicTitle }: QuestionListEditorProps) {
+export function QuestionListEditor({ value, onChange }: QuestionListEditorProps) {
   // Use a stable ID for each question to help dnd-kit
   // We'll store questions with their IDs locally to avoid regenerating IDs on every change
   const [localQuestions, setLocalQuestions] = useState<{ id: string; content: string }[]>([]);
@@ -123,7 +123,7 @@ export function QuestionListEditor({ value, onChange, topicTitle }: QuestionList
     }
   };
 
-  const totalLines = localQuestions.reduce((acc, q) => acc + q.content.split('\n').filter(l => l.trim()).length, 0);
+  // const totalLines = localQuestions.reduce((acc, q) => acc + q.content.split('\n').filter(l => l.trim()).length, 0);
   const isAllExpanded = expandedIds.size === localQuestions.length && localQuestions.length > 0;
 
   return (

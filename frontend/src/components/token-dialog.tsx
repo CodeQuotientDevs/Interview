@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { loginClient, useAppStore } from "@/store"
-import { AlertType } from "@/constants"
+// import { AlertType } from "@/constants"
 import { useState } from "react"
 import { Trash2Icon, CopyIcon, KeyIcon } from "lucide-react"
 import { toast } from "sonner"
@@ -51,7 +51,6 @@ export function TokenDialog({ children }: { children: React.ReactNode }) {
             description: "Are you sure you want to delete this token? This action is not reversible.",
             okButtonTitle: "Delete",
             cancelButtonTitle: "Cancel",
-            type: AlertType.ERROR,
             onOk: async () => {
                 try {
                     await loginClient.deleteToken(token)
