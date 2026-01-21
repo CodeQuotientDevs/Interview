@@ -7,14 +7,17 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
 import logger from '@libs/logger';
 import CandidateRepository from '@app/v1/routes/candidate/data-access/candidate.models';
-
+import redis  from '@services/redis';
 const candidateRepo = new CandidateRepo(CandidateRepository);
 const candidateServices = new candidateService(candidateRepo);
 
+const redisIP = process.env.REDIS_IP;
+const redisPORT = parseInt(process.env.REDIS_PORT || '6379');
+const redisPassword = process.env.REDIS_PASSWORD;
 const connection = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined,
+    host: redisIP,
+    port: redisPORT,
+    password: redisPassword,
 };
 
 export const startInviteWorker = () => {
