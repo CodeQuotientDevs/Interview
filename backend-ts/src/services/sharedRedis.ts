@@ -6,6 +6,7 @@ const redisClient = createClient({
         host: process.env.SHARED_REDIS_IP || 'localhost',
         port: Number(process.env.SHARED_REDIS_PORT ?? '6379'),
     },
+    password: process.env.SHARED_REDIS_PASSWORD
 });
 
 redisClient.on('connect', () => {
