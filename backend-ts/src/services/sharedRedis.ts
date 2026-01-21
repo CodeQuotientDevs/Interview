@@ -8,6 +8,15 @@ const redisClient = createClient({
     },
 });
 
+redisClient.on('connect', () => {
+    redisClient.get('1').catch(() => {
+        console.log('Session Redis Not working');
+        process.exit(1);
+    }).then(() => {
+        logger.info(`Session Redis connected`);
+    });
+});
+
 redisClient.on('error', (err) => {
     logger.error({
         message: 'Redis session client error',

@@ -19,7 +19,12 @@ redis.on('error', (err) => {
 });
 
 redis.on('connect', () => {
-    logger.info(`Redis connected`);
+    redis.get('1').catch(() => {
+        console.log('Redis Not working');
+        process.exit(1);
+    }).then(() => {
+        logger.info(`Redis connected`);
+    });
 });
 
 export default redis;
