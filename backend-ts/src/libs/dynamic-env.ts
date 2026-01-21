@@ -3,6 +3,7 @@ import fs from 'fs';
 import EventEmitter from 'node:stream';
 import logger from './logger';
 
+
 class DynamicEnv extends EventEmitter {
     #updateEnv(envPath: string) {
         dotenv.config({

@@ -7,19 +7,11 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
 import logger from '@libs/logger';
 import CandidateRepository from '@app/v1/routes/candidate/data-access/candidate.models';
-import redis  from '@services/redis';
+import { config }  from '@services/redis';
 const candidateRepo = new CandidateRepo(CandidateRepository);
 const candidateServices = new candidateService(candidateRepo);
 
-const redisIP = process.env.REDIS_IP;
-const redisPORT = parseInt(process.env.REDIS_PORT || '6379');
-const redisPassword = process.env.REDIS_PASSWORD;
-const connection = {
-    host: redisIP,
-    port: redisPORT,
-    password: redisPassword,
-};
-
+const connection = config;
 export const startInviteWorker = () => {
     const worker = new Worker('invite-queue', async (job: Job) => {
         logger.info(`Processing invite job ${job.id}`);

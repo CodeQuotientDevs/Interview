@@ -23,3 +23,9 @@ redis.on('connect', () => {
 });
 
 export default redis;
+
+export const config = {
+    host: redisIP,
+    port: redisPORT,
+    password: redisPassword,
+}
