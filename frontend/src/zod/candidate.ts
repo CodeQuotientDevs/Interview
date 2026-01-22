@@ -83,8 +83,8 @@ export const messageSchema = Zod.object({
 export const messagesSchema = Zod.array(messageSchema);
 
 export const interviewContentSchema = Zod.object({
-    idleWarningTime: Zod.string(),
-    idleSubmitTime: Zod.string(),
+    idleWarningTime: Zod.coerce.string(),
+    idleSubmitTime: Zod.coerce.string(),
     completedAt: Zod.preprocess((args) => {
         if (typeof args === 'string' || args instanceof Date) {
             return new Date(args);
