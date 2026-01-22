@@ -144,6 +144,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 }
                 ele.name = userObj.name;
                 ele.email = userObj.email;
+                delete ele.detailedReport;
             });
             return res.json(list);
         } catch (error: any) {
