@@ -24,7 +24,7 @@ export const candidateCreateSchema = Zod.object({
         url: Zod.string(),
         originalName: Zod.string(),
     })).default([]),
-    userSpecificDescription: Zod.string().nonempty(),
+    userSpecificDescription: Zod.string().optional(),
 });
 
 export const candidateUpdateSchema = Zod.object({
