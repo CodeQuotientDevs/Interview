@@ -112,7 +112,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview Not Found' });
             }
-            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not Authorized' });
             }
 
@@ -166,7 +166,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 return res.status(404).json({ error: 'Interview Not Found' });
             }
 
-            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not authorized' });
             }
 
@@ -206,7 +206,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         }
     });
 
-    router.get('/interview/:id', async (req: Request, res: Response) => {
+    router.get('/interview/:id', async (req: Request & { session?: Session }, res: Response) => {
         const { id } = req.params;
         try {
             const candidateObj = await candidateServices.findById(id);
@@ -239,6 +239,11 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
             
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
+
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
+                return res.status(403).json({ error: 'Not authorized' });
+            }
+
             const agent = await InterviewAiModel.create({
                 interview: interviewObj,
                 candidate: candidateObj,
@@ -354,7 +359,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!candidateObj.completedAt) return res.status(409).json({ error: 'Interview is not completed yet.' });
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview Not Found' });
-            if (!checkPermissionForContentModification(interviewObj, req.session)) return res.status(401).json({ error: 'Not Authorized' });
+            if (checkPermissionForContentModification(interviewObj, req.session)) return res.status(401).json({ error: 'Not Authorized' });
             await candidateResponseService.populateAttemptFromDBToRedis(id);
             await candidateServices.saveToSubmissionQueue(id);
             await candidateServices.updateOne({
@@ -422,7 +427,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         try {
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
-            if (!checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
+            if (checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
             const attempt = await candidateServices.findById(id);
             if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
 
@@ -460,7 +465,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
 
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
-            if (!checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not authorized' });
+            if (checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not authorized' });
 
             const candidateObj = await candidateServices.findById(id);
             if (!candidateObj) return res.status(404).json({ error: 'Candidate attempt not found' });

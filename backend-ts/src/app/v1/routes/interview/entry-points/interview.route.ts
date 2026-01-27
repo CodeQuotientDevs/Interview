@@ -78,7 +78,7 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
                 return res.status(404).json({ error: 'Interview not found' });
             }
 
-            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not authorized' });
             }
 
@@ -106,7 +106,7 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
                 return res.status(404).json({ error: 'Interview not found' });
             }
 
-            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not authorized' });
             }
 
@@ -125,7 +125,7 @@ export function createInterviewRoutes({ interviewServices }: Services ) {
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview Not Found' });
             }
-            if (!checkPermissionForContentModification(interviewObj, req.session)) {
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not Authorized' });
             }
 
