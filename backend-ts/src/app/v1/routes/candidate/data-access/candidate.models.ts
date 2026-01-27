@@ -30,7 +30,6 @@ const schema = new Schema<Candidate>({
     },
     userSpecificDescription: {
         type: String,
-        required: true,
     },
     yearOfExperience: {
         type: Number,
