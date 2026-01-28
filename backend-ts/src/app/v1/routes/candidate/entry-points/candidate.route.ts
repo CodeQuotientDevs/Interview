@@ -240,9 +240,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
 
-            if (checkPermissionForContentModification(interviewObj, req.session)) {
-                return res.status(403).json({ error: 'Not authorized' });
-            }
+            // if (checkPermissionForContentModification(interviewObj, req.session)) {
+            //     return res.status(403).json({ error: 'Not authorized' });
+            // }
 
             const agent = await InterviewAiModel.create({
                 interview: interviewObj,
