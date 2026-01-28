@@ -250,7 +250,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
                 config: {
-                    temperature: 0.5,
+                    temperature: 0.7,
                     thinkingConfig: {
                         includeThoughts: true,
                         thinkingBudget: 2048,
@@ -312,7 +312,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 modelToUse: "gemini-2.5-flash-lite",
                 user: userObj,
                 config: {
-                    temperature: 0.5,
+                    temperature: 0.7,
                     thinkingConfig: {
                         includeThoughts: true,
                         thinkingBudget: 2048,
