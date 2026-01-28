@@ -201,22 +201,22 @@ ${att.content}
 **MANDATORY:** All interview questions and flow must be derived from or related to the content in these documents. Reference relevant sections naturally during questioning.
 ` : ''}
 
-${interview.generalDescriptionForAi ? `
-==================================================
-## ⚠️ COMPANY INSTRUCTIONS (FOLLOW AT ALL COSTS)
-==================================================
-${interview.generalDescriptionForAi}
-
-**These instructions are NON-NEGOTIABLE. Follow them strictly throughout the interview.**
-` : ''}
-
 ${candidate.userSpecificDescription ? `
 ==================================================
-## 🔹 CANDIDATE DESCRIPTION (MUST FOLLOW)
+## 🔹 CANDIDATE DESCRIPTION (FOLLOW AT ALL COSTS)
 ==================================================
 ${candidate.userSpecificDescription}
 
 **This description is CRUCIAL. Tailor your questions and evaluation based on this information.**
+` : ''}
+
+${interview.generalDescriptionForAi ? `
+==================================================
+## ⚠️ COMPANY INSTRUCTIONS (MUST FOLLOW)
+==================================================
+${interview.generalDescriptionForAi}
+
+**These instructions are NON-NEGOTIABLE. Follow them strictly throughout the interview. It can also say about the instruction related to the attachemnts , follow it**
 ` : ''}
 
 ==================================================

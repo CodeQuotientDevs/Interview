@@ -391,7 +391,7 @@ async function ensureGraphCompiled() {
                     structuredResponse: structuredData,
                 };
                 if (structuredData.isInterviewGoingOn === false) {
-                    // updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
+                    updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
                 }
                 return {
                     messages: [updatedMessage],
