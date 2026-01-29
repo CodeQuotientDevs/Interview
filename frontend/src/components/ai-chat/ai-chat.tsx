@@ -16,10 +16,11 @@ interface AiChatProp {
     setIsInterviewEnded: (data: boolean) => void;
     handleIntervieweeIdle: () => void;
     handleAudioSubmission: (audioFile: File, audioDuration: number) => Promise<void>;
+    layout?: 'editor-left' | 'editor-right';
 }
 
 export default function AiChat(props: AiChatProp) {
-    const { messages, isGenerating, isUploading, interviewEnded, handleSubmission, setIsInterviewEnded, handleIntervieweeIdle, handleAudioSubmission: propsHandleAudioSubmission } = props;
+    const { messages, isGenerating, isUploading, interviewEnded, handleSubmission, setIsInterviewEnded, handleIntervieweeIdle, handleAudioSubmission: propsHandleAudioSubmission, layout } = props;
     const [input, setInput] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>(languagesAllowed[0].value);
     const [editorValue, setEditorValue] = useState<string>('');
@@ -111,10 +112,27 @@ export default function AiChat(props: AiChatProp) {
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isResizing) return;
 
-        const deltaX = resizeRef.current.startX - e.clientX;
+        let deltaX = resizeRef.current.startX - e.clientX;
+        
+        // If layout is editor-right (flex-row), dragging right increases width (so deltaX needs sign flip logic)
+        // Wait, current logic: startX - clientX. 
+        // If dragging Left: clientX < startX -> deltaX > 0. 
+        // If Editor is on Right (flex-row): Handle is on Left. Dragging Left (increasing width) should be positive delta.
+        // Wait, if editor is on the right, the helper is on the left.
+        // Dragging LEFT (smaller clientX) increases width. deltaX = startX - clientX > 0. Correct.
+        
+        // If Editor is on Left (flex-row-reverse): Handle is on Right.
+        // Dragging RIGHT (larger clientX) increases width. 
+        // deltaX = startX - clientX. larger clientX -> negative deltaX.
+        // So we need to negate it.
+        
+        if (layout === 'editor-left' || !layout) {
+             deltaX = -deltaX;
+        }
+
         const newWidth = Math.max(400, Math.min(1200, resizeRef.current.startWidth + deltaX));
         setEditorWidth(newWidth);
-    }, [isResizing]);
+    }, [isResizing, layout]);
 
     const handleMouseUp = useCallback(() => {
         setIsResizing(false);
@@ -132,7 +150,7 @@ export default function AiChat(props: AiChatProp) {
     }, [isResizing, handleMouseMove, handleMouseUp]);
 
     return (
-        <div className="flex gap-4 p-4 h-full">
+        <div className={`flex gap-4 p-4 h-full ${layout === 'editor-right' ? 'flex-row' : 'flex-row-reverse'}`}>
             <Chat
                 className="transition-all flex-1 mt-auto"
                 showInput={!interviewEnded}
@@ -151,7 +169,7 @@ export default function AiChat(props: AiChatProp) {
                 <div className='flex flex-col h-full relative' style={{ width: `${editorWidth}px` }}>
                     {/* Resize handle */}
                     <div
-                        className="absolute left-0 top-0 bottom-0 w-3 cursor-col-resize z-10 group flex items-center justify-center bg-gray-700 hover:bg-gray-600 transition-colors"
+                        className={`absolute top-0 bottom-0 w-3 cursor-col-resize z-10 group flex items-center justify-center bg-gray-700 hover:bg-gray-600 transition-colors ${layout === 'editor-right' ? 'left-0' : 'right-0'}`}
                         onMouseDown={handleMouseDown}
                     >
                         <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors" />

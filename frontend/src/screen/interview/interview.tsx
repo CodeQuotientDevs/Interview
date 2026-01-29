@@ -29,6 +29,8 @@ export const Interview = (props: InterviewProps) => {
   const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const showAlert = useAppStore().showAlert;
 
+  const [layout, setLayout] = useState<'editor-left' | 'editor-right'>('editor-right');
+
   const setAppLoading = useAppStore().setAppLoader;
   const { sendMessageAi: postMessage, concludeCandidateInterview,getPresignedUrl,getDataForInterview } = useMainStore();
 
@@ -296,7 +298,13 @@ export const Interview = (props: InterviewProps) => {
 
       <div className="h-full">
         <div className="fixed top-0 left-0 w-full h-[60px] z-50">
-          <Navbar startedAt={startedAt} completedAt={interview?.data?.completedAt} user={interview.data?.candidate?.user} />
+          <Navbar 
+            startedAt={startedAt} 
+            completedAt={interview?.data?.completedAt} 
+            user={interview.data?.candidate?.user}
+            layout={layout}
+            setLayout={setLayout} 
+          />
         </div>
         <div className="pt-[60px] h-full">
           <div className={`h-full bg-background text-foreground ${isBlocked ? 'blur-md pointer-events-none' : ''}`}>
@@ -310,6 +318,7 @@ export const Interview = (props: InterviewProps) => {
               isUploading={isUploading}
               handleIntervieweeIdle={handleUserKeyAction}
               handleAudioSubmission={handleAudioSubmission}
+              layout={layout}
             />
           </div>
         </div>
