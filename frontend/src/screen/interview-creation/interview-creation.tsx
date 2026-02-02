@@ -219,7 +219,6 @@ export function InterviewCreation(props: CandidatePageProps) {
 					{ label: "Interviews", href: "/interview" },
 					{ label: id ? "Edit Interview" : "Create Interview" }
 				]}
-				showBack={true}
 				backTo="/interview"
 			/>
 			<div className="flex flex-1 flex-col h-full">

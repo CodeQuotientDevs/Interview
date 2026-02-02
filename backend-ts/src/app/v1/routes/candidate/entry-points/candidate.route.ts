@@ -258,8 +258,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 },
             })
             if (!candidateObj.actualStartTime) {
-                candidateObj.actualStartTime = new Date();
-                await candidateObj.save();
+                await candidateServices.updateOne({id}, { actualStartTime: new Date() });
             }
             let history = await agent.getHistory();
             if (!history.length) {
