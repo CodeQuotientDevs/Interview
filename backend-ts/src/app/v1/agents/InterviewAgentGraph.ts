@@ -239,6 +239,7 @@ async function ensureGraphCompiled() {
                 }
             }
             logger.info('Ai Response Came');
+            modelResponse.content = modelResponse.content.filter((ele: any) => ele.type == 'text');
             const newAiMessage: MessageType = {
                 id: crypto.randomUUID(),
                 message: modelResponse,
