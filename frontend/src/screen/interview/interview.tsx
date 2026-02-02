@@ -32,12 +32,19 @@ export const Interview = (props: InterviewProps) => {
   const [layout, setLayout] = useState<'editor-left' | 'editor-right'>('editor-right');
 
   const setAppLoading = useAppStore().setAppLoader;
-  const { sendMessageAi: postMessage, concludeCandidateInterview,getPresignedUrl,getDataForInterview } = useMainStore();
+  const { sendMessageAi: postMessage, concludeCandidateInterview,getPresignedUrl,getDataForInterview, getInterviewMeta } = useMainStore();
+
+  const interviewMeta = useQuery({
+    queryFn: () => getInterviewMeta(id),
+    queryKey: ['interview-meta', id],
+    retry: false,
+  });
 
   const interview = useQuery({
     queryFn: () => getDataForInterview(id),
     queryKey: ['interview-message', id],
     retry: false,
+    enabled: isEmailVerified, // <--- CRITICAL CHANGE
   });
 
   const startedAt = useMemo(() => {
@@ -197,21 +204,31 @@ export const Interview = (props: InterviewProps) => {
   );
 
   useEffect(() => {
-    setAppLoading(interview.isFetching);
-  }, [interview.isFetching, setAppLoading]);
+    // Show loading if either query is fetching
+    setAppLoading(interviewMeta.isLoading || interview.isFetching);
+  }, [interviewMeta.isLoading, interview.isFetching, setAppLoading]);
+
+  useEffect(() => { 
+    if (interviewMeta.data) {
+      const storedEmail = localStorage.getItem(`interview-verified-email-${id}`);
+      const isVerified = storedEmail === interviewMeta.data.candidate.email;
+
+      if (isVerified) {
+        setIsEmailVerified(true);
+        setShowEmailVerification(false);
+      } else {
+        setIsEmailVerified(false);
+        setShowEmailVerification(true);
+      }
+    }
+  }, [interviewMeta.data, id]);
 
   useEffect(() => {
     if (!interview.data) return;
 
-    // Check if interview is started but not completed, and show email verification
-    if (interview.data.messages && interview.data.messages.length > 0 && !interview.data.completedAt && !isEmailVerified) {
-      setShowEmailVerification(true);
-      return;
-    }
-
     // Load messages when email is verified or if no verification needed
-    if (isEmailVerified || !showEmailVerification) {
-      if (messages.length === 0) {
+    if (isEmailVerified) {
+      if (messages.length === 0 && interview.data.messages) {
         const parsedMessages = interview.data.messages.slice(1).map((ele, idx) => parseModelResponseToCompatibleForChat(ele, idx));
         setMessages(parsedMessages);
       }
@@ -227,7 +244,7 @@ export const Interview = (props: InterviewProps) => {
       clearTimeout(idleTimeoutRef.current as NodeJS.Timeout);
       clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
     };
-  }, [interview.data, isEmailVerified, showEmailVerification]);
+  }, [interview.data, isEmailVerified]);
 
   if (interview.error) {
     return (
@@ -253,18 +270,25 @@ export const Interview = (props: InterviewProps) => {
     );
   }
 
-  const isProcessing = interview.data?.inviteStatus && interview.data?.inviteStatus !== 'sent';
+  const inviteStatus = interview.data?.inviteStatus || interviewMeta.data?.inviteStatus;
+  const isProcessing = inviteStatus && inviteStatus !== 'sent';
+
+  
   const isNotStarted = interview.data?.inviteStatus === 'sent' && interview.data?.candidate?.startTime && new Date(interview.data.candidate.startTime) > new Date();
-  const isCompleted = interview.data?.completedAt;
-  const isBlocked = isCompleted || (showEmailVerification && !isEmailVerified) || isProcessing || isNotStarted;
+  const isCompleted = interview.data?.completedAt || interviewMeta.data?.completedAt;
+
+  
+  const isBlocked = !!isCompleted || (Boolean(showEmailVerification) && !isEmailVerified) || !!isProcessing || !!isNotStarted;
   
   return (
     <>
       <EmailVerificationModal
         isOpen={showEmailVerification}
-        candidateEmail={interview.data?.candidate?.user?.email || ''}
+        candidateEmail={interviewMeta.data?.candidate?.email || ''}
         onVerified={() => {
-          console.log("zolo")
+          if (interviewMeta.data?.candidate?.email) {
+            localStorage.setItem(`interview-verified-email-${id}`, interviewMeta.data.candidate.email);
+          }
           setShowEmailVerification(false);
           setIsEmailVerified(true);
         }}

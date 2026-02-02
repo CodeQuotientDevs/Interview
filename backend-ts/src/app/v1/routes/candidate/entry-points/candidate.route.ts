@@ -106,7 +106,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.get('/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
-        const { id } = req.params;
+        const id = req.params.id as string;
         try {
             const interviewObj = await interviewServices.getInterviewById(id);
             if (!interviewObj) {
@@ -154,7 +154,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.post('/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
-        const { id } = req.params;
+        const id = req.params.id as string;
         try {
             const payload = await candidateCreateSchema.safeParseAsync(req.body);
             if (!payload.success) {
@@ -206,8 +206,48 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         }
     });
 
+    router.get('/interview-meta/:id', async (req: Request, res: Response) => {
+        const id = req.params.id as string;
+        try {
+            const candidateObj = await candidateServices.findById(id);
+            if (!candidateObj) {
+                return res.status(404).json({ error: 'Interview attempt link not found' });
+            }
+            const userObj = await userServices.getUserById(candidateObj.userId);
+            if (!userObj) {
+                throw new Error("User not found");
+            }
+            
+            // Check basic constraints similar to main endpoint but don't start anything
+            if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
+                 return res.json({
+                    inviteStatus: candidateObj.inviteStatus,
+                    completedAt: candidateObj.completedAt,
+                    candidate: { email: userObj.email }
+                });
+            }
+            if (candidateObj.startTime.getTime() > Date.now()) {
+                 return res.json({
+                    inviteStatus: candidateObj.inviteStatus,
+                    completedAt: candidateObj.completedAt,
+                    candidate: { email: userObj.email }
+                });
+            }
+            
+            // Return minimal data needed for verification
+            return res.json({
+                inviteStatus: candidateObj.inviteStatus,
+                completedAt: candidateObj.completedAt,
+                candidate: { email: userObj.email }
+            });
+        } catch (error: any) {
+             logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
     router.get('/interview/:id', async (req: Request & { session?: Session }, res: Response) => {
-        const { id } = req.params;
+        const id = req.params.id as string;
         try {
             const candidateObj = await candidateServices.findById(id);
             if (!candidateObj) {
@@ -288,7 +328,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.post('/messages/:id', async (req: Request, res: Response) => {
-        const { id } = req.params;
+        const id = req.params.id as string;
         try {
         const zodResponse = userMessage.safeParse(req.body);
             if (!zodResponse.success) {
@@ -354,7 +394,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.patch('/revaluate/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { prompt } = req.body;
         try {
             const candidateObj = await candidateServices.findById(id);
@@ -384,7 +424,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         try {
             const attemptIds = (req.body as any).attemptIds;
             const findObj: any = {
-                interviewId: req.params.interviewId,
+                interviewId: req.params.interviewId as string,
                 $or: [{ completedAt: { $exists: false } }, { completedAt: null }],
             };
             if (attemptIds?.length) findObj.id = attemptIds;
@@ -399,7 +439,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
     router.patch('/conclude-interview/:attemptId', middleware.authMiddleware.checkIfLogin, async (req: Request, res: Response) => {
         try {
-            const attemptId = req.params.attemptId
+            const attemptId = req.params.attemptId as string;
             await candidateServices.concludeCandidateInterview([attemptId]);
             return res.json({ id: attemptId });
         } catch (error: any) {
@@ -411,7 +451,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         try {
             const attemptIds = (req.body as any).attemptIds;
             const findObj: any = {
-                interviewId: req.params.interviewId,
+                interviewId: req.params.interviewId as string,
                 $or: [{ completedAt: { $exists: false } }, { completedAt: null }],
             };
             if (attemptIds?.length) findObj.id = attemptIds;
@@ -426,7 +466,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.get('/:interviewId/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
-        const { interviewId, id } = req.params;
+        const interviewId = req.params.interviewId as string;
+        const id = req.params.id as string;
         try {
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
@@ -454,7 +495,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     });
 
     router.patch('/:interviewId/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
-        const { interviewId, id } = req.params;
+        const interviewId = req.params.interviewId as string;
+        const id = req.params.id as string;
         try {
             logger.info(`PATCH request body: ${JSON.stringify(req.body)}`);
             const payload = await candidateUpdateSchema.safeParseAsync(req.body);

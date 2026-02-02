@@ -247,4 +247,8 @@ export default class MainClient {
         }));
         return response.data as { uploadUrl: string; fileUrl: string; key: string };
     }
+    async getInterviewMeta(id: string) {
+        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/interview-meta/${id}`));
+        return response.data as { inviteStatus: string; completedAt?: string; candidate: { email: string } };
+    }
 }

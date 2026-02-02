@@ -43,6 +43,7 @@ interface MainStoreState {
     getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
     getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
     getPresignedUrl: (contentType: string) => Promise<{ uploadUrl: string; fileUrl: string; key: string }>;
+    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; candidate: { email: string } }>;
 }
 
 
@@ -117,6 +118,10 @@ export const createMainStore = (client: MainApi) => {
         },
         async getPresignedUrl(contentType: string) {
             const res = await client.getPresignedUrl(contentType);
+            return res;
+        },
+        async getInterviewMeta(id: string) {
+            const res = await client.getInterviewMeta(id);
             return res;
         }
     };
