@@ -132,6 +132,13 @@ export const interviewCandidateListSchema = Zod.object({
 		}
 		return arg;
 	}, Zod.date()),
+	actualStartTime: Zod.preprocess(arg => {
+		if (typeof arg === "string" || arg instanceof Date) {
+			const parsedDate = new Date(arg);
+			return isNaN(parsedDate.getTime()) ? undefined : parsedDate;
+		}
+		return arg;
+	}, Zod.date().optional()),
 	endTime: Zod.preprocess(arg => {
 		if (typeof arg === "string" || arg instanceof Date) {
 			const parsedDate = new Date(arg);

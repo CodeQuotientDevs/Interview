@@ -73,4 +73,9 @@ export default class LoginClient {
         const response = await this.requestWrapper(this._mainAPI.delete(`/token/${token}`));
         return response.data;
     }
+
+    async logout() {
+        const response = await this.requestWrapper(this._mainAPI.get('/logout'));
+        return response.data;
+    }
 }

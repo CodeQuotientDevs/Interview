@@ -45,7 +45,9 @@ export function createAuthRouter({ authService, tokenService }: { authService: A
                     resolve();
                 });
             });
-            return res.redirect('/');
+            return res.json({success:true,
+                msg:"Logout successfully"
+            })
         } catch (error) {
             logger.error({
                 endpoint: 'Auth POST /logout',

@@ -97,6 +97,7 @@ export function InterviewDataTable(props: DataTableInterface) {
     const columns: ColumnDef<typeof interviewListItemSchema._type>[] = React.useMemo(() => [
         {
             accessorKey: "title",
+            enableHiding: false,
             header: ({ column }) => {
                 return (
                     <Button

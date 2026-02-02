@@ -43,6 +43,9 @@ const schema = new Schema<Candidate>({
         type: Date,
         required: true,
     },
+    actualStartTime: {
+        type: Date,
+    },
     endTime: Date,
     score: Number,
     completedAt: Date,

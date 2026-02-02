@@ -55,6 +55,7 @@ export class Candidate {
 			concludedAt: 1,
             inviteStatus: 1,
             attachments: 1,
+			actualStartTime: 1,
         });
         return data;
     }

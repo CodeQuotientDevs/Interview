@@ -8,6 +8,7 @@ type Candidate = {
     userId: string,
     score: number,
     endTime: Date,
+    actualStartTime: Date,
     startTime: Date,
     completedAt: Date,
     concludedAt: Date,

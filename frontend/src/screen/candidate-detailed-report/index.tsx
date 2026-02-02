@@ -245,7 +245,7 @@ export function CandidateDetailedReport() {
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-orange-600">
                                                     {reportData.startTime && reportData.completedAt ? 
-                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.startTime).getTime()) / 1000)) 
+                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.actualStartTime || reportData.startTime).getTime()) / 1000)) 
                                                         : 'N/A'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Total Time Taken</div>
