@@ -16,6 +16,7 @@ interface NavbarProps {
     user?: {_id: string, name: string, email: string};
     layout?: 'editor-left' | 'editor-right';
     setLayout?: (layout: 'editor-left' | 'editor-right') => void;
+    isInterviewCompleted?: boolean;
 }
 
 const formatElapsed = (seconds: number) => {
@@ -26,7 +27,8 @@ const formatElapsed = (seconds: number) => {
     return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 }
 
-export const Navbar = ({ startedAt, user, completedAt, layout, setLayout }: NavbarProps) => {
+
+export const Navbar = ({ startedAt, user, completedAt, layout, setLayout, isInterviewCompleted }: NavbarProps) => {
     const start = useMemo(() => {
         if (!startedAt) return null;
         return typeof startedAt === 'string' ? new Date(startedAt) : startedAt;
@@ -51,8 +53,10 @@ export const Navbar = ({ startedAt, user, completedAt, layout, setLayout }: Navb
             setElapsedSeconds(0);
             return;
         }
-        if (end) {
-            const diff = (end.getTime() - start.getTime()) / 1000;
+        // If interview is completed or completedAt is set, stop the timer
+        if (isInterviewCompleted || end) {
+            const endTime = end ? end.getTime() : Date.now(); // Use current time if completedAt is not explicitly set but interview is completed
+            const diff = (endTime - start.getTime()) / 1000;
             setElapsedSeconds(Math.max(0, Math.floor(diff)));
             return;
         }
@@ -63,7 +67,7 @@ export const Navbar = ({ startedAt, user, completedAt, layout, setLayout }: Navb
         const id = setInterval(tick, 1000);
         tick();
         return () => clearInterval(id);
-    }, [start]);
+    }, [start, end, isInterviewCompleted]);
 
     return (
         <div
@@ -132,7 +136,7 @@ export const Navbar = ({ startedAt, user, completedAt, layout, setLayout }: Navb
                         <TimerIcon className="w-3 h-3"/>
                         {formatElapsed(elapsedSeconds)}
                     </Badge>
-                    <div className="text-sm font-medium">{user?.name}</div>
+                    <div className="text-sm font-medium w-full">{user?.name}</div>
                 </div>
             </div >
         </div>

@@ -303,7 +303,8 @@ export const Interview = (props: InterviewProps) => {
             completedAt={interview?.data?.completedAt} 
             user={interview.data?.candidate?.user}
             layout={layout}
-            setLayout={setLayout} 
+            setLayout={setLayout}
+            isInterviewCompleted={isInterviewEnded}
           />
         </div>
         <div className="pt-[60px] h-full">
