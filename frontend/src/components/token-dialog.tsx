@@ -12,6 +12,7 @@ import { loginClient, useAppStore } from "@/store"
 import { useState } from "react"
 import { Trash2Icon, CopyIcon, KeyIcon } from "lucide-react"
 import { toast } from "sonner"
+import { AlertType } from "@/constants"
 
 interface Token {
     token: string
@@ -22,7 +23,7 @@ interface Token {
 
 export function TokenDialog({ children }: { children: React.ReactNode }) {
     const [tokens, setTokens] = useState<Token[]>([])
-    const { useAlertModel: showAlertModel } = useAppStore()
+    const { showAlert } = useAppStore()
 
     const fetchTokens = async () => {
         try {
@@ -61,7 +62,7 @@ export function TokenDialog({ children }: { children: React.ReactNode }) {
                     toast.error("Failed to delete token")
                 }
             },
-            onCancel: async () => {},
+            onCancel: async () => { },
         })
     }
 
@@ -101,7 +102,18 @@ export function TokenDialog({ children }: { children: React.ReactNode }) {
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="ghost" size="icon" onClick={() => copyToken(token.token)}>
+                                    <Button variant="ghost" size="icon" onClick={() => {
+                                        copyToken(token.token)
+                                        showAlert(
+                                            {
+                                                time: 5,
+                                                title: 'Token Copied',
+                                                type: AlertType.success,
+                                                message: 'Token copied to clipboard'
+                                            }
+                                        )
+
+                                    }}>
                                         <CopyIcon className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" onClick={() => deleteToken(token.token)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
