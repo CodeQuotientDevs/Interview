@@ -71,11 +71,11 @@ export function InterviewCreation(props: CandidatePageProps) {
 	const [selectedTopics, setSelectedTopics] = useState<Array<string>>([]);
 	const [selectedOptions, setSelectedOptions] = useState<Array<{ label: string, value: string }>>([])
 
-	const difficultyData = watch("difficulty");
-	const totalWeightage = useMemo(() => {
-		const difficulties = Object.values(difficultyData || {});
-		return difficulties.reduce((sum: number, item: any) => sum + (Number(item?.weight) || 0), 0);
-	}, [difficultyData]);
+	// const difficultyData = watch("difficulty");
+	// const totalWeightage = useMemo(() => {
+	// 	const difficulties = Object.values(difficultyData || {});
+	// 	return difficulties.reduce((sum: number, item: any) => sum + (Number(item?.weight) || 0), 0);
+	// }, [difficultyData]);
 
 	const defaultOptions = useMemo(() => (
 		[

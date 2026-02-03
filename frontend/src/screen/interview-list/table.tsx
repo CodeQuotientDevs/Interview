@@ -8,7 +8,8 @@ import {
     getCoreRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
+import { ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
+import Arrow from "./Arrow"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -99,13 +100,18 @@ export function InterviewDataTable(props: DataTableInterface) {
             accessorKey: "title",
             enableHiding: false,
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Title
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -150,6 +156,7 @@ export function InterviewDataTable(props: DataTableInterface) {
         {
             accessorKey: "updatedAt",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <div
                         className="text-center"
@@ -159,7 +166,11 @@ export function InterviewDataTable(props: DataTableInterface) {
                             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                         >
                             Updated At
-                            <ArrowUpDown />
+                            <Arrow 
+                                fillUp={sortDirection === "asc"}
+                                fillDown={sortDirection === "desc"}
+                                className="ml-2"
+                            />
                         </Button>
                     </div>
 
