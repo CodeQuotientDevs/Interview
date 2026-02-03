@@ -134,8 +134,8 @@ export const startInviteWorker = () => {
                 }
             }
 
-            inviteData.startDate = formatDateTime(inviteData.startDate);
-            inviteData.endDate = formatDateTime(inviteData.endDate);
+            inviteData.startTime = formatDateTime(inviteData.startTime);
+            inviteData.endTime = formatDateTime(inviteData.endTime);
 
             // Send Email
             await sendInvite(inviteData);   

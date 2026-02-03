@@ -195,8 +195,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     name: userObj.name,
                     email: userObj.email,
                     duration: interviewObj.duration,
-                    startDate: formatDateTime(candidateObj.startTime),
-                    endDate: formatDateTime(candidateObj.endTime),
+                    startTime:candidateObj.startTime,
+                    endTime: candidateObj.endTime,
                 }
             });
 

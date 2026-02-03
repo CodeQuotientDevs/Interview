@@ -17,8 +17,8 @@ export interface InviteData {
     name: string;
     email: string;
     jobTitle?: string;
-    startDate: Date | string;
-    endDate?: Date | string;
+    startTime: Date | string;
+    endTime?: Date | string;
     duration: number;
     currentHost?: string;
     [key: string]: any;
@@ -33,9 +33,7 @@ const mailContents: Record<string, MailContent> = {
     interviewInvite: {
         content: fs.readFileSync(path.join(mailContentBasePath, "./invite.ejs")).toString(),
         subject: (data: InviteData, timeZone = "asia/kolkata") => {
-            return `Invitation for Interview | Starting at ${dayjs(data.startDate).tz(timeZone).format(
-                "DD/MM/YYYY HH:mm:ss"
-            )}`;
+            return `Invitation for Interview | Starting at ${data.startTime}`;
         },
     },
 };
