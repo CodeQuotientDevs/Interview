@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Target, Clock, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,12 +26,22 @@ interface TopicCardProps {
   watch: any;
 }
 
-export function TopicCard({ topic, title, register, control, errors, topicIndex, watch }: TopicCardProps) {
-  const [isExpanded, setIsExpanded] = useState(topicIndex === 0); // Expand first topic by default
+export function TopicCard({ topic, title, register, control, errors, watch }: TopicCardProps) {
+
+  const [isExpanded, setIsExpanded] = useState(true); // Expand all topics by default
 
   const weight = watch(`difficulty.${topic}.weight`);
   const duration = watch(`difficulty.${topic}.duration`);
   const difficulty = watch(`difficulty.${topic}.difficulty`);
+
+  // Auto-expand when there are validation errors
+  const hasErrors = errors && Object.keys(errors).length > 0;
+  // const isExpanded = isExpanded || hasErrors;
+  useEffect(()=>{
+    if(hasErrors){
+      setIsExpanded(true)
+    }
+  },[errors])
 
   const difficultyLabel = {
     "1": "Beginner",
@@ -106,10 +116,9 @@ export function TopicCard({ topic, title, register, control, errors, topicIndex,
                   {...register(`difficulty.${topic}.weight`, { required: true, valueAsNumber: true })} 
                   className="h-10 bg-background border-muted-foreground/20 focus-visible:ring-1 focus-visible:ring-primary/30 transition-shadow"
                 />
-                {/* <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">%</div> */}
               </div>
               {errors?.weight && (
-                <p className="text-[10px] font-bold text-destructive uppercase tracking-tight pl-1">Weight is required</p>
+                <p className="text-[10px] font-bold text-destructive uppercase tracking-tight pl-1">{errors.weight.message}</p>
               )}
             </div>
 
@@ -122,10 +131,9 @@ export function TopicCard({ topic, title, register, control, errors, topicIndex,
                   {...register(`difficulty.${topic}.duration`, { required: true, valueAsNumber: true })} 
                   className="h-10 bg-background border-muted-foreground/20 focus-visible:ring-1 focus-visible:ring-primary/30 transition-shadow"
                 />
-                {/* <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs">min</div> */}
               </div>
               {errors?.duration && (
-                <p className="text-[10px] font-bold text-destructive uppercase tracking-tight pl-1">Duration is required</p>
+                <p className="text-[10px] font-bold text-destructive uppercase tracking-tight pl-1">{errors.duration.message}</p>
               )}
             </div>
 

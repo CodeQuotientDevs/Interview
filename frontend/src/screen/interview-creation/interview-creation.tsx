@@ -71,6 +71,12 @@ export function InterviewCreation(props: CandidatePageProps) {
 	const [selectedTopics, setSelectedTopics] = useState<Array<string>>([]);
 	const [selectedOptions, setSelectedOptions] = useState<Array<{ label: string, value: string }>>([])
 
+	const difficultyData = watch("difficulty");
+	const totalWeightage = useMemo(() => {
+		const difficulties = Object.values(difficultyData || {});
+		return difficulties.reduce((sum: number, item: any) => sum + (Number(item?.weight) || 0), 0);
+	}, [difficultyData]);
+
 	const defaultOptions = useMemo(() => (
 		[
 			{ label: "JavaScript", value: "javascript" },
@@ -349,6 +355,23 @@ Example: Focus on evaluating problem-solving skills, code quality, and edge-case
 														)
 													})}
 												</div>
+
+												{/* {selectedTopics.length > 0 && (
+													<div className="flex items-center justify-between px-1 py-2 border-t border-dashed mt-2">
+														<span className="text-sm font-medium text-muted-foreground">Total Weightage</span>
+														<span className={cn(
+															"text-sm font-bold",
+															totalWeightage === 100 ? "text-green-600" : "text-destructive"
+														)}>
+															{totalWeightage}%
+														</span>
+													</div>
+												)} */}
+								{(form.formState.errors as any)?.difficulty?.message && (
+									<p className="text-sm font-medium text-destructive">
+										{(form.formState.errors as any).difficulty.message}
+									</p>
+								)}
 
 											</div>
 										</div>

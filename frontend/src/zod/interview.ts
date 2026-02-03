@@ -7,7 +7,7 @@ const types = {
 	phone: Zod.string().nonempty().optional(),
 	jobTitle: Zod.string().nonempty(),
 	description: Zod.string().nonempty().trim(),
-	duration: Zod.number().nonnegative().min(1, "Duration must be greater than or equal to 1"),
+	duration: Zod.number({ invalid_type_error: "Duration is required" }).nonnegative("Duration must not be negative").min(1, "Duration must be greater than or equal to 1"),
 	difficulty: Zod.record(Zod.string(), Zod.object({
 		difficulty: Zod.preprocess((arg) => {
 			if (typeof arg === 'string') {
@@ -15,8 +15,8 @@ const types = {
 			}
 			return arg;
 		}, Zod.number().min(1).max(3)),
-		duration: Zod.number().min(1).default(1),
-		weight: Zod.number().min(1).default(1),
+		duration: Zod.number({ invalid_type_error: "Duration is required" }).min(1).default(1),
+		weight: Zod.number({ invalid_type_error: "Weight is required" }).min(0).default(1),
 		questionList: Zod.string().optional().default(""),
 	})),
 	startTime: Zod.date(),
@@ -34,6 +34,18 @@ export const interviewCreateSchema = Zod.object({
 	keywords: types.keywords.optional().default([]),
 	difficulty: types.difficulty.optional().default({}),
 	generalDescriptionForAi: types.generalDescriptionForAi,
+}).superRefine((data, ctx) => {
+	const difficulties = Object.values(data.difficulty || {});
+	if (difficulties.length > 0) {
+		const totalWeight = difficulties.reduce((sum, item) => sum + (item.weight || 0), 0);
+		if (totalWeight !== 100) {
+			ctx.addIssue({
+				code: Zod.ZodIssueCode.custom,
+				message: `Total weightage must be 100% (Current: ${totalWeight}%)`,
+				path: ["difficulty"],
+			});
+		}
+	}
 });
 
 export const interviewUpdateSchema = Zod.object({
