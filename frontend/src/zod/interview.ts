@@ -45,6 +45,15 @@ export const interviewCreateSchema = Zod.object({
 				path: ["difficulty"],
 			});
 		}
+
+		const totalDuration = difficulties.reduce((sum, item) => sum + (item.duration || 0), 0);
+		if (totalDuration !== data.duration) {
+			ctx.addIssue({
+				code: Zod.ZodIssueCode.custom,
+				message: `Total duration of topics must be equal to the interview duration (${data.duration} mins). Current: ${totalDuration} mins`,
+				path: ["difficulty"],
+			});
+		}
 	}
 });
 

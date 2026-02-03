@@ -63,6 +63,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { inviteStatusConfig } from "@/constants/interview";
+import { Pagination } from "@/components/ui/pagination";
 
 
 interface DataTableInterface {
@@ -593,7 +594,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             <Calendar className="w-5 h-5" />
                             <div>
                                 <p className="text-xs text-gray-500">Created</p>
-                                <p className="font-medium">{new Date(interviewObj?.createdAt || "-NA-").toLocaleString()}</p>
+                                <p className="font-medium">{formatDateTime(new Date(interviewObj?.createdAt||""))}</p>
                             </div>
                         </div>
 
@@ -702,28 +703,15 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </Table>
                 </div>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4 px-4 lg:px-6">
-                <div className="flex-1 text-sm text-muted-foreground">
-                    {table.getFilteredRowModel().rows.length} row(s) total.
-                </div>
-                <div className="space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        Next
-                    </Button>
-                </div>
+            <div className="py-4 px-4 lg:px-6">
+                <Pagination
+                    currentPage={table.getState().pagination.pageIndex + 1}
+                    totalPages={table.getPageCount()}
+                    pageSize={table.getState().pagination.pageSize}
+                    onPageChange={(page) => table.setPageIndex(page - 1)}
+                    onPageSizeChange={table.setPageSize}
+                    totalCount={table.getFilteredRowModel().rows.length}
+                />
             </div>
             <AlertDialog open={!!reEvaluateId} onOpenChange={() => !isReEvaluating && setReEvaluateId(null)}>
                 <AlertDialogContent className="sm:max-w-[500px]">

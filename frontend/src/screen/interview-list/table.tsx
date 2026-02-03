@@ -35,6 +35,7 @@ import { Loader } from "@/components/ui/loader"
 import { formatDateTime } from "@/lib/utils"
 import { useAppStore } from "@/store"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Pagination } from "@/components/ui/pagination";
 
 interface DataTableInterface {
     loading: boolean,
@@ -44,6 +45,14 @@ interface DataTableInterface {
     onSearchChange: (value: string) => void
     sortState: { id: string; desc: boolean }
     onSortChange: (columnId: string, desc: boolean) => void
+
+    // Pagination props
+    currentPage?: number;
+    totalPages?: number;
+    pageSize?: number;
+    onPageChange?: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    totalCount?: number;
 }
 export function InterviewDataTable(props: DataTableInterface) {
     const alertModels = useAppStore().useAlertModel;
@@ -107,7 +116,7 @@ export function InterviewDataTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Title
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -166,7 +175,7 @@ export function InterviewDataTable(props: DataTableInterface) {
                             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                         >
                             Updated At
-                            <Arrow 
+                            <Arrow
                                 fillUp={sortDirection === "asc"}
                                 fillDown={sortDirection === "desc"}
                                 className="ml-2"
@@ -341,8 +350,8 @@ export function InterviewDataTable(props: DataTableInterface) {
                                                     <FileText className="w-8 h-8 mx-auto" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-sm font-medium">No interviews yet</p>
-                                                    <p className="text-xs text-muted-foreground">Create your first interview to get started</p>
+                                                    <p className="text-sm font-medium">{searchFilter ? `No interviews match your search criteria.` : "No interviews yet"}</p>
+                                                    <p className="text-xs text-muted-foreground">{searchFilter ? "Try adjusting your search" : "Create your first interview to get started"}</p>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -354,6 +363,19 @@ export function InterviewDataTable(props: DataTableInterface) {
                     </Table>
                 </div>
             </div>
+
+            {props.currentPage && props.totalPages && props.onPageChange && (
+                <div className="py-4 px-4 lg:px-6">
+                    <Pagination
+                        currentPage={props.currentPage}
+                        totalPages={props.totalPages}
+                        pageSize={props.pageSize || 10}
+                        onPageChange={props.onPageChange}
+                        onPageSizeChange={props.onPageSizeChange || (() => { })}
+                        totalCount={props.totalCount}
+                    />
+                </div>
+            )}
         </div>
     )
 }

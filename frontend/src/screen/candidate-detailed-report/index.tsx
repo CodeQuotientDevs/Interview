@@ -208,7 +208,7 @@ export function CandidateDetailedReport() {
                                             </CardTitle>
                                             <CardDescription>
                                                 Interview: {reportData.interview?.title || 'N/A'} •
-                                                Completed: {reportData.completedAt ? new Date(reportData.completedAt).toLocaleDateString() : 'N/A'}
+                                                Completed: {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
                                             </CardDescription>
                                         </div>
                                         <div className="text-right">
@@ -244,8 +244,8 @@ export function CandidateDetailedReport() {
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-orange-600">
-                                                    {reportData.startTime && reportData.completedAt ? 
-                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.actualStartTime || reportData.startTime).getTime()) / 1000)) 
+                                                    {reportData.actualStartTime && reportData.completedAt ? 
+                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.actualStartTime).getTime()) / 1000)) 
                                                         : 'N/A'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Total Time Taken</div>

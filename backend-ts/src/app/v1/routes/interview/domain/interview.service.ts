@@ -57,6 +57,10 @@ function getTodayRange(tz: string) {
     return { start, end };
 }
 
+function escapeRegex(text: string) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 export class InterviewService {
     private model: InterviewRepositoryInterface;
     private timezone: string;
@@ -87,7 +91,7 @@ export class InterviewService {
 
         // Apply search filter
         if (searchQuery) {
-            findObj.title = { $regex: new RegExp(searchQuery, 'i') };
+            findObj.title = { $regex: new RegExp(escapeRegex(searchQuery), 'i') };
         }
 
         // Apply sorting

@@ -23,6 +23,7 @@ import type CandidateService from "../../candidate/domain/candidate.service";
 import type UserService from "../../user/domain/user.service";
 import type CandidateResponseService from "../../candidate-responses/domain/candidate-response.service";
 import { getPresignedUploadUrl } from '@root/services/s3';
+import { formatDateTime } from '@root/libs/DateUtils';
 
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
@@ -217,10 +218,10 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!userObj) {
                 throw new Error("User not found");
             }
-            
+
             // Check basic constraints similar to main endpoint but don't start anything
             if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
-                 return res.json({
+                return res.json({
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt,
                     startTime: candidateObj.startTime,
@@ -229,7 +230,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 });
             }
             if (candidateObj.startTime.getTime() > Date.now()) {
-                 return res.json({
+                return res.json({
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt,
                     startTime: candidateObj.startTime,
@@ -237,7 +238,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     candidate: { email: userObj.email }
                 });
             }
-            
+
             // Return minimal data needed for verification
             return res.json({
                 inviteStatus: candidateObj.inviteStatus,
@@ -247,7 +248,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 candidate: { email: userObj.email }
             });
         } catch (error: any) {
-             logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });
+            logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });
             return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
@@ -268,7 +269,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             let idleSubmitTime = process.env.IDLE_SUBMIT_TIME || 600;
 
             if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
-                 return res.json({
+                return res.json({
                     idleWarningTime,
                     idleSubmitTime,
                     inviteStatus: candidateObj.inviteStatus,
@@ -276,14 +277,14 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 });
             }
             if (candidateObj.startTime.getTime() > Date.now()) {
-                 return res.json({
+                return res.json({
                     idleWarningTime,
                     idleSubmitTime,
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt, messages: [], candidate: { user: userObj, startTime: candidateObj.startTime }
                 });
             }
-            
+
             const interviewObj = await interviewServices.getInterviewById(candidateObj.interviewId, candidateObj.versionId);
 
             // if (checkPermissionForContentModification(interviewObj, req.session)) {
@@ -304,7 +305,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 },
             })
             if (!candidateObj.actualStartTime) {
-                await candidateServices.updateOne({id}, { actualStartTime: new Date() });
+                await candidateServices.updateOne({ id }, { actualStartTime: new Date() });
             }
             let history = await agent.getHistory();
             if (!history.length) {
@@ -336,7 +337,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     router.post('/messages/:id', async (req: Request, res: Response) => {
         const id = req.params.id as string;
         try {
-        const zodResponse = userMessage.safeParse(req.body);
+            const zodResponse = userMessage.safeParse(req.body);
             if (!zodResponse.success) {
                 return res.status(400).json({ message: 'Bad request', details: zodResponse.error });
             }
@@ -570,8 +571,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const userObj = await userServices.getUserById(candidateObj.userId);
+            if (!userObj) return res.status(404).json({ error: 'User not found' });
 
-            if (shouldProcessAttachments && userObj) {
+            if (shouldProcessAttachments) {
                 await addInviteJob({
                     candidateId: candidateObj.id,
                     attachments: candidateUpdateData.attachments,
@@ -584,11 +586,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                         endDate: candidateUpdateData.endTime || candidateObj.endTime,
                     }
                 });
-            }
-
-            if (userObj) {
+            } else {
                 await sendInvite({
-                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: candidateUpdateData.startTime || candidateObj.startTime, endDate: candidateUpdateData.endTime || candidateObj.endTime,
+                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime), endDate: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime),
                     jobTitle: ""
                 });
                 logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);

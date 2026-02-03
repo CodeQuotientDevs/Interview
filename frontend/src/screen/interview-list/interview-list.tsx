@@ -5,8 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertType } from '@/constants';
 import logger from '@/lib/logger';
 import { SiteHeader } from "@/components/site-header";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
 
 export const InterviewList = () => {
     const getListItems = useMainStore().interviewList;
@@ -14,7 +13,7 @@ export const InterviewList = () => {
     const cloneInterview = useMainStore().cloneInterview;
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(10); // Fixed page size for now
+    const [pageSize, setPageSize] = useState(10);
     const [searchFilter, setSearchFilter] = useState("");
     const [sortState, setSortState] = useState({ id: "updatedAt", desc: true });
 
@@ -80,39 +79,21 @@ export const InterviewList = () => {
                                 onSearchChange={handleSearchChange}
                                 sortState={sortState}
                                 onSortChange={handleSortChange}
+                                
+                                currentPage={pagination?.page || 1}
+                                totalPages={pagination?.totalPages || 1}
+                                pageSize={pageSize}
+                                onPageChange={handlePageChange}
+                                onPageSizeChange={setPageSize}
+                                totalCount={pagination?.total || 0}
                             />
 
-                            {/* Pagination Controls */}
-                            {pagination && pagination.totalPages > 1 && (
+                            {/* Pagination Controls Removed */}
+                            {/* {pagination && pagination.totalPages > 1 && (
                                 <div className="flex items-center justify-between px-4 lg:px-6 py-4">
-                                    <div className="text-sm text-muted-foreground">
-                                        Page {pagination.page} of {pagination.totalPages}
-                                        ({pagination.total} total interviews)
-                                    </div>
-
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(currentPage - 1)}
-                                            disabled={!pagination.hasPrev || interviewListFetchResult.isLoading}
-                                        >
-                                            <ChevronLeft className="h-4 w-4" />
-                                            Previous
-                                        </Button>
-
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(currentPage + 1)}
-                                            disabled={!pagination.hasNext || interviewListFetchResult.isLoading}
-                                        >
-                                            Next
-                                            <ChevronRight className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                ...
                                 </div>
-                            )}
+                            )} */}
                         </div>
                     </div>
                 </div>

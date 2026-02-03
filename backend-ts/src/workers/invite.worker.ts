@@ -8,6 +8,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import logger from '@libs/logger';
 import CandidateRepository from '@app/v1/routes/candidate/data-access/candidate.models';
 import { config }  from '@services/redis';
+import { formatDateTime } from '@root/libs/DateUtils';
 const candidateRepo = new CandidateRepo(CandidateRepository);
 const candidateServices = new candidateService(candidateRepo);
 
@@ -133,8 +134,11 @@ export const startInviteWorker = () => {
                 }
             }
 
+            inviteData.startDate = formatDateTime(inviteData.startDate);
+            inviteData.endDate = formatDateTime(inviteData.endDate);
+
             // Send Email
-            await sendInvite(inviteData);
+            await sendInvite(inviteData);   
 
             // Update Status
             await candidateServices.updateOne({ id: candidateId }, {

@@ -188,6 +188,7 @@ export const Interview = (props: InterviewProps) => {
         logger.error(error);
         setIsUploading(false);
         setIsGenerating(false); 
+        window.location.reload();
     } finally {
         setIsUploading(false);
         setIsGenerating(false);
@@ -218,6 +219,7 @@ export const Interview = (props: InterviewProps) => {
         setMessages(parsedMessages);
       } catch (error) {
         logger.error(error);
+        window.location.reload();
       } finally {
         setIsGenerating(false);
       }
@@ -354,8 +356,8 @@ export const Interview = (props: InterviewProps) => {
          >
            <div className="text-center">
              <Terminal className="h-12 w-12 mx-auto mb-4" />
-             <h2 className="text-2xl font-bold mb-2">Interview is already ended</h2>
-             <p className="text-muted-foreground">The interview time has expired.</p>
+             <h2 className="text-2xl font-bold mb-2">Interview has ended</h2>
+             <p className="text-muted-foreground">This invitation link is no longer valid.</p>
            </div>
          </BlockingOverlay>
       )}
