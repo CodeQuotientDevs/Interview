@@ -134,11 +134,11 @@ export const startInviteWorker = () => {
                 }
             }
 
-            inviteData.startTime = formatDateTime(inviteData.startTime);
-            inviteData.endTime = formatDateTime(inviteData.endTime);
+            inviteData.startTime = formatDateTime(inviteData.startTime,"asia/kolkata");
+            inviteData.endTime = formatDateTime(inviteData.endTime,"asia/kolkata");
 
             // Send Email
-            await sendInvite(inviteData);   
+            await sendInvite(inviteData); 
 
             // Update Status
             await candidateServices.updateOne({ id: candidateId }, {

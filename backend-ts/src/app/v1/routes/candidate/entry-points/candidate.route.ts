@@ -582,13 +582,13 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                         name: userObj.name,
                         email: userObj.email,
                         duration: interviewObj.duration,
-                        startDate: candidateUpdateData.startTime || candidateObj.startTime,
-                        endDate: candidateUpdateData.endTime || candidateObj.endTime,
+                        startTime: candidateUpdateData.startTime || candidateObj.startTime,
+                        endTime: candidateUpdateData.endTime || candidateObj.endTime,
                     }
                 });
             } else {
                 await sendInvite({
-                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startDate: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime), endDate: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime),
+                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startTime: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime,"asia/kolkata"), endTime: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime,"asia/kolkata"),
                     jobTitle: ""
                 });
                 logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);
