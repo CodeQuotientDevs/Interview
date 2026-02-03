@@ -103,11 +103,11 @@
                     <span class="info-label">Start Date:</span> <%= locals.startTime %>
                 </div>
                 <% } %>
-                <!-- <% if (locals.endTime) {%>
+                <% if (locals.endTime) {%>
                 <div class="info-item">
                     <span class="info-label">End Date:</span> <%= locals.endTime %>
                 </div>
-                <% } %> -->
+                <% } %>
                 <% if (locals.duration) { %>
                 <div class="info-item">
                     <span class="info-label">Duration:</span> <%= locals.duration %> minutes
@@ -117,7 +117,7 @@
             <% } %>
 
             <div class="btn-container">
-                <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" class="btn">Start Interview</a>
+                <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" class="btn" style="color: #ffffff;">Start Interview</a>
             </div>
 
             <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">

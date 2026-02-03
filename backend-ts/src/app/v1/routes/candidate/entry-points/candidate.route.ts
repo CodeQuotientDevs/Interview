@@ -588,7 +588,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 });
             } else {
                 await sendInvite({
-                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startTime: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime,"asia/kolkata"), endTime: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime,"asia/kolkata"),
+                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startTime: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime,"asia/kolkata") as string, endTime: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime,"asia/kolkata"),
                     jobTitle: ""
                 });
                 logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);
