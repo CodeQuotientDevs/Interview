@@ -40,11 +40,33 @@ export const Interview = (props: InterviewProps) => {
     retry: false,
   });
 
+
+  // Memoize interview state checks based on interviewMeta
+  const shouldBlockQuery = useMemo(() => {
+    if (!interviewMeta.data) return false; // If no metadata yet, don't block
+    
+    const startTime = interviewMeta.data.startTime;
+    const endTime = interviewMeta.data.endTime;
+    const completedAt = interviewMeta.data.completedAt;
+    
+    // Block if interview hasn't started yet
+    if (startTime && new Date(startTime) > new Date()) return true;
+    
+    // Block if interview has ended
+    if (endTime && new Date(endTime) < new Date() && !completedAt) return true;
+    
+    // Block if interview is completed
+    if (completedAt) return true;
+    
+    return false;
+  }, [interviewMeta.data]);
+
   const interview = useQuery({
     queryFn: () => getDataForInterview(id),
     queryKey: ['interview-message', id],
     retry: false,
-    enabled: isEmailVerified, // <--- CRITICAL CHANGE
+    // Only fetch full interview data if email is verified and interview is in valid state
+    enabled: isEmailVerified && !shouldBlockQuery,
   });
 
   const startedAt = useMemo(() => {
@@ -208,17 +230,29 @@ export const Interview = (props: InterviewProps) => {
     setAppLoading(interviewMeta.isLoading || interview.isFetching);
   }, [interviewMeta.isLoading, interview.isFetching, setAppLoading]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (interviewMeta.data) {
+      const candidateEmail = interviewMeta.data.candidate.email;
       const storedEmail = localStorage.getItem(`interview-verified-email-${id}`);
-      const isVerified = storedEmail === interviewMeta.data.candidate.email;
-
-      if (isVerified) {
+      
+      // Check if interview has started, ended, or is completed
+      const isNotStarted = interviewMeta.data.startTime && new Date(interviewMeta.data.startTime) > new Date();
+      const isEnded = interviewMeta.data.endTime && new Date(interviewMeta.data.endTime) < new Date() && !interviewMeta.data.completedAt;
+      const isCompleted = interviewMeta.data.completedAt;
+      
+      // Only show email verification if interview is in progress (started, not ended, and not completed)
+      if (!isNotStarted && !isEnded && !isCompleted) {
+        if (storedEmail === candidateEmail) {
+          setIsEmailVerified(true);
+          setShowEmailVerification(false);
+        } else {
+          setIsEmailVerified(false);
+          setShowEmailVerification(true);
+        }
+      } else {
+        // For not started, ended, or completed interviews, skip email verification
         setIsEmailVerified(true);
         setShowEmailVerification(false);
-      } else {
-        setIsEmailVerified(false);
-        setShowEmailVerification(true);
       }
     }
   }, [interviewMeta.data, id]);
@@ -273,12 +307,18 @@ export const Interview = (props: InterviewProps) => {
   const inviteStatus = interview.data?.inviteStatus || interviewMeta.data?.inviteStatus;
   const isProcessing = inviteStatus && inviteStatus !== 'sent';
 
+  // Use startTime from interviewMeta if available, otherwise fall back to interview.data
+  const startTime = interviewMeta.data?.startTime || interview.data?.candidate?.startTime;
+  const isNotStarted = startTime && new Date(startTime) > new Date();
   
-  const isNotStarted = interview.data?.inviteStatus === 'sent' && interview.data?.candidate?.startTime && new Date(interview.data.candidate.startTime) > new Date();
+  // Use endTime from interviewMeta if available, otherwise fall back to interview.data
+  const endTime = interviewMeta.data?.endTime || interview.data?.candidate?.endTime;
+  const isEnded = endTime && new Date(endTime) < new Date() && !interview.data?.completedAt && !interviewMeta.data?.completedAt;
+  
   const isCompleted = interview.data?.completedAt || interviewMeta.data?.completedAt;
 
   
-  const isBlocked = !!isCompleted || (Boolean(showEmailVerification) && !isEmailVerified) || !!isProcessing || !!isNotStarted;
+  const isBlocked = !!isCompleted || !!isEnded || (Boolean(showEmailVerification) && !isEmailVerified) || !!isProcessing || !!isNotStarted;
   
   return (
     <>
@@ -306,6 +346,18 @@ export const Interview = (props: InterviewProps) => {
             imageSrc="/interview-not-started.svg" 
             title="Interview is not started yet, come after sometime" 
         />
+      )}
+
+      {isEnded && (
+         <BlockingOverlay 
+            imageSrc="/Interview-completed.png" 
+         >
+           <div className="text-center">
+             <Terminal className="h-12 w-12 mx-auto mb-4" />
+             <h2 className="text-2xl font-bold mb-2">Interview is already ended</h2>
+             <p className="text-muted-foreground">The interview time has expired.</p>
+           </div>
+         </BlockingOverlay>
       )}
 
       {isCompleted && (

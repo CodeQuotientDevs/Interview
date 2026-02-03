@@ -106,5 +106,11 @@ export const interviewContentSchema = Zod.object({
             }
             return args;
         }, Zod.date()),
+        endTime: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date().optional()),
     }).optional(),
 });

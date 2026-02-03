@@ -223,6 +223,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                  return res.json({
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt,
+                    startTime: candidateObj.startTime,
+                    endTime: candidateObj.endTime,
                     candidate: { email: userObj.email }
                 });
             }
@@ -230,6 +232,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                  return res.json({
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt,
+                    startTime: candidateObj.startTime,
+                    endTime: candidateObj.endTime,
                     candidate: { email: userObj.email }
                 });
             }
@@ -238,6 +242,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.json({
                 inviteStatus: candidateObj.inviteStatus,
                 completedAt: candidateObj.completedAt,
+                startTime: candidateObj.startTime,
+                endTime: candidateObj.endTime,
                 candidate: { email: userObj.email }
             });
         } catch (error: any) {
