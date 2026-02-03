@@ -12,10 +12,11 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 import {
-    UsersIcon, ArrowUpDown, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
+    UsersIcon, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
     Download, FileText, MailPlus, MoreHorizontal, Upload, Clock,
     Calendar, AlertCircle, Loader2
 } from "lucide-react"
+import Arrow from "@/components/ui/Arrow"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -227,13 +228,18 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             accessorKey: "name",
             enableHiding: false,
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Name
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -263,13 +269,18 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         {
             accessorKey: "email",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Email
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -290,6 +301,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         {
             accessorKey: "startTime",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -297,7 +309,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Start Time
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -308,6 +324,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         {
             accessorKey: "endTime",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -315,7 +332,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         End Time
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -326,6 +347,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         {
             accessorKey: "score",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -333,7 +355,11 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Score
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },

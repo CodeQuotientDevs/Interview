@@ -9,7 +9,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 import { ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
-import Arrow from "./Arrow"
+import Arrow from "../../components/ui/Arrow"
 
 import { Button } from "@/components/ui/button"
 import {
