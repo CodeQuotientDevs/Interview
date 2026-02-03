@@ -23,7 +23,7 @@ interface Token {
 
 export function TokenDialog({ children }: { children: React.ReactNode }) {
     const [tokens, setTokens] = useState<Token[]>([])
-    const { showAlert } = useAppStore()
+    const { showAlert,useAlertModel:showAlertModel } = useAppStore()
 
     const fetchTokens = async () => {
         try {
