@@ -6,158 +6,134 @@
     <title>Interview Invitation</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
             margin: 0;
             padding: 0;
-            background-color: #f9f9f9;
+            color: #333;
         }
         .container {
             max-width: 600px;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 12px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid #eef2f7;
+            border: 1px solid #e5e7eb;
         }
         .header {
-            padding: 40px 30px 20px 30px;
+            background-color: #DE6834;
+            color: #ffffff;
+            padding: 30px;
             text-align: center;
         }
-        .header img {
-            height: 45px;
-            width: auto;
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
         }
         .content {
             padding: 40px 30px;
+            line-height: 1.6;
         }
-        .greeting {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 20px;
+        .info-box {
+            background-color: #f3f4f6;
+            border-left: 4px solid #DE6834;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
         }
-        .message {
-            font-size: 16px;
+        .info-item {
+            margin-bottom: 5px;
+        }
+        .info-label {
+            font-weight: bold;
             color: #4b5563;
-            margin-bottom: 30px;
         }
-        .details-card {
-            background-color: #fffaf0;
-            border: 1px solid #ffe8cc;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .detail-item {
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-        }
-        .detail-item:last-child {
-            margin-bottom: 0;
-        }
-        .detail-label {
-            font-weight: 600;
-            color: #1a1a1a;
-            width: 100px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .detail-value {
-            color: #4b5563;
-            font-size: 15px;
-        }
-        .cta-container {
+        .btn-container {
             text-align: center;
-            margin: 40px 0;
+            margin: 35px 0;
         }
-        .button {
-            background-color: #FF6B00;
-            color: #ffffff !important;
-            padding: 16px 32px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 16px;
+        .btn {
             display: inline-block;
-            transition: background-color 0.3s ease;
-            box-shadow: 0 4px 6px rgba(255, 107, 0, 0.2);
+            background-color: #DE6834;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #DE6834;
+        }
+        .link-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 10px;
+            word-break: break-all;
         }
         .footer {
-            padding: 30px;
-            background-color: #f8fafc;
+            background-color: #f9fafb;
+            padding: 20px;
             text-align: center;
             font-size: 14px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-        }
-        .footer p {
-            margin: 5px 0;
-        }
-        .brand {
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-        @media only screen and (max-width: 600px) {
-            .container {
-                margin: 0;
-                width: 100%;
-                border-radius: 0;
-            }
+            color: #6b7280;
+            border-top: 1px solid #DE6834;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="<%=locals.currentHost%>/logo.png" alt="CodeQuotient Logo">
+            <h2>Interview Invitation</h2>
         </div>
-        
         <div class="content">
-            <div class="greeting">Hello <%= locals.name %>,</div>
+            <p>Dear <%= locals.name %>,</p>
             
-            <div class="message">
-                We are excited to invite you to participate in an interview with CodeQuotient. This is an opportunity for you to showcase your skills and  expertise.
-            </div>
-            
-            <div class="details-card">
-                <% if (locals.startTime) { %>
-                <div class="detail-item">
-                    <span class="detail-label">Start By:</span>
-                    <span class="detail-value"><%= locals.startTime %></span>
+            <p>
+                We are pleased to invite you to participate in a coding interview with CodeQuotient. This assessment is designed to evaluate your technical skills and problem-solving abilities.
+            </p>
+
+            <% if (locals.startTime || locals.endTime) { %>
+            <div class="info-box">
+                <% if (locals.startTime) {%>
+                <div class="info-item">
+                    <span class="info-label">Start Date:</span> <%= locals.startTime %>
                 </div>
                 <% } %>
-                <% if (locals.endTime) { %>
-                <div class="detail-item">
-                    <span class="detail-label">End By:</span>
-                    <span class="detail-value"><%= locals.endDate %></span>
+                <% if (locals.endTime) {%>
+                <div class="info-item">
+                    <span class="info-label">End Date:</span> <%= locals.endTime %>
+                </div>
+                <% } %>
+                <% if (locals.duration) { %>
+                <div class="info-item">
+                    <span class="info-label">Duration:</span> <%= locals.duration %> minutes
                 </div>
                 <% } %>
             </div>
-            
-            <div class="message" style="margin-bottom: 10px;">
-                Please click the button below to access your interview dashboard and begin the assessment.
+            <% } %>
+
+            <div class="btn-container">
+                <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" class="btn" style="color: #ffffff;">Start Interview</a>
             </div>
-            
-            <div class="cta-container">
-                <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" class="button">Start Your Interview</a>
+
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 14px; color: #666; margin-bottom: 5px;">If the button above doesn't work, you can also copy and paste this link into your browser:</p>
+                <div class="link-text">
+                    <a href="<%=locals.currentHost%>/candidates/<%=locals.id%>" style="color: #2563eb;"><%=locals.currentHost%>/candidates/<%=locals.id%></a>
+                </div>
             </div>
-            
-            <div class="message" style="font-size: 14px; font-style: italic; color: #94a3b8;">
-                If you have any questions or experience technical difficulties, please reply to this email for assistance.
-            </div>
+
+            <p style="margin-top: 30px;">
+                Good luck!<br>
+                Team CodeQuotient
+            </p>
         </div>
-        
         <div class="footer">
-            <p>Best regards,</p>
-            <p class="brand">Team CodeQuotient</p>
-            <div style="margin-top: 15px; font-size: 12px; color: #94a3b8;">
-                &copy; 2026 CodeQuotient. All rights reserved.
-            </div>
+            &copy; <%= new Date().getFullYear() %> CodeQuotient. All rights reserved.
         </div>
     </div>
 </body>
