@@ -487,12 +487,13 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         data,
         columns,
         manualPagination: true,
+        manualSorting: true,
         pageCount: totalPages,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
         // getPaginationRowModel: getPaginationRowModel(), // Removed for server-side pagination
-        getSortedRowModel: getSortedRowModel(),
+        // getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         state: {

@@ -132,35 +132,6 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
 
             const result = await candidateServices.listInterviewCandidatePaginated(id, { page, limit, sortBy, sortOrder });
             const list = result.data;
-            const usersToGet: Set<string> = new Set();
-            const usersToGetFromExternalService = new Set();
-            list.forEach((ele) => {
-                if (ele.externalUser) {
-                    return usersToGetFromExternalService.add(ele.userId);
-                }
-                return usersToGet.add(ele.userId);
-            });
-            const userMap = await userServices.getUserMap(Array.from(usersToGet), { name: 1, email: 1 });
-            let userMapExternal = new Map();
-            if (usersToGetFromExternalService.size) {
-                userMapExternal = new Map();
-            }
-            list.forEach((ele) => {
-                if (ele.externalUser) {
-                    const userObj = userMapExternal.get(ele.userId.toString());
-                    ele.name = userObj.displayname;
-                    ele.email = userObj.email;
-                    ele.attachments = userObj.attachments;
-                    return;
-                }
-                const userObj = userMap.get(ele.userId.toString());
-                if (!userObj) {
-                    return;
-                }
-                ele.name = userObj.name;
-                ele.email = userObj.email;
-                delete ele.detailedReport;
-            });
             return res.json({
                 data: list,
                 pagination: result.pagination,

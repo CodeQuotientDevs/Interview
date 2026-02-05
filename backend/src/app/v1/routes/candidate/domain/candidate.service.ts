@@ -3,18 +3,18 @@ import redis from "@services/redis"
 import redisConstant from "@root/constants/redis"
 import { candidateInterviewAttemptStatus } from "@root/constants";
 import type CandidateRepository from "@root/app/v1/routes/candidate/data-access/candidate.repository"
-
+import mongoose from "mongoose";
 
 type GetMetricsOptions = {
-	startDate?: Date;
-	endDate?: Date;
+    startDate?: Date;
+    endDate?: Date;
 };
 
 type LabelFormat = "hour" | "date" | "month";
 
 type MetricRow = {
-    date: string;    
-    label: string;   
+    date: string;
+    label: string;
     scheduled: number;
     concluded: number;
 };
@@ -52,10 +52,10 @@ export class Candidate {
             completedAt: 1,
             summaryReport: 1,
             detailedReport: 1,
-			concludedAt: 1,
+            concludedAt: 1,
             inviteStatus: 1,
             attachments: 1,
-			actualStartTime: 1,
+            actualStartTime: 1,
         });
         return data;
     }
@@ -66,59 +66,72 @@ export class Candidate {
     ) {
         const { page = 1, limit = 10, sortBy, sortOrder } = paginationConfig;
         const skip = (page - 1) * limit;
+        const sortDirection = sortOrder === 'desc' ? -1 : 1;
 
-        const findObj = {
-            interviewId,
-            isActive: true,
-        };
+        const pipeline: any[] = [
+            { $match: { interviewId: new mongoose.Types.ObjectId(interviewId), isActive: true } },
+            {
+                $addFields: {
+                    userId: { $toObjectId: "$userId" }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'userId',
+                    foreignField: 'id',
+                    as: 'userData'
+                }
+            },
 
-        // Build sort options
-        let sortOption: Record<string, 1 | -1> = { createdAt: -1 }; // Default sort
-        if (sortBy) {
-            const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            sortOption = { [sortBy]: sortDirection };
-        }
+            { $unwind: { path: '$userData', preserveNullAndEmptyArrays: true } },
+            {
+                $replaceRoot: {
+                    newRoot: { $mergeObjects: ["$$ROOT", "$userData"] }
+                }
+            },
+            {
+                $project: {
+                    id: 1,
+                    interviewId: 1,
+                    startTime: 1,
+                    endTime: 1,
+                    score: 1,
+                    completedAt: 1,
+                    concludedAt: 1,
+                    inviteStatus: 1,
+                    name: 1,
+                    email: 1,
+                    phone: 1,
+                    createdAt: 1,
+                }
+            }
+        ];
 
-        const projection = {
-            id: 1,
-            interviewId: 1,
-            versionId: 1,
-            externalUser: 1,
-            userId: 1,
-            startTime: 1,
-            endTime: 1,
-            score: 1,
-            completedAt: 1,
-            summaryReport: 1,
-            concludedAt: 1,
-            inviteStatus: 1,
-            attachments: 1,
-            actualStartTime: 1,
-        };
 
-        // collation for case-insensitive sorting
-        const collation = {
-            locale: 'en',
-            strength: 2  // Case-insensitive comparison
-        };
+        let finalSortBy = sortBy || "createdAt";
+        pipeline.push({ $sort: { [finalSortBy]: sortDirection } });
 
-        const [data, total] = await Promise.all([
-            this.#model.find(findObj, projection, { skip, limit, sort: sortOption, collation }),
-            this.#model.countDocuments(findObj),
-        ]);
 
+        pipeline.push({
+            $facet: {
+                metadata: [{ $count: 'total' }],
+                data: [{ $skip: skip }, { $limit: limit }]
+            }
+        });
+
+
+        const results = await this.#model.model.aggregate(pipeline, {
+            collation: { locale: 'en', strength: 2 }
+        });
+
+        const data = results[0].data;
+        const total = results[0].metadata[0]?.total || 0;
         const totalPages = Math.ceil(total / limit);
 
         return {
             data,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages,
-                hasNext: page < totalPages,
-                hasPrev: page > 1,
-            },
+            pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
         };
     }
 
@@ -232,194 +245,194 @@ export class Candidate {
         return redisPipeline.exec();
     }
 
-		async getPendingConclusionCandidates(ids: string[]) {
-			const redisPipeline = redis.pipeline();
-			const result = await redisPipeline.zmscore(redisConstant.completedInterview, ...ids).exec();
-			return Object.fromEntries(
-				result?.map((ele, index) => [ids[index], ele[1] !== null]) || []
-			);
-		}
+    async getPendingConclusionCandidates(ids: string[]) {
+        const redisPipeline = redis.pipeline();
+        const result = await redisPipeline.zmscore(redisConstant.completedInterview, ...ids).exec();
+        return Object.fromEntries(
+            result?.map((ele, index) => [ids[index], ele[1] !== null]) || []
+        );
+    }
 
     async getMetrics(
-		options?: GetMetricsOptions,
-		interviewIds: string[] = []
-	): Promise<GetMetricsResult> {
-		const locales = "en-US";
-		const MAX_DATE_RANGE_DAYS = 400;
-		const now = new Date();
+        options?: GetMetricsOptions,
+        interviewIds: string[] = []
+    ): Promise<GetMetricsResult> {
+        const locales = "en-US";
+        const MAX_DATE_RANGE_DAYS = 400;
+        const now = new Date();
 
-		let endDate = options?.endDate || now;
-		let startDate = options?.startDate;
+        let endDate = options?.endDate || now;
+        let startDate = options?.startDate;
 
-		if (!startDate) {
-			startDate = new Date(endDate);
-			startDate.setDate(endDate.getDate() - 7);
-		}
+        if (!startDate) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 7);
+        }
 
-		if (endDate > now) endDate = now;
+        if (endDate > now) endDate = now;
 
-		if (startDate > endDate) {
-			startDate = new Date(endDate);
-			startDate.setDate(endDate.getDate() - 7);
-		}
+        if (startDate > endDate) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 7);
+        }
 
-		let diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-		let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        let diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-		if (diffDays > MAX_DATE_RANGE_DAYS) {
-			startDate = new Date(endDate);
-			startDate.setDate(endDate.getDate() - MAX_DATE_RANGE_DAYS);
-		}
+        if (diffDays > MAX_DATE_RANGE_DAYS) {
+            startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - MAX_DATE_RANGE_DAYS);
+        }
 
-		let labelFormat: LabelFormat = "date";
-		// if (diffDays <= 1) labelFormat = "hour";
-		// else if (diffDays <= 180) labelFormat = "date";
-		// else labelFormat = "month";
+        let labelFormat: LabelFormat = "date";
+        // if (diffDays <= 1) labelFormat = "hour";
+        // else if (diffDays <= 180) labelFormat = "date";
+        // else labelFormat = "month";
 
-		const baseMatch: Record<string, any> = {
-			startTime: { $gte: startDate, $lte: endDate },
-			isActive: true,
-			interviewId: { $in: interviewIds },
-		};
+        const baseMatch: Record<string, any> = {
+            startTime: { $gte: startDate, $lte: endDate },
+            isActive: true,
+            interviewId: { $in: interviewIds },
+        };
 
-		const scheduledMetrics = await this.#model.model.aggregate([
-			{ $match: baseMatch },
-			{
-				$group: {
-					_id:{
+        const scheduledMetrics = await this.#model.model.aggregate([
+            { $match: baseMatch },
+            {
+                $group: {
+                    _id: {
                         year: { $year: "$startTime" },
                         month: { $month: "$startTime" },
                         day: { $dayOfMonth: "$startTime" },
-					},
-					count: { $sum: 1 },
-				},
-			},
-		]);
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
 
-		const concludedMatch: Record<string, any> = {
-			completedAt: { $gte: startDate, $lte: endDate },
-			isActive: true,
-			interviewId: { $in: interviewIds },
-		};
+        const concludedMatch: Record<string, any> = {
+            completedAt: { $gte: startDate, $lte: endDate },
+            isActive: true,
+            interviewId: { $in: interviewIds },
+        };
 
-		const concludedMetrics = await this.#model.model.aggregate([
-			{ $match: concludedMatch },
-			{
-				$group: {
-					_id: {
+        const concludedMetrics = await this.#model.model.aggregate([
+            { $match: concludedMatch },
+            {
+                $group: {
+                    _id: {
                         year: { $year: "$completedAt" },
                         month: { $month: "$completedAt" },
                         day: { $dayOfMonth: "$completedAt" },
-					},
-					count: { $sum: 1 },
-				},
-			},
-		]);
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
 
-		interface MetricDoc {
-			_id: { year: number; month: number; day?: number; hour?: number };
-			count: number;
-		}
+        interface MetricDoc {
+            _id: { year: number; month: number; day?: number; hour?: number };
+            count: number;
+        }
 
-		const metricsMap = new Map<
-			string,
-			{ _id: MetricDoc["_id"]; scheduled: number; concluded: number }
-		>();
+        const metricsMap = new Map<
+            string,
+            { _id: MetricDoc["_id"]; scheduled: number; concluded: number }
+        >();
 
-		(scheduledMetrics as MetricDoc[]).forEach((metric) => {
-			const key = JSON.stringify(metric._id);
-			metricsMap.set(key, { _id: metric._id, scheduled: metric.count, concluded: 0 });
-		});
+        (scheduledMetrics as MetricDoc[]).forEach((metric) => {
+            const key = JSON.stringify(metric._id);
+            metricsMap.set(key, { _id: metric._id, scheduled: metric.count, concluded: 0 });
+        });
 
-		(concludedMetrics as MetricDoc[]).forEach((metric) => {
-			const key = JSON.stringify(metric._id);
-			const existing = metricsMap.get(key);
-			if (existing) existing.concluded = metric.count;
-			else
-				metricsMap.set(key, {
-					_id: metric._id,
-					scheduled: 0,
-					concluded: metric.count,
-				});
-		});
+        (concludedMetrics as MetricDoc[]).forEach((metric) => {
+            const key = JSON.stringify(metric._id);
+            const existing = metricsMap.get(key);
+            if (existing) existing.concluded = metric.count;
+            else
+                metricsMap.set(key, {
+                    _id: metric._id,
+                    scheduled: 0,
+                    concluded: metric.count,
+                });
+        });
 
-		const metrics = Array.from(metricsMap.values()).sort((a, b) => {
-			if (a._id.year !== b._id.year) return a._id.year - b._id.year;
-			if (a._id.month !== b._id.month) return a._id.month - b._id.month;
-			if (a._id.day && b._id.day && a._id.day !== b._id.day)
-				return a._id.day - b._id.day;
-			if (a._id.hour && b._id.hour && a._id.hour !== b._id.hour)
-				return a._id.hour - b._id.hour;
-			return 0;
-		});
+        const metrics = Array.from(metricsMap.values()).sort((a, b) => {
+            if (a._id.year !== b._id.year) return a._id.year - b._id.year;
+            if (a._id.month !== b._id.month) return a._id.month - b._id.month;
+            if (a._id.day && b._id.day && a._id.day !== b._id.day)
+                return a._id.day - b._id.day;
+            if (a._id.hour && b._id.hour && a._id.hour !== b._id.hour)
+                return a._id.hour - b._id.hour;
+            return 0;
+        });
 
-		const intlOptions: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+        const intlOptions: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 
-		const formattedMetrics: MetricRow[] = metrics.map((metric) => {
-			const { year, month, day, hour } = metric._id;
-			const dateObj = new Date(year, month - 1, day!)
+        const formattedMetrics: MetricRow[] = metrics.map((metric) => {
+            const { year, month, day, hour } = metric._id;
+            const dateObj = new Date(year, month - 1, day!)
 
-			return {
-				date: dateObj.toISOString(),
-				label: dateObj.toLocaleString(locales, intlOptions),
-				scheduled: metric.scheduled,
-				concluded: metric.concluded,
-			};
-		});
+            return {
+                date: dateObj.toISOString(),
+                label: dateObj.toLocaleString(locales, intlOptions),
+                scheduled: metric.scheduled,
+                concluded: metric.concluded,
+            };
+        });
 
-		return {
-			labelFormat: { locales, type: labelFormat, intlOptions },
-			metrics: formattedMetrics,
-		};
-	}
+        return {
+            labelFormat: { locales, type: labelFormat, intlOptions },
+            metrics: formattedMetrics,
+        };
+    }
 
-async getInterviewsByDate(
-	date: Date,
-	type: 'hour' | 'date' | 'month',
-	interviewIds: string[] = []
-): Promise<any[]> {
-		let startDate: Date, endDate: Date;
+    async getInterviewsByDate(
+        date: Date,
+        type: 'hour' | 'date' | 'month',
+        interviewIds: string[] = []
+    ): Promise<any[]> {
+        let startDate: Date, endDate: Date;
 
-		if (type === 'hour') {
-			startDate = new Date(date);
-			startDate.setMinutes(0, 0, 0);
-			endDate = new Date(startDate);
-			endDate.setHours(startDate.getHours() + 1);
-		} else if (type === 'date') {
-			startDate = new Date(date);
-			startDate.setHours(0, 0, 0, 0);
-			endDate = new Date(startDate);
-			endDate.setDate(startDate.getDate() + 1);
-		} else if (type === 'month') {
-			startDate = new Date(date);
-			startDate.setDate(1);
-			startDate.setHours(0, 0, 0, 0);
-			endDate = new Date(startDate);
-			endDate.setMonth(startDate.getMonth() + 1);
-		} else {
-			throw new Error('Invalid type parameter');
-		}
+        if (type === 'hour') {
+            startDate = new Date(date);
+            startDate.setMinutes(0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setHours(startDate.getHours() + 1);
+        } else if (type === 'date') {
+            startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 1);
+        } else if (type === 'month') {
+            startDate = new Date(date);
+            startDate.setDate(1);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setMonth(startDate.getMonth() + 1);
+        } else {
+            throw new Error('Invalid type parameter');
+        }
 
-		const interviews = await this.#model.model.find(
-			{
-				interviewId: { $in: interviewIds },
-				startTime: { $gte: startDate, $lt: endDate },
-				isActive: true
-			},
-			{ interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1 }
-		)
-		.populate({
-			path: 'interview',
-			select: '_id id title duration'
-		})
-		.populate({
-			path: 'user',
-			select: '_id id name email'
-		})
-		.sort({ startTime: -1 });
+        const interviews = await this.#model.model.find(
+            {
+                interviewId: { $in: interviewIds },
+                startTime: { $gte: startDate, $lt: endDate },
+                isActive: true
+            },
+            { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1 }
+        )
+            .populate({
+                path: 'interview',
+                select: '_id id title duration'
+            })
+            .populate({
+                path: 'user',
+                select: '_id id name email'
+            })
+            .sort({ startTime: -1 });
 
-		return interviews;
-	}
+        return interviews;
+    }
 
 }
 

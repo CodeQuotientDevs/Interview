@@ -22,7 +22,7 @@ const schema = new Schema<Candidate>({
         required: true,
     },
     userId: {
-        type: String,
+        type: Schema.ObjectId,
         required: true,
     },
     externalUserUniquenessKey: {

@@ -51,8 +51,8 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
             return res;
         },
         enabled: !!interviewObj.data,
-        // refetchInterval: 4000,
-        // refetchIntervalInBackground: true,
+        refetchInterval: 4000,
+        refetchIntervalInBackground: true,
     });
 
     const handlePageChange = (newPage: number) => {
