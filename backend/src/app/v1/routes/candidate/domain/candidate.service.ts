@@ -86,8 +86,10 @@ export class Candidate {
 
             { $unwind: { path: '$userData', preserveNullAndEmptyArrays: true } },
             {
-                $replaceRoot: {
-                    newRoot: { $mergeObjects: ["$$ROOT", "$userData"] }
+                $addFields: {
+                    name: "$userData.name",
+                    email: "$userData.email",
+                    phone: "$userData.phone",
                 }
             },
             {
