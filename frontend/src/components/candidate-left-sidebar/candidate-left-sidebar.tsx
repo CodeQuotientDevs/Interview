@@ -72,6 +72,15 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
         });
         return;
       }
+      if (data.name.trim() === '') {
+        showAlert({
+          time: 4,
+          title: 'Invalid Name',
+          type: AlertType.error,
+          message: 'Name should not be empty'
+        });
+        return;
+      }
       await handleSaveData(data);
     } catch (error) {
       logger.error(error);
