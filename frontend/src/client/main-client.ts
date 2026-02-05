@@ -102,9 +102,27 @@ export default class MainClient {
         return obj.data;
     }
 
-    async getCandidateInterviewList(id: string) {
-        const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/${id}`));
-        const obj = await Zod.array(interviewCandidateListSchema).safeParseAsync(response.data);
+    async getCandidateInterviewList(id: string, page?: number, limit?: number, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (sortBy) params.append('sortBy', sortBy);
+        if (sortOrder) params.append('sortOrder', sortOrder);
+
+        const queryString = params.toString();
+        const url = queryString ? `/api/v1/candidates/${id}?${queryString}` : `/api/v1/candidates/${id}`;
+        const response = await this.requestWrapper(this._mainAPI.get(url));
+        const obj = await Zod.object({
+            data: Zod.array(interviewCandidateListSchema),
+            pagination: Zod.object({
+                page: Zod.number(),
+                limit: Zod.number(),
+                total: Zod.number(),
+                totalPages: Zod.number(),
+                hasNext: Zod.boolean(),
+                hasPrev: Zod.boolean()
+            })
+        }).safeParseAsync(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }

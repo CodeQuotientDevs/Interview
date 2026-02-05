@@ -42,13 +42,18 @@ export const InterviewList = () => {
     }, []);
 
     const handleSearchChange = useCallback((value: string) => {
-        setCurrentPage(1); // Reset to first page when search changes
+        setCurrentPage(1); 
         setSearchFilter(value);
     }, []);
 
     const handleSortChange = useCallback((columnId: string, desc: boolean) => {
-        setCurrentPage(1); // Reset to first page when sort changes
+        setCurrentPage(1); 
         setSortState({ id: columnId, desc });
+    }, []);
+
+    const handlePageSizeChange = useCallback((size: number) => {
+        setPageSize(size);
+        setCurrentPage(1);
     }, []);
 
     useEffect(() => {
@@ -79,12 +84,11 @@ export const InterviewList = () => {
                                 onSearchChange={handleSearchChange}
                                 sortState={sortState}
                                 onSortChange={handleSortChange}
-                                
                                 currentPage={pagination?.page || 1}
                                 totalPages={pagination?.totalPages || 1}
                                 pageSize={pageSize}
                                 onPageChange={handlePageChange}
-                                onPageSizeChange={setPageSize}
+                                onPageSizeChange={handlePageSizeChange}
                                 totalCount={pagination?.total || 0}
                             />
 

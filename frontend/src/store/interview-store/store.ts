@@ -32,7 +32,17 @@ interface MainStoreState {
     updateInterview: (data: typeof interviewUpdateSchema._type) => Promise<string>;
     sendInterviewCandidate: (id: string, date: typeof candidateInviteSchema._type) => Promise<string>;
     updateInterviewCandidate: (interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) => Promise<string>;
-    getInterviewCandidateList: (id: string) => Promise<Array<typeof interviewCandidateListSchema._type>>;
+    getInterviewCandidateList: (id: string, page?: number, limit?: number, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
+        data: Array<typeof interviewCandidateListSchema._type>;
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    }>;
     getDataForInterview: (id: string) => Promise<typeof interviewContentSchema._type>;
     cloneInterview: (id: string) => Promise<string>
     revaluate: (id: string, prompt?: string) => Promise<string>
@@ -69,8 +79,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.sendMessage(id, message, audioUrl, type, audioDuration);
             return res;
         },
-        async getInterviewCandidateList(id) {
-            const res = await client.getCandidateInterviewList(id);
+        async getInterviewCandidateList(id, page, limit, sortBy, sortOrder) {
+            const res = await client.getCandidateInterviewList(id, page, limit, sortBy, sortOrder);
             return res;
         },
         async sendInterviewCandidate(id, data) {

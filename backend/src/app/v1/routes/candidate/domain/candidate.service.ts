@@ -60,6 +60,68 @@ export class Candidate {
         return data;
     }
 
+    async listInterviewCandidatePaginated(
+        interviewId: string,
+        paginationConfig: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' }
+    ) {
+        const { page = 1, limit = 10, sortBy, sortOrder } = paginationConfig;
+        const skip = (page - 1) * limit;
+
+        const findObj = {
+            interviewId,
+            isActive: true,
+        };
+
+        // Build sort options
+        let sortOption: Record<string, 1 | -1> = { createdAt: -1 }; // Default sort
+        if (sortBy) {
+            const sortDirection = sortOrder === 'desc' ? -1 : 1;
+            sortOption = { [sortBy]: sortDirection };
+        }
+
+        const projection = {
+            id: 1,
+            interviewId: 1,
+            versionId: 1,
+            externalUser: 1,
+            userId: 1,
+            startTime: 1,
+            endTime: 1,
+            score: 1,
+            completedAt: 1,
+            summaryReport: 1,
+            concludedAt: 1,
+            inviteStatus: 1,
+            attachments: 1,
+            actualStartTime: 1,
+        };
+
+        // collation for case-insensitive sorting
+        const collation = {
+            locale: 'en',
+            strength: 2  // Case-insensitive comparison
+        };
+
+        const [data, total] = await Promise.all([
+            this.#model.find(findObj, projection, { skip, limit, sort: sortOption, collation }),
+            this.#model.countDocuments(findObj),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1,
+            },
+        };
+    }
+
 
     async createCandidateInterview(interviewObj: { id: string, versionId: string }, data: Record<string, any>) {
         if (data.externalUser) {

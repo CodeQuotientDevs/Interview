@@ -42,4 +42,8 @@ export default class InterviewCandidate {
         (options as any).new = true;
         return this.model.findOneAndUpdate(findObj as any, objToUpdate as any, options as any).exec();
     }
+
+    async countDocuments(findObj: Record<string, any>): Promise<number> {
+        return this.model.countDocuments(findObj as any).exec();
+    }
 }

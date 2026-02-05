@@ -14,6 +14,7 @@ interface PaginationProps {
     pageSizeOptions?: number[];
     className?: string;
     totalCount?: number;
+    entriesText?: string;
 }
 
 export function Pagination({
@@ -24,7 +25,8 @@ export function Pagination({
     onPageSizeChange,
     pageSizeOptions = [10, 20, 50, 100],
     className,
-    totalCount
+    totalCount,
+    entriesText = "entries"
 }: PaginationProps) {
     const handlePageSizeChange = (value: string) => {
         onPageSizeChange(Number(value));
@@ -83,7 +85,7 @@ export function Pagination({
              <div className="flex-1 text-sm text-muted-foreground whitespace-nowrap">
                 {totalCount !== undefined ? (
                     <>
-                        Showing {Math.min((currentPage - 1) * pageSize + 1, totalCount)} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+                        Showing {Math.min((currentPage - 1) * pageSize + 1, totalCount)} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} {entriesText}
                     </>
                 ) : (
                     <>Page {currentPage} of {totalPages}</>

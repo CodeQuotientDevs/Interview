@@ -7,7 +7,6 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
@@ -77,6 +76,14 @@ interface DataTableInterface {
     openBulkUploadDrawer: (value: boolean) => void,
     revaluationFunction: (id: string, prompt?: string) => Promise<void>,
     onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
+    // Pagination props
+    currentPage?: number
+    totalPages?: number
+    pageSize?: number
+    totalCount?: number
+    onPageChange?: (page: number) => void
+    onPageSizeChange?: (size: number) => void
+    onSortChange?: (sort: { id: string, desc: boolean }) => void
 }
 
  const skillLevelNumberToString = {
@@ -93,7 +100,21 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     const showAlert = useAppStore().showAlert;
     const alertModel = useAppStore().useAlertModel;
-    const { data, loading, openCandidateDrawer, openBulkUploadDrawer, interviewName, interviewObj } = props;
+    const { 
+        data, 
+        loading, 
+        openCandidateDrawer, 
+        openBulkUploadDrawer, 
+        interviewName, 
+        interviewObj,
+        currentPage,
+        totalPages,
+        pageSize,
+        totalCount,
+        onPageChange,
+        onPageSizeChange,
+        onSortChange
+    } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -455,13 +476,22 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         },
     ], [concludeUserInterview, handleReEvaluate, interviewId, navigate, onEditCandidate])
 
+    // Sync sorting with parent
+    React.useEffect(() => {
+        if (sorting.length > 0 && onSortChange) {
+             onSortChange?.({ id: sorting[0].id, desc: sorting[0].desc })
+        }
+    }, [sorting])
+
     const table = useReactTable({
         data,
         columns,
+        manualPagination: true,
+        pageCount: totalPages,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
+        // getPaginationRowModel: getPaginationRowModel(), // Removed for server-side pagination
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
@@ -705,12 +735,13 @@ export function InterviewCandidateTable(props: DataTableInterface) {
             </div>
             <div className="py-4 px-4 lg:px-6">
                 <Pagination
-                    currentPage={table.getState().pagination.pageIndex + 1}
-                    totalPages={table.getPageCount()}
-                    pageSize={table.getState().pagination.pageSize}
-                    onPageChange={(page) => table.setPageIndex(page - 1)}
-                    onPageSizeChange={table.setPageSize}
-                    totalCount={table.getFilteredRowModel().rows.length}
+                    currentPage={currentPage || 0}
+                    totalPages={totalPages || 0}
+                    pageSize={pageSize || 10}
+                    onPageChange={(page) => onPageChange?.(page)}
+                    onPageSizeChange={(size) => onPageSizeChange?.(size)}
+                    totalCount={totalCount || 0}
+                    entriesText="candidates"
                 />
             </div>
             <AlertDialog open={!!reEvaluateId} onOpenChange={() => !isReEvaluating && setReEvaluateId(null)}>

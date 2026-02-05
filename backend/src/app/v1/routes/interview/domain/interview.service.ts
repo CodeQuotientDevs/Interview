@@ -100,12 +100,18 @@ export class InterviewService {
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
             sortOption = { [sortBy]: sortDirection };
         }
+        // collation for case-insensitive sorting
+        const collation = {
+            locale: 'en',
+            strength: 2  // Case-insensitive comparison
+        };
 
         const total = await this.model.model.countDocuments(findObj);
         const data = await this.model.find(findObj, {}, {
             skip,
             limit,
             sort: sortOption,
+            collation
         });
 
         const totalPages = Math.ceil(total / limit);

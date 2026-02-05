@@ -109,6 +109,19 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     router.get('/:id', middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
         const id = req.params.id as string;
         try {
+            // Extract pagination params from query
+            const page = parseInt((req.query as any).page) || 1;
+            const limit = parseInt((req.query as any).limit) || 10;
+            const sortBy = (req.query as any).sortBy || undefined;
+            const sortOrder = (req.query as any).sortOrder || undefined;
+
+            if (page < 1 || limit < 1 || limit > 100) {
+                return res.status(400).json({
+                    error: 'Invalid pagination parameters',
+                    details: 'Page must be >= 1, limit must be between 1 and 100',
+                });
+            }
+
             const interviewObj = await interviewServices.getInterviewById(id);
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview Not Found' });
@@ -117,7 +130,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 return res.status(403).json({ error: 'Not Authorized' });
             }
 
-            const list = await candidateServices.listInterviewCandidate(id);
+            const result = await candidateServices.listInterviewCandidatePaginated(id, { page, limit, sortBy, sortOrder });
+            const list = result.data;
             const usersToGet: Set<string> = new Set();
             const usersToGetFromExternalService = new Set();
             list.forEach((ele) => {
@@ -147,7 +161,10 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 ele.email = userObj.email;
                 delete ele.detailedReport;
             });
-            return res.json(list);
+            return res.json({
+                data: list,
+                pagination: result.pagination,
+            });
         } catch (error: any) {
             logger.error({ endpoint: `candidate GET /${id}`, error: error?.message, trace: error?.stack });
             return res.status(500).json({ error: 'Internal server error' });
