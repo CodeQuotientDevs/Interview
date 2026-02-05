@@ -242,7 +242,7 @@ export function InterviewDataTable(props: DataTableInterface) {
 
     return (
         <div className="w-full">
-            <div className="flex items-center py-4 px-4 lg:px-6 sticky top-14 z-[72] bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear ">
+            <div className="flex items-center py-4 px-4 lg:px-6 sticky top-14 z-[10] bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear ">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>

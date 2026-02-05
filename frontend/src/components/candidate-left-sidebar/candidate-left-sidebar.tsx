@@ -172,8 +172,8 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
     <Dialog open={open} onOpenChange={setOpenDrawer}>
       <DialogContent onInteractOutside={(event) => event.preventDefault()} className="max-h-[90vh] overflow-y-auto sm:max-w-[80%] sm:w-[600px] !w-[900px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Candidate' : 'Invite Candidate'}</DialogTitle>
-          <DialogDescription>{isEditing ? 'Update candidate details to create a new invitation.' : 'Enter candidate details below.'}</DialogDescription>
+          <DialogTitle>{isEditing ? 'Resend Invite' : 'Invite Candidate'}</DialogTitle>
+          <DialogDescription>{isEditing ? 'Update candidate details to resend invitation.' : 'Enter candidate details to send new invitation.'}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

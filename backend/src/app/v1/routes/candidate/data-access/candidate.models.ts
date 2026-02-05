@@ -103,6 +103,6 @@ schema.virtual('user', {
 
 schema.index({ externalUserUniquenessKey: 1 }, { background: true, sparse: true });
 schema.index({ id: 1 }, { background: true, unique: true });
-// schema.index({ userId: 1, interviewId: 1 }, { background: true, unique: true, partialFilterExpression: { externalUser: false } });
+schema.index({ userId: 1, interviewId: 1 }, { background: true, unique: true, partialFilterExpression: { externalUser: false } });
 
 export default model<Candidate>(modelString.interviewAttempt, schema);
