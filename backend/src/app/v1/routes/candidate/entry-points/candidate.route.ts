@@ -149,6 +149,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!payload.success) {
                 return res.status(400).json({ error: 'Invalid payload', details: payload.error });
             }
+            //check that this interview exists and user has access to it
 
             const interviewObj = await interviewServices.getInterviewById(id);
             if (!interviewObj) {
@@ -166,6 +167,16 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
             data.externalUser = false;
             data.userId = userObj.id;
+
+
+            //check that this user doesn't already have an active candidate interview for this interview
+            const existingCandidate = await candidateServices.getInterviewCandidate(id, userObj.id);
+
+            if (existingCandidate) {
+                return res.status(400).json({ error: 'Candidate is already invited for this Interview' });
+            }
+
+
             // Transform { url, originalName }[] to object[] for model creation
             data.attachments = data?.attachments?.map((att: { url: string, originalName: string }) => ({ url: att.url, originalName: att.originalName, content: '' }));
 
@@ -207,6 +218,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 throw new Error("User not found");
             }
 
+            const serverTime = Date.now();
+            
             // Check basic constraints similar to main endpoint but don't start anything
             if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
                 return res.json({
@@ -214,16 +227,18 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     completedAt: candidateObj.completedAt,
                     startTime: candidateObj.startTime,
                     endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email }
+                    candidate: { email: userObj.email },
+                    currentTime: serverTime
                 });
             }
-            if (candidateObj.startTime.getTime() > Date.now()) {
+            if (candidateObj.startTime.getTime() > serverTime) {
                 return res.json({
                     inviteStatus: candidateObj.inviteStatus,
                     completedAt: candidateObj.completedAt,
                     startTime: candidateObj.startTime,
                     endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email }
+                    candidate: { email: userObj.email },
+                    currentTime: serverTime
                 });
             }
 
@@ -233,7 +248,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 completedAt: candidateObj.completedAt,
                 startTime: candidateObj.startTime,
                 endTime: candidateObj.endTime,
-                candidate: { email: userObj.email }
+                candidate: { email: userObj.email },
+                currentTime: serverTime
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });

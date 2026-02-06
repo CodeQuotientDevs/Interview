@@ -267,6 +267,6 @@ export default class MainClient {
     }
     async getInterviewMeta(id: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/interview-meta/${id}`));
-        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string } };
+        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number };
     }
 }

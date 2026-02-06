@@ -53,7 +53,7 @@ interface MainStoreState {
     getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
     getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
     getPresignedUrl: (contentType: string) => Promise<{ uploadUrl: string; fileUrl: string; key: string }>;
-    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string } }>;
+    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number }>;
 }
 
 

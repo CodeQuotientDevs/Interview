@@ -35,6 +35,16 @@ export class Candidate {
         this.#model = model;
     }
 
+    async getInterviewCandidate(interviewId: string, userId: string | mongoose.Types.ObjectId) {
+        const findObj = {
+            interviewId,
+            userId,
+            isActive: true,
+        }
+        const data = await this.#model.findOne(findObj);
+        return data;
+    }
+
     async listInterviewCandidate(interviewId: string) {
         const findObj = {
             interviewId,

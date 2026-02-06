@@ -166,6 +166,18 @@ export default function CandidateSidebar(props: CandidateSidebarProps) {
         })));
       }
     }
+    else{
+      form.reset({
+        name: '',
+        email: '',
+        phone: '',
+        yearOfExperience: '' as unknown as undefined,
+        startTime: new Date(),
+        endTime: null,
+        userSpecificDescription: ''
+      });
+      setAttachments([]);
+    }
   }, [defaultValues?.email, open]);
 
   return (
