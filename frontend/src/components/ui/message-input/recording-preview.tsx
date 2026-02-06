@@ -26,8 +26,13 @@ export function RecordingPreview({
   spikeCountRef,
 }: RecordingPreviewProps) {
   const [isPlayingPreview, setIsPlayingPreview] = useState(false)
+  const [playbackDuration, setPlaybackDuration] = useState(0)
+  const [playbackWaveform, setPlaybackWaveform] = useState<{ id: string; height: number }[]>([])
+  const [isAudioReady, setIsAudioReady] = useState(false)
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
   const waveformContainerRef = useRef<HTMLDivElement>(null)
+  // const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
 
   // Calculate how many spikes can fit in the container
   useEffect(() => {
@@ -47,19 +52,61 @@ export function RecordingPreview({
     return () => observer.disconnect()
   }, [spikeCountRef])
 
+  // Handle playback duration for animation
+  useEffect(() => {
+    if (isPlayingPreview && isAudioReady && audioPlayerRef.current) {
+      const updatePlayback = () => {
+        if (audioPlayerRef.current && audioPlayerRef.current.currentTime > 0) {
+          setPlaybackDuration(audioPlayerRef.current.currentTime)
+        }
+        animationFrameRef.current = requestAnimationFrame(updatePlayback)
+      }
+      
+      animationFrameRef.current = requestAnimationFrame(updatePlayback)
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+    }
+  }, [isPlayingPreview, isAudioReady])
+
+  // Calculate waveform for playback animation
+  useEffect(() => {
+    if (isPlayingPreview && waveform.length > 0) {
+      const progress = recordingDuration > 0 ? playbackDuration / recordingDuration : 0
+      const spikesPerSecond = waveform.length / recordingDuration
+      const displaySpikes = Math.floor(progress * waveform.length)
+      
+      setPlaybackWaveform(waveform.slice(0, displaySpikes))
+    }
+  }, [isPlayingPreview, playbackDuration, waveform, recordingDuration])
+
   const togglePreview = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (audioPlayerRef.current) {
       if (isPlayingPreview) {
         audioPlayerRef.current.pause()
+        setIsPlayingPreview(false)
+        setIsAudioReady(false)
       } else {
         if (audioURL) {
           audioPlayerRef.current.src = audioURL
+          audioPlayerRef.current.currentTime = 0
+          setPlaybackDuration(0)
+          setPlaybackWaveform([])
           audioPlayerRef.current.play()
+          setIsPlayingPreview(true)
         }
       }
-      setIsPlayingPreview(!isPlayingPreview)
       onActivity?.();
     }
   }
@@ -79,20 +126,41 @@ export function RecordingPreview({
       {/* Center: Timer + Visuals */}
       <div className="flex items-center flex-1 px-4 w-full">
         <div className="text-red-500 animate-pulse font-mono text-sm whitespace-nowrap flex items-center">
-          {recordingDuration > 0 && <span>●</span>}
-          <span className="ml-1 text-foreground font-sans text-base">{formatTime(recordingDuration)}</span>
+          {isPlayingPreview ? (
+            <>
+              <span>▶</span>
+              <span className="ml-1 text-foreground font-sans text-base">{formatTime(Math.floor(playbackDuration))}</span>
+            </>
+          ) : (
+            <>
+              {recordingDuration > 0 && <span>●</span>}
+              <span className="ml-1 text-foreground font-sans text-base">{formatTime(recordingDuration)}</span>
+            </>
+          )}
         </div>
         <div 
           ref={waveformContainerRef}
           className="flex items-center justify-end flex-1 gap-[1px] overflow-hidden h-[30px] mx-4"
         >
-          {waveform.map((spike) => (
-            <div
-              key={spike.id}
-              className="bg-primary rounded-full transition-all duration-100 ease-linear w-[3px] shrink-0"
-              style={{ height: `${spike.height}%`, minHeight: '4px' }}
-            />
-          ))}
+          {isPlayingPreview ? (
+            // During playback, show animated waveform progressing left to right
+            playbackWaveform.map((spike) => (
+              <div
+                key={spike.id}
+                className="bg-primary rounded-full transition-all duration-100 ease-linear w-[3px] shrink-0"
+                style={{ height: `${spike.height}%`, minHeight: '4px' }}
+              />
+            ))
+          ) : (
+            // During recording preview, show full waveform
+            waveform.map((spike) => (
+              <div
+                key={spike.id}
+                className="bg-primary rounded-full transition-all duration-100 ease-linear w-[3px] shrink-0"
+                style={{ height: `${spike.height}%`, minHeight: '4px' }}
+              />
+            ))
+          )}
         </div>
 
         {isPaused && (
@@ -107,7 +175,18 @@ export function RecordingPreview({
               {isPlayingPreview ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
             </Button>
             <span>{isPlayingPreview ? "Stop" : "Preview"}</span>
-            <audio ref={audioPlayerRef} className="hidden" onEnded={() => setIsPlayingPreview(false)} />
+            <audio 
+              ref={audioPlayerRef} 
+              className="hidden" 
+              onPlaying={() => setIsAudioReady(true)}
+              onPause={() => setIsAudioReady(false)}
+              onEnded={() => {
+                setIsPlayingPreview(false)
+                setIsAudioReady(false)
+                setPlaybackDuration(0)
+                setPlaybackWaveform([])
+              }} 
+            />
           </div>
         )}
       </div>

@@ -69,7 +69,6 @@ export function MessageInput({
     audioURL,
     waveform,
     startRecording,
-
     pauseRecording,
     resumeRecording,
     discardRecording,
@@ -192,27 +191,6 @@ export function MessageInput({
   const onSendClick = () => {
       if (isRecording) {
         submitRecording()
-        // We need to manually trigger form submission if needed, 
-        // but submitRecording calls handleAudioSubmission which might be enough.
-        // The original code did:
-        /*
-          setTimeout(() => {
-            textAreaRef.current?.form?.requestSubmit()
-            ...
-          }, 100)
-        */
-       // Since submitRecording in the hook calls onRecordingComplete, we might want to also trigger the form submit if that was the intended behavior.
-       // However, the original code called `textAreaRef.current?.form?.requestSubmit()` inside the timeout.
-       // We can pass a callback to submitRecording or handle it in onRecordingComplete?
-       // Let's modify submitRecording in the hook to allow a callback or just standardise on rely on the prop.
-       // Actually, the original passed `handleAudioSubmission` which returns a Promise.
-       // And then called `requestSubmit`.
-       // We'll stick to the props for now.
-       // Wait, `submitRecording` in hook calls `onRecordingComplete`.
-       // We might need to also submit the form.
-       // Let's modify useAudioRecording to simpler just return the file and duration, and let the UI handle the rest? 
-       // Or we can just call requestSubmit here.
-       
        setTimeout(() => {
          textAreaRef.current?.form?.requestSubmit()
        }, 300) // Small delay to ensure state updates
@@ -251,7 +229,6 @@ export function MessageInput({
         />
       ) : (
         <TextInput
-
             placeholders={placeholders}
             placeholderInterval={placeholderInterval}
             placeholderAnimationType={placeholderAnimationType}

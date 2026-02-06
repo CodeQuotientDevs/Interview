@@ -114,18 +114,6 @@ export default function AiChat(props: AiChatProp) {
 
         let deltaX = resizeRef.current.startX - e.clientX;
         
-        // If layout is editor-right (flex-row), dragging right increases width (so deltaX needs sign flip logic)
-        // Wait, current logic: startX - clientX. 
-        // If dragging Left: clientX < startX -> deltaX > 0. 
-        // If Editor is on Right (flex-row): Handle is on Left. Dragging Left (increasing width) should be positive delta.
-        // Wait, if editor is on the right, the helper is on the left.
-        // Dragging LEFT (smaller clientX) increases width. deltaX = startX - clientX > 0. Correct.
-        
-        // If Editor is on Left (flex-row-reverse): Handle is on Right.
-        // Dragging RIGHT (larger clientX) increases width. 
-        // deltaX = startX - clientX. larger clientX -> negative deltaX.
-        // So we need to negate it.
-        
         if (layout === 'editor-left' || !layout) {
              deltaX = -deltaX;
         }
