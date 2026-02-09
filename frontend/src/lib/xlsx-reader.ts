@@ -43,7 +43,7 @@ function convertRowToObject(
 export async function readExcel<T extends Zod.ZodRawShape>(
 	file: File,
 	validator: Zod.ZodObject<T>
-): Promise<[typeof validator._type[], { error: string; index: number }[]]> {
+): Promise<[typeof validator._type[], { error: string; index: number; row: Record<string, unknown> }[]]> {
 	const reader = new FileReader();
 
 	return new Promise((resolve, reject) => {
@@ -72,7 +72,7 @@ export async function readExcel<T extends Zod.ZodRawShape>(
 
 			const headers: string[] = [];
 			const data: Zod.infer<typeof validator>[] = [];
-			const errors: { error: string; index: number }[] = [];
+			const errors: { error: string; index: number; row: Record<string, unknown> }[] = [];
 
 			for (let index = 0; index < rows.length; index++) {
 				const row = rows[index];
@@ -101,6 +101,7 @@ export async function readExcel<T extends Zod.ZodRawShape>(
 					errors.push({
 						error: result.error.toString(),
 						index: index - 1,
+						row: obj,
 					});
 				} else {
 					data.push(result.data);
