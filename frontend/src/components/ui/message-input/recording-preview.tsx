@@ -82,7 +82,7 @@ export function RecordingPreview({
   useEffect(() => {
     if (isPlayingPreview && waveform.length > 0) {
       const progress = recordingDuration > 0 ? playbackDuration / recordingDuration : 0
-      const spikesPerSecond = waveform.length / recordingDuration
+      // const spikesPerSecond = waveform.length / recordingDuration
       const displaySpikes = Math.floor(progress * waveform.length)
       
       setPlaybackWaveform(waveform.slice(0, displaySpikes))
