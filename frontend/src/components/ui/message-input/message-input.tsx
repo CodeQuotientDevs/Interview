@@ -86,6 +86,25 @@ export function MessageInput({
     }
   }, [isGenerating])
 
+  // Warn user before reloading if there's recorded audio
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (audioURL) {
+        e.preventDefault()
+        // Modern browsers require returnValue to be set
+        e.returnValue = ''
+        // Some browsers use the return value as the message
+        return 'Are you sure you want to reload? Your recorded audio will be lost.'
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [audioURL])
+
   const addFiles = (files: File[] | null) => {
     if (props.allowAttachments) {
       props.setFiles((currentFiles) => {
