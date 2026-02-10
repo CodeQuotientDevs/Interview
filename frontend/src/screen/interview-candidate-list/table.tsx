@@ -71,10 +71,10 @@ interface DataTableInterface {
     interviewId?: string
     interviewObj?: typeof interviewGetSchema._type
     concludeInterview: (attemptId?: string) => Promise<void>,
-    openCandidateDrawer: (value: boolean) => void
     openBulkUploadDrawer: (value: boolean) => void,
     revaluationFunction: (id: string, prompt?: string) => Promise<void>,
     onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
+    onAddCandidate?: () => void,
     // Pagination props
     currentPage?: number
     totalPages?: number
@@ -101,8 +101,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     const alertModel = useAppStore().useAlertModel;
     const { 
         data, 
-        loading, 
-        openCandidateDrawer, 
+        loading,  
         openBulkUploadDrawer, 
         interviewName, 
         interviewObj,
@@ -112,7 +111,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         totalCount,
         onPageChange,
         onPageSizeChange,
-        onSortChange
+        onSortChange,
+        onAddCandidate,
     } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -528,7 +528,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button onClick={() => openCandidateDrawer(true)} variant="default" className="mr-2">
+                            <Button onClick={() => onAddCandidate?.()} variant="default" className="mr-2">
                                 <MailPlus size={16} />
                             </Button>
                         </TooltipTrigger>
@@ -717,7 +717,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                                     <p className="text-xs text-muted-foreground">Start by inviting candidates to this interview</p>
                                                 </div>
                                                 <Button 
-                                                    onClick={() => openCandidateDrawer(true)} 
+                                                    onClick={()=>onAddCandidate?.()} 
                                                     size="sm"
                                                     className="rounded-md px-6"
                                                 >

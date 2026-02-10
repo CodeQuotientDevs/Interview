@@ -2,9 +2,20 @@ import { Chat } from '@/components/ui/chat';
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Editor, EditorRefType } from '@/components/editor';
 import { Button } from '@/components/ui/button';
-import { Loader2, GripVertical, Wand2 } from 'lucide-react';
+import { Loader2, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { languagesAllowed } from '@/constants/interview';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface AiChatProp {
   // interviewId: string;
@@ -195,21 +206,40 @@ export default function AiChat(props: AiChatProp) {
               </SelectContent>
             </Select>
             <div className="flex gap-2 items-center">
-              { ["typescript","javascript"].includes(selectedLanguage) && (
+              {/* { ["typescript","javascript"].includes(selectedLanguage) && (
                 <Button variant="outline" onClick={handleFormatCode} title="Format Code">
                   <Wand2 className="w-4 h-4" />
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                disabled={isGenerating}
-                onClick={() => {
-                  handleUnifiedSubmission({ skip: true });
-                }}
-              >
-                {isGenerating && <Loader2 className="animate-spin" />}
-                Skip
-              </Button>
+              )} */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating && <Loader2 className="animate-spin" />}
+                    Skip
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Skip Question</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to skip this question? You won't be able to answer it later.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        handleUnifiedSubmission({ skip: true });
+                      }}
+                    >
+                      Skip
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
           <Editor ref={editorRef} value={editorValue} language={selectedLanguage} onChange={handleEditorInputChange} />

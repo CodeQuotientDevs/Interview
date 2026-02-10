@@ -2,6 +2,17 @@
 import React, { useRef, useEffect, useState } from "react"
 import { Trash, Play, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface RecordingPreviewProps {
   isPaused: boolean
@@ -113,15 +124,35 @@ export function RecordingPreview({
 
   return (
     <div className="z-10 flex w-full grow items-center justify-between rounded-xl border border-input bg-background p-2 px-4 shadow-sm pr-24">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onDiscard}
-        className="text-muted-foreground hover:text-destructive transition-colors"
-      >
-        <Trash className="h-5 w-5" />
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <Trash className="h-5 w-5" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Recording</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the recorded audio? This action cannot be reversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDiscard}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Center: Timer + Visuals */}
       <div className="flex items-center flex-1 px-4 w-full">

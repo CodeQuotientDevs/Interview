@@ -387,7 +387,10 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                             <InterviewCandidateTable
                                 revaluationFunction={revaluationFunction}
                                 openBulkUploadDrawer={setOpenBulkUpload}
-                                openCandidateDrawer={setOpenDrawable}
+                                onAddCandidate={() => {
+                                    setEditingCandidate(null)
+                                    setOpenDrawable(true)
+                                }}
                                 data={candidateLists.data?.data || []}
                                 loading={candidateLists.isLoading}
                                 interviewName={interviewObj?.data?.title || "Interview"}
