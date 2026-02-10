@@ -227,6 +227,15 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                 type: AlertType.success,
             });
         }
+        
+            setShowResultModal(true);
+        // } else {
+        //      showAlert({
+        //         time: 5,
+        //         title: 'All candidates invited successfully',
+        //         type: AlertType.success,
+        //     });
+        // }
 
         candidateLists.refetch();
         setFileUploadData(null);
@@ -249,6 +258,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                     row: err.row || {}, // fallback if row is missing, though we added it
                     error: `Schema Error: ${err.error}`
                 });
+                console.log(err);
             });
 
             // Date validation
@@ -337,7 +347,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                             />
                             <FileUploadDrawer
                                 open={openBulkUpload}
-                                showUploadButton={!!fileUploadData?.data.length}
+                                showUploadButton={true}
                                 uploadFile={handleUpload}
                                 setOpenDrawer={setOpenBulkUpload}
                                 defaultText="Upload in bulk"
