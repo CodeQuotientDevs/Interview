@@ -104,11 +104,11 @@ export default function AiChat(props: AiChatProp) {
     [handleUnifiedSubmission]
   );
 
-  const handleFormatCode = useCallback(() => {
-    if (editorRef.current) {
-      editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
-    }
-  }, []);
+  // const handleFormatCode = useCallback(() => {
+  //   if (editorRef.current) {
+  //     editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
+  //   }
+  // }, []);
 
   useEffect(() => {
     for (let index = messages.length - 1; index >= 0; index--) {
