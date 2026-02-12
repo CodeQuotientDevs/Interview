@@ -16,7 +16,7 @@ export default class InterviewCandidate {
         options: QueryOptions = {}
     ): Promise<any | null> {
         (options as any).lean = true;
-        return this.model.findOne(findObj as any, projection as any, options as any).exec();
+        return this.model.findOne(findObj as any, projection as any, options as any);
     }
 
     async find(

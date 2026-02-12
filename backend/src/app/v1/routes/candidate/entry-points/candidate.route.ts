@@ -24,6 +24,7 @@ import type UserService from "../../user/domain/user.service";
 import type CandidateResponseService from "../../candidate-responses/domain/candidate-response.service";
 import { getPresignedUploadUrl } from '@root/services/s3';
 import { formatDateTime } from '@root/libs/DateUtils';
+import mongoose from 'mongoose';
 
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
@@ -194,7 +195,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     name: userObj.name,
                     email: userObj.email,
                     duration: interviewObj.duration,
-                    startTime:candidateObj.startTime,
+                    startTime: candidateObj.startTime,
                     endTime: candidateObj.endTime,
                 }
             });
@@ -209,6 +210,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
     router.get('/interview-meta/:id', async (req: Request, res: Response) => {
         const id = req.params.id as string;
         try {
+            if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(404).json({ error: 'Interview attempt link not found' });
+            }
             const candidateObj = await candidateServices.findById(id);
             if (!candidateObj) {
                 return res.status(404).json({ error: 'Interview attempt link not found' });
@@ -219,7 +223,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const serverTime = Date.now();
-            
+
             // Check basic constraints similar to main endpoint but don't start anything
             if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
                 return res.json({
@@ -592,7 +596,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 });
             } else {
                 await sendInvite({
-                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startTime: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime,"asia/kolkata") as string, endTime: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime,"asia/kolkata"),
+                    id: candidateObj.id, name: userObj.name, email: userObj.email, duration: interviewObj.duration, startTime: formatDateTime(candidateUpdateData.startTime || candidateObj.startTime, "asia/kolkata") as string, endTime: formatDateTime(candidateUpdateData.endTime || candidateObj.endTime, "asia/kolkata"),
                     jobTitle: ""
                 });
                 logger.info(`Resent invitation email to ${userObj.email} for candidate ${candidateObj.id}`);

@@ -285,12 +285,12 @@ export const Interview = (props: InterviewProps) => {
     };
   }, [interview.data, isEmailVerified]);
 
-  if (interview.error) {
+  if (interview.error||interviewMeta.error) {
     return (
       <>
         <Alert className="fixed top-[50%] left-[50%] w-[300px] -translate-x-1/2 -translate-y-1/2 z-10 flex items-center gap-2">
           <ShieldCloseIcon className="h-6 w-6" color="red" />
-          <AlertTitle className="h-6 content-center mt-1">{interview.error.message}</AlertTitle>
+          <AlertTitle className="h-6 content-center mt-1">{interview.error?.message || interviewMeta.error?.message}</AlertTitle>
         </Alert>
         <main className={`h-full bg-background text-foreground blur-md pointer-events-none`}>
             <AiChat
