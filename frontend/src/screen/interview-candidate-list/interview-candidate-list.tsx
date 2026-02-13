@@ -74,6 +74,14 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         onSuccess: () => {
             console.log("Candidate saved successfully");
         },
+        onError: (error) => {
+            showAlert({
+                time: 5,
+                title: 'Unable to save candidate',
+                type: AlertType.error,
+                message: error.message,
+            });
+        }
     });
 
     const updateCandidate = useMutation({
@@ -83,6 +91,14 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         onSuccess: () => {
             console.log("Candidate updated successfully");
         },
+        onError: (error) => {
+            showAlert({
+                time: 5,
+                title: 'Unable to update candidate',
+                type: AlertType.error,
+                message: error.message,
+            });
+        }
     });
 
     const handleCandidateInvite = useCallback(async (data: CandidateInvite, candidateId?: string) => {
