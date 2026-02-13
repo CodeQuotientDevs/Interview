@@ -15,7 +15,10 @@ const types = {
     ),
     startTime: Zod.date(),
     endTime: Zod.date(),
-    userSpecificDescription: Zod.string().nonempty("Description must contain at least 1 character(s)"),
+    userSpecificDescription: Zod.string({
+        required_error: "Description is required",
+        invalid_type_error: "Description must be a string",
+    }).min(1, "Description must contain at least 1 character(s)"),
 }
 
 const excelDateParser = (value: unknown) => {

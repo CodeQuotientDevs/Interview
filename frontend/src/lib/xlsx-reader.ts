@@ -96,10 +96,12 @@ export async function readExcel<T extends Zod.ZodRawShape>(
 
 				// Validate row
 				const result = validator.safeParse(obj);
+				console.log(result);
 
 				if (!result.success) {
+					console.log(result.error);
 					errors.push({
-						error: result.error.toString(),
+						error: JSON.parse(result?.error as unknown as  string)[0].message || result.error.toString(),
 						index: index - 1,
 						row: obj,
 					});
