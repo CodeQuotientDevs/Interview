@@ -29,6 +29,9 @@ export default class MainClient {
                 if (error.status === 401) {
                     window.location.reload();
                 }
+                if(error.status === 404){
+                    throw new Error('Not Found');
+                }
                 throw new Error(error?.response?.data?.error ?? error.message);
             }
             logger.error(error);

@@ -174,7 +174,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             const existingCandidate = await candidateServices.getInterviewCandidate(id, userObj.id);
 
             if (existingCandidate) {
-                return res.status(400).json({ error: 'Candidate is already invited for this Interview' });
+                return res.status(409).json({ error: 'Candidate is already invited for this Interview', errCode: "CANDIDATE_ALREADY_INVITED" });
             }
 
 

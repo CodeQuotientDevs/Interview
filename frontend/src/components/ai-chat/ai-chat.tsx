@@ -225,7 +225,7 @@ export default function AiChat(props: AiChatProp) {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Skip Question</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to skip this question? You won't be able to answer it later.
+                      Are you sure you want to skip this question?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

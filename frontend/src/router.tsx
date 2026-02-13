@@ -17,12 +17,12 @@ import { Dashboard } from "./screen/dashboard";
 import Mainlayout from "./components/layout/main-layout";
 import LoginPage from "./screen/login/login";
 import { CandidateDetailedReport } from "./screen/candidate-detailed-report";
+import NotFound from "./screen/error-page/404";
 
 const Interview = lazy(() => import("./screen/interview/lazy"));
 
 const InterviewPageWrapper = () => {
     const { id } = useParams();
-    console.log('ID TO GET',id);
     return <Interview id={id || ""} />;
 };
 
@@ -107,6 +107,7 @@ export const Routes = createBrowserRouter(
                 </Route>
             </Route>
             <Route path="/" element={<Navigate to={"/interview"} replace />} />
+            <Route path="*" element={<NotFound />} />
         </Route>
     )
 );
