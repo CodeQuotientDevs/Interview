@@ -28,7 +28,6 @@ export function App() {
         </div>
       </QueryClientProvider>
     </>
-
   )
 }
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import {
   ChatMessage,
   type ChatMessageProps,
@@ -22,22 +23,50 @@ export function MessageList({
   isTyping = false,
   messageOptions,
 }: MessageListProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (containerRef.current) {
+        const parent = containerRef.current.parentElement
+        if (parent) {
+          parent.scrollTop = parent.scrollHeight
+        }
+      }
+    }
+
+    scrollToBottom()
+
+    // Create a ResizeObserver to handle content height changes (like audio messages rendering)
+    const resizeObserver = new ResizeObserver(() => {
+      scrollToBottom()
+    })
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [messages, isTyping])
+
   return (
-    <div className="space-y-4 overflow-visible">
+    <div ref={containerRef} className="space-y-4 overflow-visible">
       {messages.map((message, index) => {
         const additionalOptions =
           typeof messageOptions === "function"
             ? messageOptions(message)
             : messageOptions
-
-        return (
+           
+        return  message.content!=="" || message.type =="audio" ? (
           <ChatMessage
             key={index}
             showTimeStamp={showTimeStamps}
             {...message}
             {...additionalOptions}
           />
-        )
+        ) : null
       })}
       {isTyping && <TypingIndicator />}
     </div>

@@ -64,7 +64,6 @@ export default function CandidatePage(props: CandidatePageProps) {
 	}, []);
 
 	const onSubmit = useCallback(async (data: unknown) => {
-		console.log(data);
 		const parsedData = interviewCreateSchema.safeParse(data);
 		if (parsedData.error) {
 			showAlert({
@@ -259,8 +258,8 @@ export default function CandidatePage(props: CandidatePageProps) {
 							<Input className="hidden" type="datetime-local" {...register("endTime", { valueAsDate: true, value: endDate })} />
 							<DateTimePicker date={endDate} setDate={setEndDate} />
 
-							<Label>Duration of interview</Label>
-							<Input type="number" placeholder="Enter interview time in minuets" {...register("duration", { valueAsNumber: true })} />
+							<Label>Duration of interview (minutes)</Label>
+							<Input type="number" placeholder="Enter duration in minutes" {...register("duration", { valueAsNumber: true })} />
 						</CardContent>
 					</Card>
 				</div>

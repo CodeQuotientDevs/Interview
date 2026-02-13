@@ -1,36 +1,116 @@
 import Zod from "zod";
 
 const types = {
-    name: Zod.string().nonempty(),
-    email: Zod.string().nonempty(),
-    phone: Zod.string().nonempty(),
-    yearOfExperience: Zod.number().nonnegative(),
+    name: Zod.string().nonempty("Name must contain at least 1 character(s)"),
+    email: Zod.string().nonempty("Email must contain valid email"),
+    phone: Zod.string(),
+    yearOfExperience: Zod.preprocess(
+        (v) => {
+            if (v === "" || v === null || v === undefined) return undefined;
+            const n = Number(v);
+            if (Number.isNaN(n)) return undefined;
+            return n;
+        },
+        Zod.number().nonnegative().optional()
+    ),
     startTime: Zod.date(),
     endTime: Zod.date(),
-    userSpecificDescription: Zod.string().nonempty(),
+    userSpecificDescription: Zod.string().nonempty("Description must contain at least 1 character(s)"),
 }
+
+const excelDateParser = (value: unknown) => {
+    if (value instanceof Date) return value;
+    if (typeof value !== "string") return value;
+
+    const [date, time, meridian] = value.trim().split(/\s+/);
+    const [dd, mm, yyyy] = date.split("/");
+
+    return new Date(`${yyyy}-${mm}-${dd} ${time} ${meridian}`);
+};
+
+
+
 
 export const candidateInviteSchema = Zod.object({
     name: types.name,
     email: types.email,
     phone: types.phone.optional(),
-    yearOfExperience: types.yearOfExperience,
-    startTime: types.startTime,
-    endTime: types.endTime.optional(),
+    yearOfExperience: types.yearOfExperience.optional(),
+    startTime: Zod.preprocess(
+        excelDateParser,
+        Zod.date()
+    ),
+
+    endTime: Zod.preprocess(
+        excelDateParser,
+        Zod.date().nullable().optional()
+    ),
     userSpecificDescription: types.userSpecificDescription,
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
 });
 
-export const messagesSchema = Zod.object({
+export const messageSchema = Zod.object({
+    id: Zod.string(),
+    createdAt: Zod.preprocess((args) => {
+        if (typeof args === 'string' || args instanceof Date) {
+            return new Date(args);
+        }
+        return args;
+    }, Zod.date()),
     role: Zod.string(),
-    parts: Zod.any(),
-})
+    rowText: Zod.string().default(""),
+    parsedResponse: Zod.object({
+        confidence: Zod.number().min(0).max(1),
+        intent: Zod.string(),
+        isInterviewGoingOn: Zod.boolean(),
+        shortSummary: Zod.string(),
+        timestamp: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date()),
+    }).optional(),
+    toolCalls: Zod.array(Zod.any()).optional(),
+    type: Zod.string().optional(),
+    audioUrl: Zod.string().optional(),
+    audioDuration: Zod.number().optional(),
+});
+
+export const messagesSchema = Zod.array(messageSchema);
 
 export const interviewContentSchema = Zod.object({
+    idleWarningTime: Zod.coerce.string(),
+    idleSubmitTime: Zod.coerce.string(),
     completedAt: Zod.preprocess((args) => {
         if (typeof args === 'string' || args instanceof Date) {
             return new Date(args);
         }
         return args;
     }, Zod.date().optional()),
-    messages: Zod.array(messagesSchema),
+    inviteStatus: Zod.enum(['pending', 'processing', 'sent', 'failed']).optional(),
+    messages: messagesSchema,
+    candidate: Zod.object({
+        // _id: Zod.string(),
+        user: Zod.object({
+            _id: Zod.string(),
+            name: Zod.string(),
+            email: Zod.string(),
+        }),
+        startTime: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date()),
+        endTime: Zod.preprocess((args) => {
+            if (typeof args === 'string' || args instanceof Date) {
+                return new Date(args);
+            }
+            return args;
+        }, Zod.date().optional()),
+    }).optional(),
 });

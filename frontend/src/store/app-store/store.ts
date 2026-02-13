@@ -160,8 +160,12 @@ export const createAppStore = (client: LoginApi) => {
                     alerts: data,
                 });
             },
-            logout: () => {
-                window.location.href = `${loginClientURL}/logout`;
+            logout: async () => {
+                await client.logout();
+                set({
+                    session: null,
+                });
+                window.location.href = `/`;
             },
             showAlert: (singleAlert) => {
                 const finalAlert: FinalAlert = {

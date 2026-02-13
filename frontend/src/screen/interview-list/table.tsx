@@ -6,15 +6,12 @@ import {
     type VisibilityState,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
+import { ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
+import Arrow from "../../components/ui/Arrow"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -35,28 +32,64 @@ import {
 import { useNavigate } from "react-router"
 import { interviewListItemSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
-import { ScrollArea } from "@radix-ui/react-scroll-area"
-import dayjs from "dayjs"
+import { formatDateTime } from "@/lib/utils"
 import { useAppStore } from "@/store"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Pagination } from "@/components/ui/pagination";
 
 interface DataTableInterface {
     loading: boolean,
     data: Array<typeof interviewListItemSchema._type>
     cloneInterview: (id: string) => Promise<void>
+    searchFilter: string
+    onSearchChange: (value: string) => void
+    sortState: { id: string; desc: boolean }
+    onSortChange: (columnId: string, desc: boolean) => void
+
+    // Pagination props
+    currentPage?: number;
+    totalPages?: number;
+    pageSize?: number;
+    onPageChange?: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    totalCount?: number;
 }
 export function InterviewDataTable(props: DataTableInterface) {
     const alertModels = useAppStore().useAlertModel;
-    const { data, loading, cloneInterview } = props;
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const { data, loading, cloneInterview, searchFilter, onSearchChange, sortState, onSortChange } = props;
+    const [sorting, setSorting] = React.useState<SortingState>([
+        {
+            id: sortState.id,
+            desc: sortState.desc
+        }
+    ])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
+        searchFilter ? [{ id: "title", value: searchFilter }] : []
     )
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({});
 
     const navigation = useNavigate();
+
+    // Update sorting when parent state changes
+    React.useEffect(() => {
+        setSorting([{ id: sortState.id, desc: sortState.desc }]);
+    }, [sortState]);
+
+    // Update filters when parent state changes
+    React.useEffect(() => {
+        setColumnFilters(searchFilter ? [{ id: "title", value: searchFilter }] : []);
+    }, [searchFilter]);
+
+    // Notify parent when sorting changes
+    React.useEffect(() => {
+        if (sorting.length > 0) {
+            const currentSort = sorting[0];
+            if (currentSort.id !== sortState.id || currentSort.desc !== sortState.desc) {
+                onSortChange(currentSort.id, currentSort.desc ?? false);
+            }
+        }
+    }, [sorting, sortState, onSortChange]);
 
     const handleClone = React.useCallback((id: string, title: string) => {
         alertModels({
@@ -73,37 +106,21 @@ export function InterviewDataTable(props: DataTableInterface) {
 
     const columns: ColumnDef<typeof interviewListItemSchema._type>[] = React.useMemo(() => [
         {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
-            enableHiding: false,
-        },
-        {
             accessorKey: "title",
+            enableHiding: false,
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Title
-                        <ArrowUpDown />
+                        <Arrow
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
@@ -111,28 +128,14 @@ export function InterviewDataTable(props: DataTableInterface) {
                 const { id } = row.original;
                 const title = row.getValue("title") as string;
                 return (
-                    <div className="lowercase">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="link"
-                                        onClick={() => {
-                                            navigation(`/interview/candidates/${id}`);
-                                        }}
-                                    >
-                                        {title}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Go to {title}'s candidate list</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                )
-                return <Button variant="link">Link</Button>
-                return <div className="lowercase">{row.getValue("title")}</div>;
+                    <button
+                        onClick={() => navigation(`/interview/candidates/${id}`)}
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left px-4 py-2 max-w-[600px] truncate"
+                        title={title}
+                    >
+                        {title}
+                    </button>
+                );
             },
         },
         {
@@ -140,12 +143,29 @@ export function InterviewDataTable(props: DataTableInterface) {
             header: () => <div className="text-center">Duration</div>,
             cell: ({ row }) => {
                 const duration = parseFloat(row.getValue("duration"));
-                return <div className="text-center font-medium">{duration} minutes</div>
+                return <div className="text-center min-w-24">{duration} minutes</div>
             },
         },
+        // {
+        //     accessorKey: "firstCreatedAt",
+        //     header: ({ column }) => {
+        //         return (
+        //             <div className="text-center">
+        //                 <Button
+        //                     variant="ghost"
+        //                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        //                 >
+        //                     Created At
+        //                     <ArrowUpDown />
+        //                 </Button>
+        //             </div>
+        //         )
+        //     },
+        // },
         {
             accessorKey: "updatedAt",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <div
                         className="text-center"
@@ -155,33 +175,28 @@ export function InterviewDataTable(props: DataTableInterface) {
                             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                         >
                             Updated At
-                            <ArrowUpDown />
+                            <Arrow
+                                fillUp={sortDirection === "asc"}
+                                fillDown={sortDirection === "desc"}
+                                className="ml-2"
+                            />
                         </Button>
                     </div>
 
                 )
             },
             cell: ({ row }) => {
-                const updatedAtString = dayjs(row.original.updatedAt).format('DD MMM YYYY, hh:mm A');
-                return <div className="text-center font-medium">{updatedAtString}</div>
-            }
-        },
-        {
-            accessorKey: "keywords",
-            header: () => <div className="text-center">Keywords</div>,
-            cell: ({ row }) => {
-                const keywords = (row.original.keywords ?? []).join(', ');
-                return <div className="text-ellipsis">{keywords}</div>
+                return <div className="text-center min-w-32">{formatDateTime(row.original.updatedAt)}</div>
             }
         },
         {
             id: "actions",
-            header: () => <div className="text-center" >Actions</div>,
+            header: () => <div className="text-center w-12"></div>,
             enableHiding: false,
             cell: ({ row }) => {
                 const interview = row.original
                 return (
-                    <div className="text-center">
+                    <div className="text-center w-12">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -207,7 +222,7 @@ export function InterviewDataTable(props: DataTableInterface) {
                 )
             },
         },
-    ], [navigation])
+    ], [navigation, handleClone])
 
     const table = useReactTable({
         data,
@@ -215,165 +230,153 @@ export function InterviewDataTable(props: DataTableInterface) {
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
+        manualSorting: true,
+        manualFiltering: true,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
-            rowSelection,
         },
     })
 
     return (
-        <div className={`w-full`}>
-            <div>
-                <div className="flex items-center py-4">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={() => navigation("/interview/add")} variant="outline" className="mr-2">
-                                    <Plus size={20} />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Send invite</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <Input
-                        placeholder="Filter interview..."
-                        value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) =>
-                            table.getColumn("title")?.setFilterValue(event.target.value)
-                        }
-                        className="max-w-sm"
-                    />
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto">
-                                Columns <ChevronDown />
+        <div className="w-full">
+            <div className="flex items-center py-4 px-4 lg:px-6 sticky top-14 z-[10] bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear ">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
+                                <Plus size={16} />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => {
-                                    return (
-                                        <DropdownMenuCheckboxItem
-                                            key={column.id}
-                                            className="capitalize"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) =>
-                                                column.toggleVisibility(!!value)
-                                            }
-                                        >
-                                            {column.id}
-                                        </DropdownMenuCheckboxItem>
-                                    )
-                                })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Create new interview</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <Input
+                    placeholder="Search interview..."
+                    value={searchFilter}
+                    onChange={(event) => onSearchChange(event.target.value)}
+                    className="max-w-sm"
+                />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            Columns <ChevronDown />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => {
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={column.id}
+                                        className="capitalize"
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(!!value)
+                                        }
+                                    >
+                                        {column.id}
+                                    </DropdownMenuCheckboxItem>
+                                )
+                            })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <div className="px-4 lg:px-6">
                 <div className="rounded-md border">
-                    <ScrollArea className="w-full max-h-[65vh] overflow-y-scroll">
-                        <Table>
-                            <TableHeader className="bg-background z-10 shadow-sm">
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => {
-                                            return (
-                                                <TableHead key={header.id}>
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                </TableHead>
-                                            )
-                                        })}
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                        return (
+                                            <TableHead key={header.id}>
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
+                                                    )}
+                                            </TableHead>
+                                        )
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody className="w-full">
+                            {loading &&
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        <Loader />
+                                    </TableCell>
+                                </TableRow>
+                            }
+                            {!loading && table.getRowModel().rows?.length
+                                ? table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
                                     </TableRow>
-                                ))}
-                            </TableHeader>
-                            <TableBody className="w-full">
-                                {loading &&
+                                ))
+                                : <></>
+                            }
+                            {!loading && table.getRowModel().rows.length === 0
+                                ? (
                                     <TableRow>
                                         <TableCell
                                             colSpan={columns.length}
-                                            className="h-24 text-center"
+                                            className="h-40 text-center"
                                         >
-                                            <Loader />
+                                            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                                                <div className="text-muted-foreground">
+                                                    <FileText className="w-8 h-8 mx-auto" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium">{searchFilter ? `No interviews match your search criteria.` : "No interviews yet"}</p>
+                                                    <p className="text-xs text-muted-foreground">{searchFilter ? "Try adjusting your search" : "Create your first interview to get started"}</p>
+                                                </div>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
-                                }
-                                {!loading && table.getRowModel().rows?.length
-                                    ? table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={row.getIsSelected() && "selected"}
-                                        >
-                                            {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
-                                                    {flexRender(
-                                                        cell.column.columnDef.cell,
-                                                        cell.getContext()
-                                                    )}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))
-                                    : <></>
-                                }
-                                {!loading && table.getRowModel().rows.length === 0
-                                    ? (
-                                        <>
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={columns.length}
-                                                    className="h-24 text-center"
-                                                >
-                                                    No results.
-                                                </TableCell>
-                                            </TableRow>
-                                        </>
-                                    ) : <></>
-                                }
-                            </TableBody>
+                                ) : <></>
+                            }
+                        </TableBody>
 
-                        </Table>
-                    </ScrollArea>
-
-                </div>
-                <div className="flex items-center justify-end space-x-2 py-4">
-                    <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                        {table.getFilteredRowModel().rows.length} row(s) selected.
-                    </div>
-                    <div className="space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            Next
-                        </Button>
-                    </div>
+                    </Table>
                 </div>
             </div>
+
+            {props.currentPage && props.totalPages && props.onPageChange && (
+                <div className="py-4 px-4 lg:px-6">
+                    <Pagination
+                        currentPage={props.currentPage}
+                        totalPages={props.totalPages}
+                        pageSize={props.pageSize || 10}
+                        onPageChange={props.onPageChange}
+                        onPageSizeChange={props.onPageSizeChange || (() => { })}
+                        totalCount={props.totalCount}
+                        entriesText="interviews"
+                    />
+                </div>
+            )}
         </div>
     )
 }

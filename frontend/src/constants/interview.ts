@@ -18,3 +18,30 @@ export const placeHolderConversation = [
         role: "model",
     },
 ];
+
+
+export const languagesAllowed = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "cpp", label: "C++" },
+    { value: "typescript", label: "TypeScript" },
+];
+export const inviteStatusConfig: Record<InviteStatus, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {
+  processing: {
+    label: "document processing",
+    variant: "outline",
+  },
+  pending: {
+    label: "queued",
+    variant: "secondary",
+  },
+  failed: {
+    label: "failed",
+    variant: "destructive",
+  },
+  sent: {
+    label: "Invite Sent",
+    variant: "default",
+  },
+}

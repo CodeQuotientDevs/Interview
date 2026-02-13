@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useSearchParams } from "react-router";
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -8,15 +7,30 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, CheckCheck, ChevronDown, MoreHorizontal, Plus, Save, UploadCloud } from "lucide-react"
+import {
+    UsersIcon, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
+    Download, FileText, MailPlus, MoreHorizontal, Upload, Clock,
+    Calendar, AlertCircle, Loader2
+} from "lucide-react"
+import Arrow from "@/components/ui/Arrow"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import dayjs from 'dayjs';
 import { ExcelColumn, jsonToExcel } from "@/lib/json-to-excel";
+import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -34,42 +48,77 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { interviewCandidateListSchema } from "@/zod/interview";
+import { interviewCandidateListSchema, interviewGetSchema } from "@/zod/interview";
 import { Loader } from "@/components/ui/loader"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import { useAppStore } from "@/store";
 import { AlertType } from "@/constants";
 // import logger from "@/lib/logger";
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useNavigate } from "react-router";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { inviteStatusConfig } from "@/constants/interview";
+import { Pagination } from "@/components/ui/pagination";
+
 
 interface DataTableInterface {
     data: Array<typeof interviewCandidateListSchema._type>
     loading: boolean
-    activeReport?: typeof interviewCandidateListSchema._type
     interviewName?: string | "Interview"
-    interviewId?:string
-
+    interviewId?: string
+    interviewObj?: typeof interviewGetSchema._type
     concludeInterview: (attemptId?: string) => Promise<void>,
-    openCandidateDrawer: (value: boolean) => void
     openBulkUploadDrawer: (value: boolean) => void,
-    revaluationFunction: (id: string) => Promise<void>,
-
+    revaluationFunction: (id: string, prompt?: string) => Promise<void>,
+    onEditCandidate?: (candidate: typeof interviewCandidateListSchema._type) => void,
+    onAddCandidate?: () => void,
+    // Pagination props
+    currentPage?: number
+    totalPages?: number
+    pageSize?: number
+    totalCount?: number
+    onPageChange?: (page: number) => void
+    onPageSizeChange?: (size: number) => void
+    onSortChange?: (sort: { id: string, desc: boolean }) => void
 }
+
+ const skillLevelNumberToString = {
+    1: 'beginner',
+    2: 'intermediate',
+    3: 'expert',
+} as Record<number, string>
+
+
 export function InterviewCandidateTable(props: DataTableInterface) {
 
-    const { activeReport ,interviewId} = props;
+    const { interviewId, onEditCandidate } = props;
+    const navigate = useNavigate();
 
     const showAlert = useAppStore().showAlert;
     const alertModel = useAppStore().useAlertModel;
-    const { data, loading, openCandidateDrawer, openBulkUploadDrawer,interviewName } = props;
+    const { 
+        data, 
+        loading,  
+        openBulkUploadDrawer, 
+        interviewName, 
+        interviewObj,
+        currentPage,
+        totalPages,
+        pageSize,
+        totalCount,
+        onPageChange,
+        onPageSizeChange,
+        onSortChange,
+        onAddCandidate,
+    } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({});
-    const [searchParams,setSearchParams] = useSearchParams();
-   
+    const [copyLinkModalOpen, setCopyLinkModalOpen] = React.useState(false);
+    const [copyLinkId, setCopyLinkId] = React.useState("");
     // const handleDeleteInvite = React.useCallback((id: string) => {
     //     showAlert({
     //         time: 10,
@@ -107,7 +156,12 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     }, [showAlert]);
 
-    const concludeUserInterview = React.useCallback( async (id?: string) => {
+    const handleCopyInterview = (id: string) => {
+        setCopyLinkModalOpen(true);
+        setCopyLinkId(id);
+    }
+
+    const concludeUserInterview = React.useCallback(async (id?: string) => {
         let title = "Are you sure you want to conclude this interview?";
         if (!id) {
             title = "Are you sure you want to conclude all the interviews?";
@@ -125,100 +179,150 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     }, [alertModel, props]);
 
     const handleReEvaluate = React.useCallback(async (id: string) => {
-        alertModel({
-            title: 'Are you sure you want to re evaluate interview?',
-            description: 'This is reevaluate the user test, score will be effected.',
-            cancelButtonTitle: 'Cancel',
-            okButtonTitle: 'Ok',
-            onCancel: async () => { },
-            onOk: async () => {
-                await props.revaluationFunction(id);
-            }
-        });
-    }, [props, alertModel]);
+        setReEvaluateId(id);
+    }, []);
 
-    function rowFormatter(item:typeof interviewCandidateListSchema._type, columns: ExcelColumn[]){
-        const row: Record<string, unknown> = {};
+    const [reEvaluateId, setReEvaluateId] = React.useState<string | null>(null);
+    const [reEvaluatePrompt, setReEvaluatePrompt] = React.useState("");
+    const [isReEvaluating, setIsReEvaluating] = React.useState(false);
+
+    const onConfirmReEvaluate = async () => {
+        if (!reEvaluateId) return;
+        setIsReEvaluating(true);
+        try {
+            await props.revaluationFunction(reEvaluateId, reEvaluatePrompt);
+            setReEvaluateId(null);
+            setReEvaluatePrompt("");
+        } finally {
+            setIsReEvaluating(false);
+        }
+    };
+
+    function rowFormatter(item: typeof interviewCandidateListSchema._type, columns: ExcelColumn[]): Record<string, string | number | Date> {
+        const row: Record<string, string | number | Date> = {};
         columns.forEach(column => {
             const value = item[column.key as keyof typeof item] as unknown;
-            
+
             if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
-                row[column.key] = value ? dayjs(value).format('DD-MM-YYYY HH:mm:ss') : 'N/A';
-            }else if(column.key == "reports"){
-                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}?userid=${item.id}`
-            }else {
-                row[column.key] = value !== undefined && value !== null ? value : 'N/A';
+                row[column.key] = value ? dayjs(value as any).format('DD-MM-YYYY HH:mm:ss') : 'N/A';
+            } else if (column.key == "reports") {
+                row[column.key] = `${window.location.origin}/interview/candidates/${interviewId}/report/${item.id}`;
+            } else {
+                if (value === undefined || value === null) {
+                    row[column.key] = 'N/A';
+                } else if (typeof value === 'number' || value instanceof Date) {
+                    row[column.key] = value as number | Date;
+                } else {
+                    row[column.key] = String(value);
+                }
             }
         });
         return row;
     }
 
-    function handleDownload(){
-        if(data && data.length > 0){
+    function handleDownload() {
+        if (data && data.length > 0) {
             const columns = [
                 { header: 'Name', key: 'name', width: 30 },
                 { header: 'Email', key: 'email', width: 30 },
-                { header: 'Start Time',key:'startTime',width:30},
+                { header: 'Start Time', key: 'startTime', width: 30 },
                 { header: 'Completed At', key: 'completedAt', width: 30 },
                 { header: 'Reports', key: 'reports', width: 20 },
-                { header: 'Score', key: 'score', width: 20 },  
+                { header: 'Score', key: 'score', width: 20 },
             ];
             const filename = `${interviewName}.xlsx`;
-            
-            jsonToExcel(data, columns, filename,rowFormatter).catch(() => {
+            try {
+                jsonToExcel(data, columns, filename, rowFormatter);
+            } catch {
                 showAlert({
                     time: 5,
                     title: 'Unable to generate report',
                     type: AlertType.error,
                     message: 'An error occurred while generating the Excel file. Please try again.'
                 });
-            });
+            };
         }
     }
 
     const columns: ColumnDef<typeof interviewCandidateListSchema._type>[] = React.useMemo(() => [
         {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
+            accessorKey: "name",
             enableHiding: false,
+            header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Name
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => {
+                const isConcluded = row.original.concludedAt !== undefined;
+                const name = row.getValue("name") as string;
+
+                if (isConcluded) {
+                    return (
+                        <button
+                            onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left flex items-center gap-2 px-4 py-2"
+                        >
+                            {name}
+                            <FileText size={14} className="text-blue-500" />
+                        </button>
+                    );
+                }
+                return (
+                    <div className="px-4 py-2 flex items-center gap-2">
+                        {name}
+                    </div>
+                );
+            },
         },
+
         {
             accessorKey: "email",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Email
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
-            cell: ({ row }) => (
-                <div className="lowercase">{row.getValue("email")}</div>
-            ),
+            cell: ({ row }) => {
+                const status = row.original.inviteStatus;
+                const currentStatus = inviteStatusConfig[status as InviteStatus] || inviteStatusConfig['pending'];
+
+                return (
+                    <div className="px-4 py-2 flex items-center gap-2">
+                        <div className="lowercase">{row.getValue("email")}</div>
+                        <Badge variant={currentStatus.variant} className="text-[10px] px-1.5 py-0 h-5">
+                            {currentStatus.label}
+                        </Badge>
+                    </div>
+                )
+            },
         },
         {
             accessorKey: "startTime",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -226,18 +330,22 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Start Time
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
             cell: ({ row }) => {
-                const startTimeString = dayjs(row.original.startTime).format(`YYYY-MM-DD HH:mm:ss`)
-                return <div className="text-center font-medium">{startTimeString}</div>
+                return <div className="text-center">{formatDateTime(row.original.startTime)}</div>
             },
         },
         {
             accessorKey: "endTime",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -245,22 +353,22 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         End Time
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
             cell: ({ row }) => {
-                const endTime = row.original.endTime;
-                if (!endTime) {
-                    return <></>
-                }
-                const formattedEndTime = dayjs(endTime).format('YYYY-MM-DD HH:mm:ss');
-                return <div className="text-center font-medium">{formattedEndTime}</div>
+                return <div className="text-center">{formatDateTime(row.original.endTime)}</div>
             }
         },
         {
             accessorKey: "score",
             header: ({ column }) => {
+                const sortDirection = column.getIsSorted();
                 return (
                     <Button
                         variant="ghost"
@@ -268,23 +376,35 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Score
-                        <ArrowUpDown />
+                        <Arrow 
+                            fillUp={sortDirection === "asc"}
+                            fillDown={sortDirection === "desc"}
+                            className="ml-2"
+                        />
                     </Button>
                 )
             },
             cell: ({ row }) => {
                 const isCompleted = !!row.original.completedAt;
                 if (!isCompleted) {
-                    return <div className="text-center font-medium">Not Completed Yet</div>
+                    return <div className="text-center">Not Completed Yet</div>
                 }
-                return <div className="text-center font-medium">{row.original.score}</div>
+                return <div className="text-center">{row.original.score}</div>
             }
         },
         {
             id: "actions",
-            header: () => <div className="text-center" >Actions</div>,
+            header: () => <div className="text-center"></div>,
             enableHiding: false,
             cell: ({ row }) => {
+                const isCompleted = row.original.completedAt !== undefined;
+                const isConcluding = row.original.isBeingConcluded === true;
+                const isConcluded = row.original.concludedAt !== undefined;
+                const isInviteSent = row.original.inviteStatus === "sent";
+
+                const canEdit = !isCompleted && !isConcluding && !isConcluded;
+                const canConclude = !isConcluded && !isConcluding;
+
                 return (
                     <div className="text-center max-h-[80vh] overflow-auto">
                         <DropdownMenu>
@@ -296,6 +416,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                {(!canEdit && !isConcluded && !canConclude) ? <DropdownMenuItem key="no-actions" disabled>No actions available</DropdownMenuItem> : null}
                                 {/* <DropdownMenuItem
                                     onClick={() => handleDeleteInvite(interview.id)}
                                 >
@@ -307,16 +428,21 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                 >
                                     Info
                                 </DropdownMenuItem> */}
-                                <DropdownMenuItem
-                                    onClick={() => handleCopyInterviewLink(row.original.id)}
+                                {canEdit ? <DropdownMenuItem
+                                    onClick={() => onEditCandidate?.(row.original)}
+                                >
+                                    Edit
+                                </DropdownMenuItem> : null}
+                                {canEdit && isInviteSent ? <DropdownMenuItem
+                                    onClick={() => handleCopyInterview(row.original.id)}
                                 >
                                     Interview Link
-                                </DropdownMenuItem>
-                                {row.original.completedAt
+                                </DropdownMenuItem> : null}
+                                {isConcluded
                                     && (
                                         <>
                                             <DropdownMenuItem
-                                                onClick={() => {setSearchParams({userid:row.original.id})}}
+                                                onClick={() => navigate(`/interview/candidates/${interviewId}/report/${row.original.id}`)}
                                             >
                                                 Detailed Report
                                             </DropdownMenuItem>
@@ -329,7 +455,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                         </>
                                     )
                                 }
-                                {!row.original.completedAt
+                                {canConclude && isInviteSent
                                     && (
                                         <>
                                             <DropdownMenuSeparator />
@@ -347,183 +473,185 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 )
             },
         },
-    ], [concludeUserInterview, handleCopyInterviewLink, handleReEvaluate])
+    ], [concludeUserInterview, handleReEvaluate, interviewId, navigate, onEditCandidate])
+
+    // Sync sorting with parent
+    React.useEffect(() => {
+        if (sorting.length > 0 && onSortChange) {
+             onSortChange?.({ id: sorting[0].id, desc: sorting[0].desc })
+        }
+    }, [sorting])
 
     const table = useReactTable({
         data,
         columns,
+        manualPagination: true,
+        manualSorting: true,
+        pageCount: totalPages,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
+        // getPaginationRowModel: getPaginationRowModel(), // Removed for server-side pagination
+        // getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
-            rowSelection,
         },
+        autoResetPageIndex: false,
     });
-
-    React.useEffect(() => {
-        window.addEventListener('click', () => {
-
-        });
-    }, [activeReport]);   
-
     return (
-        <div className={`w-full`}>
-            <Drawer open={!!activeReport} onClose={() => {
-                searchParams.delete('userid')
-                setSearchParams(searchParams)
-            }} >
-                <DrawerContent className="max-h-[80vh] flex flex-col">
-                    <DrawerHeader>
-                        <DrawerTitle>Detailed Report</DrawerTitle>
-                        <DrawerDescription>{activeReport?.name}'s Interview Report </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="w-full h-full max-h-[70vh] overflow-auto" >
-                        <div className="p-8 w-full h-full">
-                            <Accordion className="w-full" type="single" collapsible>
-                                <AccordionItem value={"Summary"}>
-                                    <AccordionTrigger>
-                                        <p>Summary</p>
-                                        <p className="ml-auto pr-2">
-                                            Score: {activeReport?.score}
-                                        </p>
-                                    </AccordionTrigger>
-
-                                    <AccordionContent className="pl-4">
-                                        {activeReport?.summaryReport}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                {(activeReport?.detailedReport ?? []).map((report) => {
-                                    return (
-                                        <>
-                                            <AccordionItem value={report.topic}>
-                                                <AccordionTrigger>
-                                                    <p>{report.topic}</p>
-                                                    <p className="ml-auto pr-2">
-                                                        Score: {report?.score}
-                                                    </p>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="pl-4">
-                                                    {report.detailedReport}
-                                                    <Accordion className="w-full" type="single" collapsible>
-                                                        {report.questionsAsked.map((question, index) => (
-                                                            <div>
-                                                                <AccordionItem value={question.question}>
-                                                                    <AccordionTrigger>{index + 1}. {question.question}
-                                                                        <br />
-                                                                        Score: {question.score}
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent>
-                                                                        <div className="pl-4">
-                                                                            <h4>User Answer:</h4>
-                                                                            <p>{question.userAnswer}</p>
-                                                                            <br />
-                                                                            <h4>Remark:</h4>
-                                                                            <p>{question.remarks}</p>
-                                                                        </div>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            </div>
-                                                        ))}
-                                                    </Accordion>
-
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </>
-                                    )
-                                })}
-                            </Accordion>
+        <div className="w-full">
+            <Dialog open={copyLinkModalOpen} onOpenChange={setCopyLinkModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Copy Link</DialogTitle>
+                        <DialogDescription>Copy interview link</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2">
+                        <div className="grid flex-1 gap-2">
+                            <Input readOnly defaultValue={`${window.location.origin}/candidates/${copyLinkId}`} />
                         </div>
                     </div>
-
-                </DrawerContent>
-            </Drawer>
-            <div className={`${activeReport ? 'blur-sm' : ''}`}>
-                <div className="flex items-center py-4">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={() => openCandidateDrawer(true)} variant="outline" className="mr-2">
-                                    <Plus size={20} />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Send invite</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={() => openBulkUploadDrawer(true)} className="mr-2">
-                                    <UploadCloud />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Send invite in bulk</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={() => concludeUserInterview()} className="mr-2">
-                                    <CheckCheck />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Conclude every user interview</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button className="mr-2" onClick={handleDownload}><Save /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Download user report</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-
-                    </TooltipProvider>
-                    <Input
-                        placeholder="Filter emails..."
-                        value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) =>
-                            table.getColumn("email")?.setFilterValue(event.target.value)
-                        }
-                        className="max-w-sm"
-                    />
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto">
-                                Columns <ChevronDown />
+                    <DialogFooter className="sm:justify-start">
+                        <Button variant="outline" onClick={() => handleCopyInterviewLink(copyLinkId)}> <CopyIcon /> Copy</Button>
+                        <Button variant="outline" onClick={() => { window.open(`${window.location.origin}/candidates/${copyLinkId}`, "_blank") }}>
+                            <ArrowUpRightFromSquareIcon />
+                            Open
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <div className="flex items-center py-4 px-4 lg:px-6">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={() => onAddCandidate?.()} variant="default" className="mr-2">
+                                <MailPlus size={16} />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => {
-                                    return (
-                                        <DropdownMenuCheckboxItem
-                                            key={column.id}
-                                            className="capitalize"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) =>
-                                                column.toggleVisibility(!!value)
-                                            }
-                                        >
-                                            {column.id}
-                                        </DropdownMenuCheckboxItem>
-                                    )
-                                })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Send invite</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
+                                <Upload size={16} />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Send invite in bulk</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={() => concludeUserInterview()} variant="outline" className="mr-2">
+                                <CheckCircle size={16} />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Conclude every user interview</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button className="mr-2" variant="outline" onClick={handleDownload}><Download size={16} /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Download user report</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+
+                </TooltipProvider>
+                <Input
+                    placeholder="Search emails..."
+                    value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+                    onChange={(event) =>
+                        table.getColumn("email")?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            Columns <ChevronDown />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => {
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={column.id}
+                                        className="capitalize"
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(!!value)
+                                        }
+                                    >
+                                        {column.id}
+                                    </DropdownMenuCheckboxItem>
+                                )
+                            })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <div className="flex flex-col px-4 lg:px-6 gap-4">
+                <Card className="w-full rounded-2xl p-6 space-y-4">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-semibold">{interviewObj?.title}</h1>
+                        </div>
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-1">{interviewObj?.generalDescriptionForAi}</p>
+                    </div>
+
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b pb-4">
+                        <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
+                            <Clock className="w-5 h-5" />
+                            <div>
+                                <p className="text-xs text-gray-500">Duration</p>
+                                <p className="font-medium">{interviewObj?.duration} minutes</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-red-50 rounded-xl">
+                            <Calendar className="w-5 h-5" />
+                            <div>
+                                <p className="text-xs text-gray-500">Created</p>
+                                <p className="font-medium">{formatDateTime(new Date(interviewObj?.createdAt||""))}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-xl">
+                            <div className="w-5 h-5 flex items-center justify-center font-bold">↔</div>
+                            <div>
+                                <p className="text-xs text-gray-500">Skills</p>
+                                <p className="font-medium">{Object.entries(interviewObj?.difficulty || {}).length} skill(s)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">Skill Breakdown</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Object.entries(interviewObj?.difficulty || {}).map(([skill, d]) => (
+                                <div key={skill} className="flex items-center gap-4 p-3 border rounded-xl w-auto">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <p className="font-medium">{skill}</p>
+                                    <Badge className="bg-gray-100 text-gray-700 pointer-events-none">{skillLevelNumberToString[d.difficulty]}</Badge>
+                                    <p className="text-sm text-gray-600">{d.weight}%</p>
+                                    <p className="text-sm text-gray-600">• {d.duration}m</p>
+                                </div>
+                                ))
+                                }
+                        </div>
+                    </div>
+                </Card>
                 <div className="rounded-md border">
                     <Table>
                         <TableHeader>
@@ -575,46 +703,98 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             }
                             {!loading && table.getRowModel().rows.length === 0
                                 ? (
-                                    <>
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-24 text-center"
-                                            >
-                                                No results.
-                                            </TableCell>
-                                        </TableRow>
-                                    </>
-                                ) : <></>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-40 text-center"
+                                        >
+                                            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                                                <div className="text-muted-foreground">
+                                                    <UsersIcon className="w-8 h-8 mx-auto" />
+                                                </div>
+                                                <div className="space-y-1 pb-2">
+                                                    <p className="text-sm font-medium">No candidates yet</p>
+                                                    <p className="text-xs text-muted-foreground">Start by inviting candidates to this interview</p>
+                                                </div>
+                                                <Button 
+                                                    onClick={()=>onAddCandidate?.()} 
+                                                    size="sm"
+                                                    className="rounded-md px-6"
+                                                >
+                                                    <MailPlus className="w-4 h-4 mr-2" />
+                                                    Invite Candidate
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null
                             }
                         </TableBody>
                     </Table>
                 </div>
-                <div className="flex items-center justify-end space-x-2 py-4">
-                    <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                        {table.getFilteredRowModel().rows.length} row(s) selected.
-                    </div>
-                    <div className="space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
             </div>
+            <div className="py-4 px-4 lg:px-6">
+                <Pagination
+                    currentPage={currentPage || 0}
+                    totalPages={totalPages || 0}
+                    pageSize={pageSize || 10}
+                    onPageChange={(page) => onPageChange?.(page)}
+                    onPageSizeChange={(size) => onPageSizeChange?.(size)}
+                    totalCount={totalCount || 0}
+                    entriesText="candidates"
+                />
+            </div>
+            <AlertDialog open={!!reEvaluateId} onOpenChange={() => !isReEvaluating && setReEvaluateId(null)}>
+                <AlertDialogContent className="sm:max-w-[500px]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Re-evaluate Interview</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to re-evaluate this interview? The existing scores will be updated based on new AI evaluation.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="prompt" className="text-sm font-semibold flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-primary" />
+                                Prompt to Re evaluate
+                            </Label>
+                            <Textarea 
+                                id="prompt"
+                                placeholder="Add specific instructions for the AI e.g. 'Focus more on coding logic' or 'Be more lenient with communication skills'" 
+                                className="min-h-[120px] resize-none focus-visible:ring-primary/20"
+                                value={reEvaluatePrompt}
+                                onChange={(e) => setReEvaluatePrompt(e.target.value)}
+                                disabled={isReEvaluating}
+                            />
+                            <p className="text-[11px] text-muted-foreground italic">
+                                * Leave empty for standard evaluation
+                            </p>
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isReEvaluating}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onConfirmReEvaluate();
+                            }}
+                            disabled={isReEvaluating}
+                            className="bg-primary hover:bg-primary/90"
+                        >
+                            {isReEvaluating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Re-evaluating...
+                                </>
+                            ) : (
+                                "Confirm Re-evaluation"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

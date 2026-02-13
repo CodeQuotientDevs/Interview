@@ -18,11 +18,11 @@ export function MarkdownRenderer({ children, type }: MarkdownRendererProps) {
 	const newCodeFunc = useCallback((...args) => {
 		return COMPONENTS.code(type, ...args)
 	}, [type]);
-	
+
 	return (
 		<Markdown
 			remarkPlugins={[remarkGfm]}
-			components={{...COMPONENTS, code: newCodeFunc}}
+			components={{ ...COMPONENTS, code: newCodeFunc }}
 			className="space-y-3"
 		>
 			{children}
@@ -35,7 +35,7 @@ const loadShikiLight = async (code: string, language: string) => {
 	return codeToTokens(code, {
 		lang: language as keyof typeof bundledLanguages,
 		defaultColor: false,
-	themes: { light: "catppuccin-latte", dark: "catppuccin-latte" },
+		themes: { light: "catppuccin-latte", dark: "catppuccin-latte" },
 	});
 }
 
@@ -106,10 +106,11 @@ const CodeBlock = ({ children, className, language, type, ...restProps }: CodeBl
 					{code}
 				</HighlightedPre>
 			</Suspense>
-
-			<div className="invisible absolute right-2 top-2 flex space-x-1 rounded-lg p-1 opacity-0 transition-opacity group-hover/code:visible group-hover/code:opacity-100">
-				<CopyButton content={code} copyMessage="Copied code to clipboard" />
-			</div>
+			{!restProps.isDisableCopy &&
+				<div className="invisible absolute right-2 top-2 flex space-x-1 rounded-lg p-1 opacity-0 transition-opacity group-hover/code:visible group-hover/code:opacity-100">
+					<CopyButton content={code} copyMessage="Copied code to clipboard" />
+				</div>
+			}
 		</div>
 	)
 }
@@ -118,7 +119,7 @@ function flattenChildren(element: Element): string {
 	if (typeof element === "string") return element
 	if (
 		React.isValidElement(element)
-		&& element.props 
+		&& element.props
 		&& typeof element.props === 'object'
 		&& 'children' in element.props
 	) {
@@ -141,7 +142,7 @@ const COMPONENTS = {
 	code: (type: 'light' | 'dark', { children, className, ...rest }: any) => {
 		const match = /language-(\w+)/.exec(className || "")
 		return match ? (
-			<CodeBlock className={className} type={type} language={match[1]} {...rest}>
+			<CodeBlock className={className} type={type} language={match[1]} {...rest} isDisableCopy={true}>
 				{children}
 			</CodeBlock>
 		) : (

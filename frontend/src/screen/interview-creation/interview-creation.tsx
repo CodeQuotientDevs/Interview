@@ -1,26 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TagInput, Tag } from "emblor"
 
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Loader2 } from "lucide-react";
 import MultiSelect, { Option } from "@/components/ui/multi-select";
 import { interviewCreateSchema, interviewGetSchema } from "@/zod/interview";
 import { useAppStore, useMainStore } from "@/store"
 import { useNavigate } from "react-router";
-import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, Form } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, Form } from "@/components/ui/form";
 import { useQuery } from "@tanstack/react-query";
 import { AlertType } from "@/constants";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
+// import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
 import logger from "@/lib/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Separator } from "@/components/ui/separator";
 // import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+// import { QuestionListEditor } from "@/components/question-list-editor/question-list-editor";
+import { TopicCard } from "@/components/interview-creation/topic-card";
 
 interface CandidatePageProps {
 	id?: string
@@ -28,7 +32,7 @@ interface CandidatePageProps {
 
 export function InterviewCreation(props: CandidatePageProps) {
 	const { id } = props;
-	const form = useForm<Zod.infer<typeof interviewCreateSchema>>({
+	const form = useForm<typeof interviewCreateSchema._type>({
 		resolver: zodResolver(interviewCreateSchema),
 		defaultValues: {
 			difficulty: {},
@@ -43,7 +47,13 @@ export function InterviewCreation(props: CandidatePageProps) {
 		handleSubmit,
 		register,
 		setValue,
+		watch,
 	} = form;
+
+
+
+
+
 	const showAlert = useAppStore().showAlert;
 	const setAppLoader = useAppStore().setAppLoader;
 	const navigatorR = useNavigate();
@@ -58,10 +68,14 @@ export function InterviewCreation(props: CandidatePageProps) {
 	});
 
 	const [loading, setLoading] = useState<boolean>(false);
-	const [keywords, setKeywords] = useState<Tag[]>([]);
 	const [selectedTopics, setSelectedTopics] = useState<Array<string>>([]);
 	const [selectedOptions, setSelectedOptions] = useState<Array<{ label: string, value: string }>>([])
-	const [activeKeyword, setActiveKeyword] = useState<number | null>(null);
+
+	// const difficultyData = watch("difficulty");
+	// const totalWeightage = useMemo(() => {
+	// 	const difficulties = Object.values(difficultyData || {});
+	// 	return difficulties.reduce((sum: number, item: any) => sum + (Number(item?.weight) || 0), 0);
+	// }, [difficultyData]);
 
 	const defaultOptions = useMemo(() => (
 		[
@@ -97,20 +111,17 @@ export function InterviewCreation(props: CandidatePageProps) {
 	}, []);
 
 	const onSubmit = useCallback(async (data: unknown) => {
-		logger.info("Data", data);
-		const parsedData = interviewCreateSchema.safeParse(data);
-		if (parsedData.data?.difficulty) {
-			const totalWeight = Object.values(parsedData.data?.difficulty).reduce((result, current) => result += current.weight, 0);
-			if (Math.abs(totalWeight) !== 100) {
-				showAlert({
-					time: 4,
-					title: "Topics Weight not valid",
-					type: AlertType.error,
-					message: "Total weight percentage should round off to 100%",
-				});
-				return;
-			}
-		}
+		logger.info("Data");
+		logger.info(data);
+
+		const d = data as any ?? {};
+		const cleanedData = {
+			...d,
+			title: typeof d.title === 'string' ? d.title.trim() : d.title,
+			generalDescriptionForAi: typeof d.generalDescriptionForAi === 'string' ? d.generalDescriptionForAi.trim() : d.generalDescriptionForAi,
+		};
+		const parsedData = interviewCreateSchema.safeParse(cleanedData);
+
 		if (parsedData.error) {
 			showAlert({
 				time: 4,
@@ -146,7 +157,8 @@ export function InterviewCreation(props: CandidatePageProps) {
 
 	const setAllValuesInForm = useCallback((previousData: typeof interviewGetSchema._type) => {
 		Object.entries(previousData).forEach(([key, value]) => {
-			const typedKey = key as keyof typeof previousData;
+			if (key === "createdAt") return;
+			const typedKey = key as Exclude<keyof typeof previousData, "createdAt">;
 			if (typedKey === 'id') {
 				return;
 			}
@@ -165,11 +177,14 @@ export function InterviewCreation(props: CandidatePageProps) {
 				});
 				setSelectedOptions(selectedOptions);
 			}
-			if (typedKey === 'keywords' && Array.isArray(value)) {
-				setValue('keywords', value);
-				setKeywords(value.map((value) => ({ id: crypto.randomUUID(), text: value })));
+			// Trim title and AI instructions when populating form from existing data
+			if (typedKey === 'title' && typeof value === 'string') {
+				setValue(typedKey, value.trim() as Exclude<typeof value, Date>);
+			} else if (typedKey === 'generalDescriptionForAi' && typeof value === 'string') {
+				setValue(typedKey, value.trim() as Exclude<typeof value, Date>);
+			} else {
+				setValue(typedKey, value as Exclude<typeof value, Date>);
 			}
-			setValue(typedKey, value);
 		});
 	}, [defaultOptionsValueToNameObj, setValue]);
 
@@ -204,193 +219,183 @@ export function InterviewCreation(props: CandidatePageProps) {
 	}, [selectedTopics, form]);
 
 	return (
-		<div className="min-h-screen bg-background text-foreground p-6">
-			<Form
-				{...form}
-			>
-				<form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Card>
-							<CardHeader className="border-b pb-4">
-								<CardTitle className="text-xl font-semibold">Basic Details</CardTitle>
-								<CardDescription className="text-sm text-muted-foreground">
-									Specify basic details of this interview.
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="pt-6">
-								<FormField
-									control={form.control}
-									name="title"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Title</FormLabel>
-											<FormControl>
-												<Input type="text" placeholder="Title for the interview" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</CardContent>
-							<CardContent>
-								<FormField
-									control={form.control}
-									name="duration"
-									render={() => (
-										<FormItem>
-											<FormLabel>Duration</FormLabel>
-											<FormControl>
-												<Input type="number" placeholder="Title for the interview" {...register("duration", { valueAsNumber: true, required: true })} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</CardContent>
-							<CardContent>
-								<FormField
-									control={control}
-									name="keywords"
-									render={({ field }) => (
-										<FormItem className="flex flex-col items-start">
-											<FormLabel className="text-left">Keywords</FormLabel>
-											<FormDescription className="text-left">
-												The keywords for the interview.
-											</FormDescription>
-											<FormControl className="w-full">
-												<TagInput
-													{...field}
-													activeTagIndex={activeKeyword}
-													setActiveTagIndex={setActiveKeyword}
-													placeholder="Enter keywords (optional)"
-													tags={keywords}
-													className="sm:min-w-[450px]"
-													setTags={(newTags) => {
-														setKeywords(newTags);
-														const valueToSet: Array<string> = [];
-														for (const tag of (newTags as Array<Tag>)) {
-															valueToSet.push(tag.text);
-														}
-														setValue('keywords', valueToSet);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</CardContent>
-						</Card>
-						<Card className="row-span-2 flex flex-col">
-							<FormField
-								name="generalDescriptionForAi"
-								control={form.control}
-								render={({ field }) => (
-									<FormItem className="h-full w-full flex flex-col">
-										<CardHeader className="border-b pb-4">
-											<FormLabel>
-												<CardTitle className="text-xl font-semibold">Instructions For Ai</CardTitle>
-											</FormLabel>
-											<CardDescription className="text-sm text-muted-foreground">
-												Specify instruction for AI agent. You can also add specific questions for the candidate.
-											</CardDescription>
-										</CardHeader>
-										<CardContent className="pt-2 h-full">
-											<Textarea
-												{...field}
-												placeholder="Ai Instructions"
-												className="resize-none flex-grow min-h-[300px] w-full h-full"
-											/>
-										</CardContent>
-									</FormItem>
-								)}
-							/>
-						</Card>
-						<Card>
-							<CardHeader className="border-b pb-4">
-								<CardTitle className="text-xl font-semibold">Set Topics and Their Difficulty Level</CardTitle>
-								<CardDescription className="text-sm text-muted-foreground">
-									Specify which topics to focus on and set their difficulty.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className="pt-6 pb-4">
-									<Label>Key Topics / Skills</Label>
-									<MultiSelect
-										options={defaultOptions}
-										defaultSelected={selectedOptions}
-										onChange={handleSelectedTopics}
-										placeholder="Select relevant topics"
-									/>
-								</div>
-								{selectedTopics.map((topic) => {
-									const title = defaultOptionsValueToNameObj[topic] ?? topic;
-									return (
-										<>
-											<div key={topic} className="border p-2 rounded-md">
-												<div className="border-b-2 text-center mb-2">
-													<span className="w-24 font-medium">{title}</span>
+		<>
+			<SiteHeader
+				breadcrumbs={[
+					{ label: "Interviews", href: "/interview" },
+					{ label: id ? "Edit Interview" : "Create Interview" }
+				]}
+				backTo="/interview"
+			/>
+			<div className="flex flex-1 flex-col h-full">
+				<div className="@container/main flex flex-1 flex-col h-full">
+					<div className="flex flex-col py-2 h-full">
+						<div className="flex-1 bg-background text-foreground">
+							<div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-0 min-h-full">
+								{/* Left Column */}
+								<div className="px-4 lg:px-6">
+									<Form
+										{...form}
+									>
+										<form id="interview-form" onSubmit={handleSubmit(onSubmit)} className="mx-auto">
+											<div className="space-y-8 py-6">
+												{/* Basic Details Section */}
+												<div className="space-y-4">
+													<div className="pb-0">
+														<h2 className="text-xl font-semibold">Basic Details</h2>
+														<p className="text-sm text-muted-foreground">
+															Specify basic details of this interview.
+														</p>
+													</div>
+													<div className="space-y-6">
+														<FormField
+															control={form.control}
+															name="title"
+															render={({ field }) => (
+																<FormItem>
+																	<FormLabel>Title</FormLabel>
+																	<FormControl>
+																		<Input type="text" placeholder="Title for the interview" {...field} />
+																	</FormControl>
+																	<FormMessage />
+																</FormItem>
+															)}
+														/>
+														<FormField
+															control={form.control}
+															name="duration"
+															render={() => (
+																<FormItem>
+																	<FormLabel>Duration (in minutes)</FormLabel>
+																	<FormControl>
+																		<Input type="number" placeholder="Duration in minutes" {...register("duration", { valueAsNumber: true, required: true })} />
+																	</FormControl>
+																	<FormMessage />
+																</FormItem>
+															)}
+														/>
+													</div>
 												</div>
-												<Table className="table-fixed w-full">
-													<TableHeader>
-														<TableRow>
-															<TableHead className="min-w-[100px] w-[100px]">Weight</TableHead>
-															<TableHead className="min-w-[100px] w-[100px]">Duration (min)</TableHead>
-															<TableHead className="min-w-[100px] w-[100px]">Difficulty</TableHead>
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														<TableRow>
-															<TableCell className="w-[100px]">
-																<Input type="number" placeholder="Weight" {...register(`difficulty.${topic}.weight`, { required: true, valueAsNumber: true })} />
-															</TableCell>
-															<TableCell className="w-[100px]">
-																<Input type="number" placeholder="Duration" {...register(`difficulty.${topic}.duration`, { required: true, valueAsNumber: true })} />
-															</TableCell>
-															<TableCell className="w-[100px]">
-																<Controller
-																	name={`difficulty.${topic}.difficulty`}
-																	control={control}
-																	defaultValue={1}
-																	rules={{ required: true }}
-																	render={({ field }) => (
-																		<Select onValueChange={field.onChange} value={field?.value?.toString()}>
-																			<SelectTrigger className="w-full">
-																				<SelectValue placeholder="Difficulty" />
-																			</SelectTrigger>
-																			<SelectContent>
-																				<SelectGroup>
-																					<SelectLabel>Difficulty</SelectLabel>
-																					<SelectItem value={"1"}>Easy</SelectItem>
-																					<SelectItem value={"2"}>Medium</SelectItem>
-																					<SelectItem value={"3"}>Hard</SelectItem>
-																				</SelectGroup>
-																			</SelectContent>
-																		</Select>
-																	)}
-																/>
-															</TableCell>
-														</TableRow>
-													</TableBody>
-												</Table>
-											</div >
-										</>
-									)
-								})}
-							</CardContent>
-						</Card>
-					</div>
-					<div className="w-full flex justify-center">
-						<Button disabled={loading} type="submit" className="w-full max-w-fit m-auto">
-							{loading &&
-								<Loader2 className="animate-spin" />
-							}
-							Submit
-						</Button>
-					</div>
-				</form>
-			</Form>
 
-		</div >
+												<Separator className="mx-4 lg:mx-6 my-8" />
+
+												{/* AI Instructions Section */}
+												<div className="space-y-6">
+													<div className="pb-0">
+														<h2 className="text-xl font-semibold">Instructions For AI</h2>
+														<p className="text-sm text-muted-foreground">
+															Specify instruction for AI agent.
+														</p>
+													</div>
+													<FormField
+														name="generalDescriptionForAi"
+														control={form.control}
+														render={({ field }) => (
+															<FormItem>
+																<FormLabel>AI Instructions</FormLabel>
+																<FormControl>
+																	<Textarea
+																		{...field}
+																		placeholder={`Enter specific instructions for the AI interviewer...
+Example: Focus on evaluating problem-solving skills, code quality, and edge-case handling.`}
+																		className="resize-none min-h-[300px]"
+																	/>
+																</FormControl>
+																<FormMessage />
+															</FormItem>
+														)}
+													/>
+												</div>
+											</div>
+										</form>
+									</Form>
+								</div>
+
+								{/* Vertical Separator */}
+								<div className="hidden lg:flex lg:justify-center lg:items-stretch min-h-full px-4 lg:px-6">
+									<Separator orientation="vertical" className="w-px min-h-full" />
+								</div>
+
+								{/* Right Column */}
+								<div className="px-4 lg:px-6">
+									<div className="space-y-8 py-6">
+										{/* Set Topics Section */}
+										<div className="space-y-6">
+											<div className="pb-0">
+												<h2 className="text-xl font-semibold">Set Topics and Their Difficulty Level</h2>
+												<p className="text-sm text-muted-foreground">
+													Specify which topics to focus on and set their difficulty.
+												</p>
+											</div>
+											<div className="space-y-6">
+												<div>
+													<Label className="mb-3 block">Key Topics / Skills</Label>
+													<MultiSelect
+														options={defaultOptions}
+														defaultSelected={selectedOptions}
+														onChange={handleSelectedTopics}
+														placeholder="Select relevant topics"
+													/>
+												</div>
+												<div className="space-y-4">
+													{selectedTopics.map((topic, topicIndex) => {
+														const title = defaultOptionsValueToNameObj[topic] ?? topic;
+														const topicErrors = (form.formState.errors as any)?.difficulty?.[topic];
+														return (
+															<TopicCard
+																key={topic}
+																topic={topic}
+																title={title}
+																topicIndex={topicIndex}
+																register={register}
+																control={control}
+																errors={topicErrors}
+																watch={watch}
+															/>
+														)
+													})}
+												</div>
+
+												{/* {selectedTopics.length > 0 && (
+													<div className="flex items-center justify-between px-1 py-2 border-t border-dashed mt-2">
+														<span className="text-sm font-medium text-muted-foreground">Total Weightage</span>
+														<span className={cn(
+															"text-sm font-bold",
+															totalWeightage === 100 ? "text-green-600" : "text-destructive"
+														)}>
+															{totalWeightage}%
+														</span>
+													</div>
+												)} */}
+								{(form.formState.errors as any)?.difficulty?.message && (
+									<p className="text-sm font-medium text-destructive">
+										{(form.formState.errors as any).difficulty.message}
+									</p>
+								)}
+
+											</div>
+										</div>
+									</div>
+								</div>
+							</div> {/* Close main grid container */}
+						</div>
+					</div>
+				</div>
+			</div>
+			<SiteFooter>
+				<Button
+					disabled={loading}
+					type="submit"
+					form="interview-form"
+					size="sm"
+					className="h-8"
+				>
+					{loading &&
+						<Loader2 className="h-4 w-4 animate-spin" />
+					}
+					Submit
+				</Button>
+			</SiteFooter>
+		</>
 	);
 }

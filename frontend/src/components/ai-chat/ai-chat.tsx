@@ -1,149 +1,250 @@
-import { Chat } from "@/components/ui/chat";
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Editor, EditorRefType } from "@/components/editor";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Chat } from '@/components/ui/chat';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Editor, EditorRefType } from '@/components/editor';
+import { Button } from '@/components/ui/button';
+import { Loader2, GripVertical } from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { languagesAllowed } from '@/constants/interview';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface AiChatProp {
-    // interviewId: string;
-    isGenerating: boolean;
-    interviewEnded: boolean;
-    messages: Array<MessageType>;
-    handleSubmission: (response: string) => Promise<void>;
-    setIsInterviewEnded: (data: boolean) => void;
+  // interviewId: string;
+  isGenerating: boolean;
+  isUploading: boolean;
+  interviewEnded: boolean;
+  messages: Array<MessageType>;
+  handleSubmission: (response: string) => Promise<void>;
+  setIsInterviewEnded: (data: boolean) => void;
+  handleIntervieweeIdle: () => void;
+  handleAudioSubmission: (audioFile: File, audioDuration: number) => Promise<void>;
+  layout?: 'editor-left' | 'editor-right';
 }
 
 export default function AiChat(props: AiChatProp) {
-    const { messages, isGenerating, interviewEnded, handleSubmission, setIsInterviewEnded } = props;
-    const [input, setInput] = useState<string>("");
-    const [openCodeEditor, setOpenCodeEditor] = useState<boolean>(false);
-    const [languageSelections, setLanguageSelection] = useState<Array<{ label: string, value: string }>>([]);
-    const [selectedLanguage, setSelectedLanguage] = useState<string>("");
-    const [editorValue, setEditorValue] = useState<string>('');
-    const editorRef = useRef<EditorRefType>(null);
+  const {
+    messages,
+    isGenerating,
+    isUploading,
+    interviewEnded,
+    handleSubmission,
+    setIsInterviewEnded,
+    handleIntervieweeIdle,
+    handleAudioSubmission: propsHandleAudioSubmission,
+    layout
+  } = props;
+  const [input, setInput] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(languagesAllowed[0].value);
+  const [editorValue, setEditorValue] = useState<string>('');
+  const [editorWidth, setEditorWidth] = useState<number>(600);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const editorRef = useRef<EditorRefType>(null);
+  const resizeRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 0 });
 
-    const handleInputChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
-        setInput(e.target.value);
-    }, []);
+  const handleInputChange = useCallback(
+    (e: ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(e.target.value);
+      handleIntervieweeIdle();
+    },
+    [handleIntervieweeIdle]
+  );
 
-    const handleEditorSubmit = useCallback(async (skip?: boolean) => {
-        const value = editorRef.current?.getValue();
-        let input = '';
-        if (skip) {
-            input = 'Lets skip this question.';
-            setOpenCodeEditor(false);
-        }
-        if (value) {
-            input = value;
-        }
-        if (value && selectedLanguage) {
-            input = `\`\`\`${selectedLanguage}\n${value}\n\`\`\``
-        }
-        await handleSubmission(input);
+  const handleEditorInputChange = useCallback(
+    (value: string) => {
+      setEditorValue(value);
+      handleIntervieweeIdle();
+    },
+    [handleIntervieweeIdle]
+  );
+
+  const handleUnifiedSubmission = useCallback(
+    async (options?: { skip?: boolean; preventDefault?: boolean }) => {
+      handleIntervieweeIdle();
+
+      // Handle skip
+      if (options?.skip) {
+        setInput('');
         setEditorValue('');
-    }, [ selectedLanguage, handleSubmission, setEditorValue]);
+        await handleSubmission('Lets skip this question.');
+        return;
+      }
 
-    const handleSubmissionSimpleInput = useCallback(async (event?: { preventDefault?: (() => void) | undefined; }) => {
-        event?.preventDefault?.();
-        setInput('')
-        await handleSubmission(input);
-    }, [input, handleSubmission]);
+      // Build input to send
+      let inputToSend = input;
+      const editorContent = editorRef.current?.getValue();
 
-    useEffect(() => {
-        for (let index = messages.length - 1; index >= 0; index--) {
-            const currentMessage = messages[index];
-            if (currentMessage?.role === "model") {
-                setLanguageSelection(currentMessage.parsedData?.languagesAllowed ?? []);
-                setOpenCodeEditor(currentMessage.parsedData?.editorType === 'editor');
-                if (currentMessage.parsedData && 'isInterviewGoingOn' in currentMessage.parsedData) {
-                    setIsInterviewEnded(!currentMessage.parsedData.isInterviewGoingOn)
-                }
-                break;
-            }
+      // If there's editor content, format it as code block
+      if (editorContent && selectedLanguage) {
+        const marker = `\n\n[Code Attachment (${selectedLanguage})]:`;
+        const codeFence = '```';
+        inputToSend = `${input ? input : ''}${marker}\n${codeFence}${selectedLanguage}\n${editorContent}\n${codeFence}`;
+        setEditorValue('');
+      }
+
+      setInput('');
+      await handleSubmission(inputToSend);
+    },
+    [handleIntervieweeIdle, input, selectedLanguage, handleSubmission]
+  );
+
+  const handleChatSubmit = useCallback(
+    async (event?: { preventDefault?: (() => void) | undefined }) => {
+      event?.preventDefault?.();
+      await handleUnifiedSubmission();
+    },
+    [handleUnifiedSubmission]
+  );
+
+  // const handleFormatCode = useCallback(() => {
+  //   if (editorRef.current) {
+  //     editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    for (let index = messages.length - 1; index >= 0; index--) {
+      const currentMessage = messages[index];
+      if (currentMessage?.role === 'model') {
+        if (currentMessage.parsedData && 'isInterviewGoingOn' in currentMessage.parsedData) {
+          setIsInterviewEnded(!currentMessage.parsedData.isInterviewGoingOn);
         }
-    }, [messages, setIsInterviewEnded]);
+        break;
+      }
+    }
+  }, [messages, setIsInterviewEnded]);
 
-    useEffect(() => {
-        if (!languageSelections.length) {
-            setSelectedLanguage("");
-            return;
-        }
-        setSelectedLanguage(languageSelections[0].value);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsResizing(true);
+      resizeRef.current = {
+        startX: e.clientX,
+        startWidth: editorWidth
+      };
+    },
+    [editorWidth]
+  );
 
-    }, [languageSelections]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
 
-    return (
-        <div className="flex gap-4 p-4 h-full">
-            <Chat
-                className="transition-all flex-1 mt-auto"
-                showInput={!interviewEnded}
-                messages={messages}
-                input={input}
-                handleInputChange={handleInputChange}
-                isGenerating={isGenerating}
-                handleSubmit={handleSubmissionSimpleInput}
-            />
-            <AnimatePresence>
-                {openCodeEditor && !interviewEnded && (
-                    <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "66%" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="h-full flex flex-col border border-border rounded-lg shadow-md bg-gray-900"
+      let deltaX = resizeRef.current.startX - e.clientX;
+
+      if (layout === 'editor-left' || !layout) {
+        deltaX = -deltaX;
+      }
+
+      const newWidth = Math.max(400, Math.min(1200, resizeRef.current.startWidth + deltaX));
+      setEditorWidth(newWidth);
+    },
+    [isResizing, layout]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  return (
+    <div className={`flex gap-4 p-4 h-full ${layout === 'editor-right' ? 'flex-row' : 'flex-row-reverse'}`}>
+      <Chat
+        className="transition-all flex-1 mt-auto"
+        showInput={!interviewEnded}
+        messages={messages}
+        input={input}
+        handleInputChange={handleInputChange}
+        isGenerating={isGenerating}
+        isUploading={isUploading}
+        handleSubmit={handleChatSubmit}
+        allowEmptySubmit={!!editorValue?.trim()}
+        handleAudioSubmission={propsHandleAudioSubmission}
+        handleIntervieweeIdle={handleIntervieweeIdle}
+      />
+
+      {!interviewEnded && (
+        <div className="flex flex-col h-full relative" style={{ width: `${editorWidth}px` }}>
+          {/* Resize handle */}
+          <div
+            className={`absolute top-0 bottom-0 w-3 cursor-col-resize z-10 group flex items-center justify-center bg-gray-700 hover:bg-gray-600 transition-colors ${layout === 'editor-right' ? 'left-0' : 'right-0'}`}
+            onMouseDown={handleMouseDown}
+          >
+            <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors" />
+          </div>
+
+          <div className="p-4 pl-6 pb-[12px] gap-2 bg-gray-800 flex justify-between">
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger className="w-[150px] bg-white">
+                <SelectValue placeholder="Select a language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {languagesAllowed.map((ele) => (
+                    <SelectItem key={ele.value} value={ele.value}>
+                      {ele.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2 items-center">
+              {/* { ["typescript","javascript"].includes(selectedLanguage) && (
+                <Button variant="outline" onClick={handleFormatCode} title="Format Code">
+                  <Wand2 className="w-4 h-4" />
+                </Button>
+              )} */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating && <Loader2 className="animate-spin" />}
+                    Skip
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Skip Question</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to skip this question?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        handleUnifiedSubmission({ skip: true });
+                      }}
                     >
-                        <div className="p-3 flex gap-2 bg-gray-800">
-                            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                                <SelectTrigger className="w-[180px] bg-white">
-                                    <SelectValue placeholder="Select a language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {languageSelections.map((ele) => (
-                                            <SelectItem key={ele.value} value={ele.value}>
-                                                {ele.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <Button
-                                className="ml-auto"
-                                variant="outline"
-                                disabled={isGenerating}
-                                onClick={() => {
-                                    handleEditorSubmit(true);
-                                }}
-                            >
-                                {isGenerating
-                                    && <Loader2 className="animate-spin" />
-                                }
-                                Skip
-                            </Button>
-                            <Button
-                                variant="outline"
-                                disabled={isGenerating}
-                                onClick={() => {
-                                    handleEditorSubmit(false);
-                                }}
-                            >
-                                {isGenerating
-                                    && <Loader2 className="animate-spin" />
-                                }
-                                Submit
-                            </Button>
-                        </div>
-                        <Editor
-                            ref={editorRef}
-                            value={editorValue}
-                            language={selectedLanguage}
-                            onChange={setEditorValue}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                      Skip
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+          <Editor ref={editorRef} value={editorValue} language={selectedLanguage} onChange={handleEditorInputChange} />
         </div>
-    );
+      )}
+    </div>
+  );
 }

@@ -7,29 +7,58 @@ import {
     interviewUpdateSchema,
     interviewListItemSchema,
     interviewCandidateListSchema,
-}  from "@/zod/interview";
-import type { Content } from "@google/generative-ai";
-import { candidateInviteSchema } from "@/zod/candidate";
+    interviewCandidateReportSchema,
+} from "@/zod/interview";
+import { candidateInviteSchema, interviewContentSchema, messagesSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
+import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
+import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
-    sendMessageAi: (id: string, message: string) => Promise<Array<Content>>;
-    interviewList: () => Promise<Array<typeof interviewListItemSchema._type>>;
+    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messagesSchema._type>;
+    interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
+        data: Array<typeof interviewListItemSchema._type>;
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    }>;
     getInterview: (id: string) => Promise<typeof interviewGetSchema._type>;
     addInterview: (data: typeof interviewItemSchema._type) => Promise<string>;
     updateInterview: (data: typeof interviewUpdateSchema._type) => Promise<string>;
     sendInterviewCandidate: (id: string, date: typeof candidateInviteSchema._type) => Promise<string>;
-    getInterviewCandidateList: (id: string) => Promise<Array<typeof interviewCandidateListSchema._type>>;
-    getDataForInterview: (id: string) => Promise<{ completedAt?: Date, messages: Array<Content> }>;
+    updateInterviewCandidate: (interviewId: string, candidateId: string, data: typeof candidateInviteSchema._type) => Promise<string>;
+    getInterviewCandidateList: (id: string, page?: number, limit?: number, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
+        data: Array<typeof interviewCandidateListSchema._type>;
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    }>;
+    getDataForInterview: (id: string) => Promise<typeof interviewContentSchema._type>;
     cloneInterview: (id: string) => Promise<string>
-    revaluate: (id: string) => Promise<string>
-    getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateListSchema._type>;
+    revaluate: (id: string, prompt?: string) => Promise<string>
+    getCandidateAttempt: (interviewId: string, attemptId: string) => Promise<typeof interviewCandidateReportSchema._type>;
+    concludeCandidateInterview: (attemptId: string) => Promise<void>;
     concludeInterview: (interviewId: string, attemptId?: string) => Promise<void>
+    getDashboardStats: () => Promise<typeof DashboardSchema._type>;
+    getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
+    getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
+    getPresignedUrl: (contentType: string) => Promise<{ uploadUrl: string; fileUrl: string; key: string }>;
+    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number }>;
 }
 
 
 export const createMainStore = (client: MainApi) => {
-	const initialValues: MainStoreState = {
+    const initialValues: MainStoreState = {
         async getInterview(id: string) {
             const res = await client.getInterview(id);
             return res;
@@ -38,25 +67,29 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.addInterview(data);
             return res;
         },
-        async interviewList() {
-            const res = await client.interviewList();
+        async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+            const res = await client.interviewList(page, limit, searchQuery, sortBy, sortOrder);
             return res;
         },
         async updateInterview(data) {
             const res = await client.updateInterview(data);
             return res;
         },
-        async sendMessageAi(id, message) {
-            const res = await client.sendMessage(id, message);
+        async sendMessageAi(id, message, audioUrl, type, audioDuration) {
+            const res = await client.sendMessage(id, message, audioUrl, type, audioDuration);
             return res;
         },
-        async getInterviewCandidateList(id) {
-            const res = await client.getCandidateInterviewList(id);
+        async getInterviewCandidateList(id, page, limit, sortBy, sortOrder) {
+            const res = await client.getCandidateInterviewList(id, page, limit, sortBy, sortOrder);
             return res;
         },
         async sendInterviewCandidate(id, data) {
-            logger.info(`Data: `, data);
+            logger.info(`Data: `, data as unknown as undefined);
             const res = await client.sendInterviewCandidate(id, data);
+            return res.id;
+        },
+        async updateInterviewCandidate(interviewId, candidateId, data) {
+            const res = await client.updateInterviewCandidate(interviewId, candidateId, data);
             return res.id;
         },
         async getDataForInterview(id) {
@@ -67,8 +100,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.cloneInterview(id);
             return res.id;
         },
-        async revaluate(id) {
-            const res = await client.revaluateInterviewAttempt(id);
+        async revaluate(id, prompt) {
+            const res = await client.revaluateInterviewAttempt(id, prompt);
             return res.id;
         },
         async getCandidateAttempt(interviewId, attemptId) {
@@ -76,13 +109,36 @@ export const createMainStore = (client: MainApi) => {
             return res;
         },
         async concludeInterview(interviewId, attemptId) {
-            await client.concludeInterview(interviewId, attemptId?[attemptId]: undefined);
+            await client.concludeInterview(interviewId, attemptId ? [attemptId] : undefined);
         },
-	};
+        async concludeCandidateInterview(attemptId) {
+            await client.concludeCandidateInterview(attemptId);
+        },
+        async getDashboardStats() {
+            const res = await client.getDashboardStats();
+            return res;
+        },
+        async getDashboardGraphdata(startDate?: Date, endDate?: Date) {
+            const res = await client.getDashboardGraphdata(startDate, endDate);
+            return res;
+        },
+        async getInterviewsByDate(date: Date, type: 'hour' | 'date' | 'month') {
+            const res = await client.getInterviewsByDate(date, type);
+            return res;
+        },
+        async getPresignedUrl(contentType: string) {
+            const res = await client.getPresignedUrl(contentType);
+            return res;
+        },
+        async getInterviewMeta(id: string) {
+            const res = await client.getInterviewMeta(id);
+            return res;
+        }
+    };
 
-	return create<MainStoreState>()(
-		immer(() => ({
-			...initialValues,
-		}))
-	);
+    return create<MainStoreState>()(
+        immer(() => ({
+            ...initialValues,
+        }))
+    );
 };

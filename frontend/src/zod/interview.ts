@@ -1,13 +1,13 @@
 import Zod from "zod";
 
 const types = {
-	title: Zod.string().nonempty(),
+	title: Zod.string().trim().nonempty("Tittle must contain at least 1 character(s)"),
 	name: Zod.string().nonempty(),
 	email: Zod.string().email(),
 	phone: Zod.string().nonempty().optional(),
 	jobTitle: Zod.string().nonempty(),
-	description: Zod.string().nonempty(),
-	duration: Zod.number().nonnegative().min(1),
+	description: Zod.string().nonempty().trim(),
+	duration: Zod.number({ invalid_type_error: "Duration is required" }).nonnegative("Duration must not be negative").min(1, "Duration must be greater than or equal to 1"),
 	difficulty: Zod.record(Zod.string(), Zod.object({
 		difficulty: Zod.preprocess((arg) => {
 			if (typeof arg === 'string') {
@@ -15,8 +15,9 @@ const types = {
 			}
 			return arg;
 		}, Zod.number().min(1).max(3)),
-		duration: Zod.number().min(1).default(1),
-		weight: Zod.number().min(1).default(1),
+		duration: Zod.number({ invalid_type_error: "Duration is required" }).min(1).default(1),
+		weight: Zod.number({ invalid_type_error: "Weight is required" }).min(0).default(1),
+		questionList: Zod.string().optional().default(""),
 	})),
 	startTime: Zod.date(),
 	endTime: Zod.date().optional().nullable(),
@@ -24,7 +25,7 @@ const types = {
 	completedAt: Zod.date().optional(),
 	score: Zod.number()?.optional(),
 	keywords: Zod.array(Zod.string().nonempty()),
-	generalDescriptionForAi: Zod.string().nonempty(),
+	generalDescriptionForAi: Zod.string().trim().nonempty("Description must contain at least 1 character(s)"),
 }
 
 export const interviewCreateSchema = Zod.object({
@@ -33,12 +34,27 @@ export const interviewCreateSchema = Zod.object({
 	keywords: types.keywords.optional().default([]),
 	difficulty: types.difficulty.optional().default({}),
 	generalDescriptionForAi: types.generalDescriptionForAi,
-}).refine((arg) => {
-	const totalDuration = Object.values(arg.difficulty).reduce((result, currentValue) => result += currentValue.duration, 0);
-	return totalDuration <= arg.duration;
-}, {
-	message: "Duration must be greater than the sum of all difficulty durations",
-    path: ["duration"],
+}).superRefine((data, ctx) => {
+	const difficulties = Object.values(data.difficulty || {});
+	if (difficulties.length > 0) {
+		const totalWeight = difficulties.reduce((sum, item) => sum + (item.weight || 0), 0);
+		if (totalWeight !== 100) {
+			ctx.addIssue({
+				code: Zod.ZodIssueCode.custom,
+				message: `Total weightage must be 100% (Current: ${totalWeight}%)`,
+				path: ["difficulty"],
+			});
+		}
+
+		const totalDuration = difficulties.reduce((sum, item) => sum + (item.duration || 0), 0);
+		if (totalDuration !== data.duration) {
+			ctx.addIssue({
+				code: Zod.ZodIssueCode.custom,
+				message: `Total duration of topics must be equal to the interview duration (${data.duration} mins). Current: ${totalDuration} mins`,
+				path: ["difficulty"],
+			});
+		}
+	}
 });
 
 export const interviewUpdateSchema = Zod.object({
@@ -56,12 +72,12 @@ export const interviewListItemSchema = Zod.object({
 	title: Zod.string().nonempty(),
 	keywords: types.keywords.optional(),
 	duration: types.duration,
-	createdAt: Zod.preprocess((arg) => {
+	firstCreatedAt: Zod.preprocess((arg) => {
 		if (typeof arg === 'string' || typeof arg === 'number') {
 			return new Date(arg)
 		}
 		return arg;
-	}, Zod.date()),
+	}, Zod.date()).optional(),
 	updatedAt: Zod.preprocess((arg) => {
 		if (typeof arg === 'string' || typeof arg === 'number') {
 			return new Date(arg)
@@ -77,6 +93,12 @@ export const interviewGetSchema = Zod.object({
 	keywords: types.keywords.optional(),
 	difficulty: types.difficulty.optional(),
 	generalDescriptionForAi: types.generalDescriptionForAi,
+	createdAt: Zod.preprocess((arg) => {
+		if (typeof arg === 'string' || typeof arg === 'number') {
+			return new Date(arg)
+		}
+		return arg;
+	}, Zod.date()).optional()
 });
 
 const interviewCandidate = {
@@ -131,6 +153,13 @@ export const interviewCandidateListSchema = Zod.object({
 		}
 		return arg;
 	}, Zod.date()),
+	actualStartTime: Zod.preprocess(arg => {
+		if (typeof arg === "string" || arg instanceof Date) {
+			const parsedDate = new Date(arg);
+			return isNaN(parsedDate.getTime()) ? undefined : parsedDate;
+		}
+		return arg;
+	}, Zod.date().optional()),
 	endTime: Zod.preprocess(arg => {
 		if (typeof arg === "string" || arg instanceof Date) {
 			const parsedDate = new Date(arg);
@@ -139,11 +168,31 @@ export const interviewCandidateListSchema = Zod.object({
 		return arg;
 	}, Zod.date().optional()),
 	completedAt: interviewCandidate.completedAt.optional(),
+	concludedAt: interviewCandidate.completedAt.optional(),
+	isBeingConcluded: Zod.boolean().optional(),
 	score: interviewCandidate.score.optional(),
 	summaryReport: interviewCandidate.summaryReport.optional(),
 	detailedReport: interviewCandidate.detailedReport.optional(),
 	userSpecificDescription: interviewCandidate.userSpecificDescription.optional(),
+    inviteStatus: Zod.enum(['pending', 'processing', 'sent', 'failed']).optional(),
+    attachments: Zod.array(Zod.object({
+        url: Zod.string(),
+        originalName: Zod.string(),
+    })).optional(),
 });
+
+export const interviewCandidateReportSchema = Zod.intersection(
+	interviewCandidateListSchema,
+	Zod.object({
+		interview: Zod.object({
+			_id: Zod.string().nonempty(),
+			title: Zod.string().nonempty(),
+			duration: Zod.number().nonnegative().min(1),
+		}),
+		phone: Zod.string().optional(),
+		yearOfExperience: Zod.number().nonnegative().optional(),
+	})
+);
 
 
 // export const interviewListSchema = Zod.object({
@@ -171,6 +220,7 @@ export const interviewCandidateListSchema = Zod.object({
 export const sessionSchema = Zod.object({
 	userId: Zod.string().nonempty().min(1),
 	displayname: Zod.string().nonempty(),
+	email: Zod.string().email(),
 });
 
 export const interviewItemSchema = interviewCreateSchema;

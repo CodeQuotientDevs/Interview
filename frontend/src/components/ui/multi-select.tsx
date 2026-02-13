@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { X, ChevronDown } from "lucide-react";
-import logger from "@/lib/logger";
 
 export type Option = { label: string; value: string };
 
@@ -24,7 +23,7 @@ interface MultiSelectProps {
 }
 
 const createNewTag: Option = {
-  label: 'Create New Tag',
+  label: 'Create New Topic',
   value: '#123123123',
 }
 
@@ -137,7 +136,6 @@ export default function MultiSelect({
         <PopoverContent className="w-56 p-0">
           <Command
             filter={(value, search, keywords) => {
-              logger.info(value, search, keywords);
               if (search.length && keywords?.length == 0 && value === createNewTag.value) {
                 return 1;
               }
@@ -148,6 +146,12 @@ export default function MultiSelect({
               placeholder="Search..."
               value={search}
               onValueChange={setSearch}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  createNewOption(search);
+                  setSearch("");
+                }
+              }}
             />
             <CommandList>
               {filteredOptions.length === 0 && (
@@ -159,7 +163,7 @@ export default function MultiSelect({
                       setSearch("");
                     }}
                   >
-                    Create New Tag
+                    Create New Topic
                   </Button>
                 </CommandEmpty>
               )}

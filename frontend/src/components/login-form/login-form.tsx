@@ -9,7 +9,7 @@ import * as z from "zod";
 import { useAppStore } from "@/store";
 import { AlertType } from "@/constants";
 import { useMutation } from "@tanstack/react-query";
-
+import { CodeQuotientIcon } from "../logo";
 
 // Define the login schema using Zod
 const loginSchema = z.object({
@@ -54,36 +54,47 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 	}, [loginHandler, showAlert]);
 
 	return (
+		<div className="w-full flex flex-col justify-center items-center bg-white p-4">
 		<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}> 
-			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(handleLogin)}
-					className={cn("flex flex-col gap-6", className)}
-					{...props}
-				>
-					<div className="flex flex-col items-center gap-2 text-center">
-						<h1 className="text-2xl font-bold">Login to your account</h1>
-						<p className="text-balance text-sm text-muted-foreground">
-							Use one of the options below to sign in
-						</p>
-					</div>
-					<div className="grid gap-6">
-						<div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-							<span className="bg-background text-muted-foreground relative z-10 px-2">
-								Sign in with
-							</span>
+			<div className="flex flex-col items-center gap-6 max-w-md w-full text-center">
+				<div className="">
+		        <CodeQuotientIcon className="h-[80px]"/>
+				</div>
+				<div className="flex flex-col items-center gap-6 max-w-md w-full text-center">
+					<h1 className="text-3xl font-bold">Welcome to CodeQuotient</h1>
+					<p className="text-gray-600 mt-1">Access the interview dashboard</p>
+				</div>
+				<Form {...form}>
+					<form
+						onSubmit={form.handleSubmit(handleLogin)}
+						className={cn("flex flex-col gap-8 ", className)}
+						{...props}
+					>
+						<div className="grid gap-6">
+							<GoogleLogin
+							width={"500px"}
+							theme="filled_blue"
+								onSuccess={credentialResponse => {
+									if (credentialResponse.credential) {
+										handleLoginWithGoogle.mutate(credentialResponse.credential);
+									}
+								}}
+							>
+							</GoogleLogin>
 						</div>
-						<GoogleLogin
-							onSuccess={credentialResponse => {
-								if (credentialResponse.credential) {
-									handleLoginWithGoogle.mutate(credentialResponse.credential);
-								}
-							}}
-						>
-						</GoogleLogin>
+					</form>
+				</Form>
+				<div className="bg-gray-100 p-4 rounded-xl text-sm flex gap-2 items-start w-full max-w-md">
+					<span className="text-red-500 mt-0.5">⚠️</span>
+					<p className="text-gray-700 text-left">This is a secure admin access point. Authorized personnel only.</p>
 					</div>
-				</form>
-			</Form>
+
+					<div className="text-center text-xs text-gray-500 mt-6">
+					<p>© CodeQuotient. All rights reserved.</p>
+				</div>
+			</div>
 		</GoogleOAuthProvider>
+
+		</div>
 	);
 }

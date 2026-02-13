@@ -58,4 +58,24 @@ export default class LoginClient {
         const session = await this.requestWrapper(this._mainAPI.get('/session'));
         return session;
     }
+
+    async generateToken() {
+        const response = await this.requestWrapper(this._mainAPI.post('/token/generate', {}));
+        return response.data;
+    }
+
+    async getTokens() {
+        const response = await this.requestWrapper(this._mainAPI.get('/tokens'));
+        return response.data;
+    }
+
+    async deleteToken(token: string) {
+        const response = await this.requestWrapper(this._mainAPI.delete(`/token/${token}`));
+        return response.data;
+    }
+
+    async logout() {
+        const response = await this.requestWrapper(this._mainAPI.get('/logout'));
+        return response.data;
+    }
 }

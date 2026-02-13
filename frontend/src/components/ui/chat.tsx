@@ -28,6 +28,10 @@ interface ChatPropsBase {
     messageId: string,
     rating: "thumbs-up" | "thumbs-down"
   ) => void
+  allowEmptySubmit?: boolean
+  isUploading: boolean;
+  handleAudioSubmission?: (audioFile: File, audioDuration: number) => Promise<void>;
+  handleIntervieweeIdle?: () => void;
 }
 
 interface ChatPropsWithoutSuggestions extends ChatPropsBase {
@@ -54,10 +58,14 @@ export function Chat({
   suggestions,
   className,
   onRateResponse,
+  handleAudioSubmission,
+  isUploading,
+  allowEmptySubmit,
+  handleIntervieweeIdle,
 }: ChatProps) {
   const lastMessage = messages.at(-1)
   const isEmpty = messages.length === 0
-  const isTyping = lastMessage?.role === "user"
+  const isTyping = isGenerating || lastMessage?.role === "user"
 
   const messageOptions = useCallback(
     (message: Message) => ({
@@ -132,7 +140,19 @@ export function Chat({
             // files={files}
             // setFiles={setFiles}
             stop={stop}
+            placeholderInterval={10000}
             isGenerating={isGenerating}
+            isUploading={isUploading}
+            allowEmptySubmit={allowEmptySubmit}
+            handleAudioSubmission={handleAudioSubmission}
+            placeholders={[
+              "Explain your answer with relevant examples...",
+              "Describe your approach and reasoning...",
+              "Share your thought process step by step...",
+              "Answer as you would in a real interview...",
+            ]}
+            placeholderAnimationType="slide"
+            handleActivity={handleIntervieweeIdle}
           />
         )}
       </ChatForm>
@@ -199,6 +219,7 @@ export const ChatContainer = forwardRef<
   )
 })
 ChatContainer.displayName = "ChatContainer"
+
 
 interface ChatFormProps {
   className?: string

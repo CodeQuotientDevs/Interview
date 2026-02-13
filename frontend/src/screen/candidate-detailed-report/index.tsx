@@ -1,0 +1,389 @@
+import { useNavigate, useParams } from "react-router";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Loader } from "@/components/ui/loader";
+import { CheckCircle, XCircle, AlertCircle, Trophy, Target, MessageSquare, Code, ArrowLeft } from "lucide-react";
+
+import { useAppStore, useMainStore } from "@/store";
+import { AlertType } from "@/constants";
+import { useQuery } from "@tanstack/react-query";
+import { SiteHeader } from "@/components/site-header";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { formatDateTime, formatDurationDayjs } from "@/lib/utils";
+
+// Type definitions based on Zod schema
+type DetailedReport = {
+    topic: string;
+    score: number;
+    detailedReport: string;
+    questionsAsked: Array<{
+        userAnswer: string;
+        question: string;
+        remarks: string;
+        score: number;
+    }>;
+};
+
+// type ReportData = {
+//     id: string;
+//     name: string;
+//     email: string;
+//     startTime: Date;
+//     endTime?: Date;
+//     completedAt: Date;
+//     score: number;
+//     summaryReport: string;
+//     detailedReport?: DetailedReport[];
+//     interview?: {
+//         id: string;
+//         title: string;
+//     };
+// };
+
+export function CandidateDetailedReport() {
+    const { interviewId, candidateId } = useParams();
+    const showAlert = useAppStore().showAlert;
+    const getCandidateAttempt = useMainStore().getCandidateAttempt;
+    const navigate = useNavigate();
+
+    const reportQuery = useQuery({
+        queryKey: ['candidate-report', interviewId, candidateId],
+        queryFn: () => {
+            return getCandidateAttempt(interviewId!, candidateId!);
+        },
+        enabled: !!(interviewId && candidateId),
+        retry: false,
+    });
+
+
+    // Handle errors
+    useEffect(() => {
+        if (reportQuery.error) {
+            showAlert({
+                time: 5,
+                title: 'Error loading report',
+                type: AlertType.error,
+                message: reportQuery.error?.message ?? 'Failed to load the detailed report. Please try again.'
+            });
+            return;
+        }
+    }, [reportQuery.error, showAlert]);
+
+
+    const getBreadcrumbs = (candidateName?: string) => {
+        // TODO: Get interview title from API response when available
+        const interviewTitle = reportQuery.data?.interview.title ?? "[Interview Name]"; // Placeholder for now
+        return [
+            { label: "Interviews", href: "/interview" },
+            { label: interviewTitle, href: `/interview/candidates/${interviewId}` },
+            { label: "Candidates", href: `/interview/candidates/${interviewId}` },
+            { label: candidateName ? `${candidateName}'s Report` : "Report" }
+        ];
+    };
+
+
+
+    if (reportQuery.isLoading) {
+        return (
+            <>
+                <SiteHeader
+                    breadcrumbs={getBreadcrumbs()}
+                    showBack={true}
+                    backTo={`/interview/candidates/${interviewId}`}
+                />
+                <div className="flex flex-1 flex-col">
+                    <div className="flex justify-center items-center h-64">
+                        <Loader />
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    if (!reportQuery.data || !reportQuery.data.completedAt) {
+        return (
+            <>
+                <SiteHeader
+                    breadcrumbs={getBreadcrumbs()}
+                    showBack={true}
+                    backTo={`/interview/candidates/${interviewId}`}
+                />
+                <div className="flex flex-1 flex-col">
+                    <div className="@container/main flex flex-1 items-center justify-center">
+                        <div className="max-w-xl w-full text-center p-8 bg-background/70 backdrop-blur rounded-lg border border-muted-foreground/10">
+                            <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center bg-gray-100 rounded-full">
+                                <AlertCircle className="w-8 h-8 text-gray-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">No report available</h3>
+                            <p className="text-sm text-muted-foreground mb-6">
+                                It may still be processing or the candidate hasn't completed the interview.
+                            </p>
+                            <div className="flex items-center justify-center gap-3">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate(`/interview/candidates/${interviewId}`)}
+                                    className="h-8 hover:bg-muted"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    <span>Back to candidates</span>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    const reportData = reportQuery.data;
+
+    // Helper function to get score color
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return "text-green-600 bg-green-50 border-green-200";
+        if (score >= 40) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+        return "text-red-600 bg-red-50 border-red-200";
+    };
+
+    // Helper function to get progress bar color
+    const getProgressColor = (score: number) => {
+        if (score >= 80) return "bg-green-500";
+        if (score >= 40) return "bg-yellow-500";
+        return "bg-red-500";
+    };
+
+    // Helper function to get score icon
+    const getScoreIcon = (score: number) => {
+        if (score >= 80) return <CheckCircle className="w-4 h-4" />;
+        if (score >= 40) return <AlertCircle className="w-4 h-4" />;
+        return <XCircle className="w-4 h-4" />;
+    };
+
+    // Helper for individual question score styling (score 0-10)
+    const getQuestionScoreStyle = (score: number) => {
+        if (score >= 8) return {
+            text: "text-green-700",
+            bg: "bg-green-50",
+            border: "border-green-200",
+            icon: <CheckCircle className="w-3 h-3" />
+        };
+        if (score >= 4) return {
+            text: "text-yellow-700",
+            bg: "bg-yellow-50",
+            border: "border-yellow-200",
+            icon: <AlertCircle className="w-3 h-3" />
+        };
+        return {
+            text: "text-red-700",
+            bg: "bg-red-50",
+            border: "border-red-200",
+            icon: <XCircle className="w-3 h-3" />
+        };
+    };
+
+    return (
+        <>
+            <SiteHeader
+                breadcrumbs={getBreadcrumbs(reportData.name)}
+                showBack={true}
+                backTo={`/interview/candidates/${interviewId}`}
+            />
+            <div className="flex flex-1 flex-col">
+                <div className="@container/main flex flex-1 flex-col">
+                    <div className="flex flex-col py-2">
+                        <div className="px-4 lg:px-6 space-y-6">
+                            {/* Candidate Overview Card */}
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Trophy className="w-5 h-5 text-yellow-500" />
+                                                {reportData.name}'s Interview Report
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Interview: {reportData.interview?.title || 'N/A'} •
+                                                Completed: {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
+                                            </CardDescription>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-3xl font-bold text-primary">
+                                                {reportData.score}/100
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">Overall Score</div>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-medium">Performance</span>
+                                                <span className="text-sm text-muted-foreground">{reportData.score}%</span>
+                                            </div>
+                                            <Progress value={reportData.score} fillColor={getProgressColor(reportData.score ?? 0)} className="h-3" />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
+                                            <div className="text-center">
+                                                <div className="text-xl font-bold text-blue-600">
+                                                    {(reportData.detailedReport ?? []).length}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Topics Covered</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-xl font-bold text-green-600">
+                                                    {(reportData.detailedReport ?? []).reduce((acc: number, report: DetailedReport) =>
+                                                        acc + (report.questionsAsked?.length || 0), 0)}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Questions Asked</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-xl font-bold text-orange-600">
+                                                    {reportData.actualStartTime && reportData.completedAt ? 
+                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.actualStartTime).getTime()) / 1000)) 
+                                                        : 'N/A'}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Total Time Taken</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-xl font-bold text-purple-600">
+                                                    {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Completion Time</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Summary Report Card */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <MessageSquare className="w-5 h-5" />
+                                        Interview Summary
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="prose prose-sm max-w-none">
+                                        {/* Render summary as Markdown preview so any formatting in AI response shows properly */}
+                                        <MarkdownRenderer type="light">{reportData.summaryReport || ''}</MarkdownRenderer>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Topic-wise Detailed Reports */}
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-semibold flex items-center gap-2">
+                                    <Target className="w-5 h-5" />
+                                    Topic-wise Analysis
+                                </h2>
+
+                                <Accordion type="multiple" className="w-full space-y-4">
+                                    {(reportData.detailedReport ?? []).map((report: DetailedReport, index: number) => (
+                                        <AccordionItem key={report.topic} value={report.topic} className="border rounded-lg overflow-hidden">
+                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="flex items-center gap-3">
+                                                        <Code className="w-4 h-4" />
+                                                        <span className="text-lg font-medium">{report.topic}</span>
+                                                    </div>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`flex items-center gap-1 mr-2 ${getScoreColor(report.score)}`}
+                                                    >
+                                                        {getScoreIcon(report.score)}
+                                                        {report.score}/100
+                                                    </Badge>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-6 pb-4">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <Progress value={report.score} fillColor={getProgressColor(report.score)} className="h-2" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-medium mb-2 text-muted-foreground">Detailed Feedback</h4>
+                                                        <p className="text-sm leading-relaxed">{report.detailedReport}</p>
+                                                    </div>
+
+                                                    <Separator />
+
+                                                    <div>
+                                                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                                                            <MessageSquare className="w-4 h-4" />
+                                                            Questions & Answers ({report.questionsAsked.length})
+                                                        </h4>
+                                                        <Accordion type="single" collapsible className="w-full">
+                                                            {report.questionsAsked.map((question: DetailedReport['questionsAsked'][0], qIndex: number) => {
+                                                                const qStyle = getQuestionScoreStyle(question.score);
+                                                                return (
+                                                                    <AccordionItem key={qIndex} value={`q-${index}-${qIndex}`}>
+                                                                        <AccordionTrigger className="text-left">
+                                                                            <div className="flex items-start gap-3 w-full">
+                                                                                <Badge variant="secondary" className="mt-0.5">
+                                                                                    {qIndex + 1}
+                                                                                </Badge>
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm font-medium leading-tight">
+                                                                                        {question.question}
+                                                                                    </p>
+                                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Score: {question.score}/10
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </AccordionTrigger>
+                                                                        <AccordionContent>
+                                                                            <div className="space-y-4 pl-11">
+                                                                                <div>
+                                                                                    <h5 className={`text-sm font-medium ${qStyle.text} mb-2 flex items-center gap-1`}>
+                                                                                        {qStyle.icon}
+                                                                                        Candidate's Answer
+                                                                                    </h5>
+                                                                                    <div className={`${qStyle.bg} border ${qStyle.border} rounded-md p-3`}>
+                                                                                        {question.userAnswer ? (
+                                                                                            <MarkdownRenderer type="light">{question.userAnswer}</MarkdownRenderer>
+                                                                                        ) : (
+                                                                                            <p className={`text-sm ${qStyle.text}`}>No answer provided</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 className={`text-sm font-medium ${qStyle.text} mb-2 flex items-center gap-1`}>
+                                                                                        {qStyle.icon}
+                                                                                        AI Evaluation & Remarks
+                                                                                    </h5>
+                                                                                    <div className={`${qStyle.bg} border ${qStyle.border} rounded-md p-3`}>
+                                                                                        {question.remarks ? (
+                                                                                            <MarkdownRenderer type="light">{question.remarks}</MarkdownRenderer>
+                                                                                        ) : (
+                                                                                            <p className={`text-sm ${qStyle.text}`}>No remarks provided</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </AccordionContent>
+                                                                    </AccordionItem>
+                                                                );
+                                                            })}
+                                                        </Accordion>
+                                                    </div>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+}
