@@ -64,7 +64,7 @@ export function QuestionItem({ id, index, question, isExpanded, onToggle, onChan
           {isExpanded ? (
             <span className="text-sm font-semibold text-foreground">Question {index + 1}</span>
           ) : (
-            <p className="text-sm text-foreground truncate pr-4">
+            <p className="text-sm text-foreground truncate pr-4 max-w-[300px]">
               {question || <span className="text-muted-foreground/60 italic">No question content...</span>}
             </p>
           )}
