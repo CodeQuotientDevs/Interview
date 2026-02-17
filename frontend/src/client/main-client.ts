@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema } from '@/zod/interview';
+import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema, interviewCandidateListResponseSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
 import { candidateInviteSchema, interviewContentSchema, messagesSchema } from '@/zod/candidate';
@@ -116,20 +116,7 @@ export default class MainClient {
         const queryString = params.toString();
         const url = queryString ? `/api/v1/candidates/${id}?${queryString}` : `/api/v1/candidates/${id}`;
         const response = await this.requestWrapper(this._mainAPI.get(url));
-        const obj = await Zod.object({
-            data: Zod.array(interviewCandidateListSchema),
-            pagination: Zod.object({
-                page: Zod.number(),
-                limit: Zod.number(),
-                total: Zod.number(),
-                totalPages: Zod.number(),
-                hasNext: Zod.boolean(),
-                hasPrev: Zod.boolean()
-            }),
-            meta: Zod.object({
-                sharedAccess: Zod.boolean()
-            }).optional()
-        }).safeParseAsync(response.data);
+        const obj = interviewCandidateListResponseSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
