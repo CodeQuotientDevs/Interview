@@ -202,6 +202,21 @@ export const interviewCandidateReportSchema = Zod.intersection(
 	})
 );
 
+export const interviewCandidateListResponseSchema =  Zod.object({
+			data: Zod.array(interviewCandidateListSchema),
+			pagination: Zod.object({
+				page: Zod.number(),
+				limit: Zod.number(),
+				total: Zod.number(),
+				totalPages: Zod.number(),
+				hasNext: Zod.boolean(),
+				hasPrev: Zod.boolean()
+			}),
+			meta: Zod.object({
+				sharedAccess: Zod.boolean()
+			}).optional()
+		})
+
 
 // export const interviewListSchema = Zod.object({
 // 	id: Zod.string().nonempty(),
