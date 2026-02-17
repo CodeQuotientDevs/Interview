@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema, interviewCandidateListResponseSchema } from '@/zod/interview';
+import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateReportSchema, interviewCandidateListResponseSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
 import { candidateInviteSchema, interviewContentSchema, messagesSchema } from '@/zod/candidate';

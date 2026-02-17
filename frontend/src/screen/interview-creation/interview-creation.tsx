@@ -157,8 +157,8 @@ export function InterviewCreation(props: CandidatePageProps) {
 
 	const setAllValuesInForm = useCallback((previousData: typeof interviewGetSchema._type) => {
 		Object.entries(previousData).forEach(([key, value]) => {
-			if (key === "createdAt") return;
-			const typedKey = key as Exclude<keyof typeof previousData, "createdAt">;
+			if (key === "createdAt" || key === "users") return;
+			const typedKey = key as Exclude<keyof typeof previousData, "createdAt" | "users">;
 			if (typedKey === 'id') {
 				return;
 			}
@@ -183,7 +183,7 @@ export function InterviewCreation(props: CandidatePageProps) {
 			} else if (typedKey === 'generalDescriptionForAi' && typeof value === 'string') {
 				setValue(typedKey, value.trim() as Exclude<typeof value, Date>);
 			} else {
-				setValue(typedKey, value as Exclude<typeof value, Date>);
+				setValue(typedKey, value as Exclude<keyof typeof previousData, "createdAt" | "users">);
 			}
 		});
 	}, [defaultOptionsValueToNameObj, setValue]);
