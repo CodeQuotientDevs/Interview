@@ -12,7 +12,7 @@ import {
 import {
     UsersIcon, ArrowUpRightFromSquareIcon, CheckCircle, ChevronDown, CopyIcon,
     Download, FileText, MailPlus, MoreHorizontal, Upload, Clock,
-    Calendar, AlertCircle, Loader2
+    Calendar, AlertCircle, Loader2, Share2
 } from "lucide-react"
 import Arrow from "@/components/ui/Arrow"
 import {
@@ -62,6 +62,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { inviteStatusConfig } from "@/constants/interview";
 import { Pagination } from "@/components/ui/pagination";
+import { ShareInterviewModal } from "./shareModal";
 
 
 interface DataTableInterface {
@@ -83,9 +84,12 @@ interface DataTableInterface {
     onPageChange?: (page: number) => void
     onPageSizeChange?: (size: number) => void
     onSortChange?: (sort: { id: string, desc: boolean }) => void
+    sharedAccess?: boolean
+    shareInterview: (email: string) => Promise<void>;
+    unshareInterview: (userId: string) => Promise<void>;
 }
 
- const skillLevelNumberToString = {
+const skillLevelNumberToString = {
     1: 'beginner',
     2: 'intermediate',
     3: 'expert',
@@ -96,14 +100,16 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
     const { interviewId, onEditCandidate } = props;
     const navigate = useNavigate();
+    const [shareModalOpen, setShareModalOpen] = React.useState(false);
 
     const showAlert = useAppStore().showAlert;
+
     const alertModel = useAppStore().useAlertModel;
-    const { 
-        data, 
-        loading,  
-        openBulkUploadDrawer, 
-        interviewName, 
+    const {
+        data,
+        loading,
+        openBulkUploadDrawer,
+        interviewName,
         interviewObj,
         currentPage,
         totalPages,
@@ -113,6 +119,9 @@ export function InterviewCandidateTable(props: DataTableInterface) {
         onPageSizeChange,
         onSortChange,
         onAddCandidate,
+        sharedAccess,
+        shareInterview,
+        unshareInterview
     } = props;
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -181,6 +190,23 @@ export function InterviewCandidateTable(props: DataTableInterface) {
     const handleReEvaluate = React.useCallback(async (id: string) => {
         setReEvaluateId(id);
     }, []);
+
+    const handleShareInterview = React.useCallback(async (email: string) => {
+        await shareInterview(email);
+    }, [shareInterview]);
+
+    const handleUnshareInterview = React.useCallback(async (userId: string) => {
+        alertModel({
+            title: "Remove Access",
+            description: "Are you sure you want to remove access of this user?",
+            onCancel: async () => { },
+            onOk: async () => {
+                await unshareInterview(userId);
+            },
+            cancelButtonTitle: "Cancel",
+            okButtonTitle: "Remove Access"
+        });
+    }, [unshareInterview, alertModel]);
 
     const [reEvaluateId, setReEvaluateId] = React.useState<string | null>(null);
     const [reEvaluatePrompt, setReEvaluatePrompt] = React.useState("");
@@ -256,7 +282,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Name
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -297,7 +323,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Email
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -330,7 +356,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Start Time
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -353,7 +379,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         End Time
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -376,7 +402,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Score
-                        <Arrow 
+                        <Arrow
                             fillUp={sortDirection === "asc"}
                             fillDown={sortDirection === "desc"}
                             className="ml-2"
@@ -392,11 +418,12 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 return <div className="text-center">{row.original.score}</div>
             }
         },
-        {
+
+        ...(sharedAccess ? [] : [{
             id: "actions",
             header: () => <div className="text-center"></div>,
             enableHiding: false,
-            cell: ({ row }) => {
+            cell: ({ row }: { row: any }) => {
                 const isCompleted = row.original.completedAt !== undefined;
                 const isConcluding = row.original.isBeingConcluded === true;
                 const isConcluded = row.original.concludedAt !== undefined;
@@ -472,13 +499,13 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </div>
                 )
             },
-        },
-    ], [concludeUserInterview, handleReEvaluate, interviewId, navigate, onEditCandidate])
+        }]),
+    ], [concludeUserInterview, handleReEvaluate, interviewId, navigate, onEditCandidate, sharedAccess])
 
     // Sync sorting with parent
     React.useEffect(() => {
         if (sorting.length > 0 && onSortChange) {
-             onSortChange?.({ id: sorting[0].id, desc: sorting[0].desc })
+            onSortChange?.({ id: sorting[0].id, desc: sorting[0].desc })
         }
     }, [sorting])
 
@@ -525,48 +552,60 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                 </DialogContent>
             </Dialog>
             <div className="flex items-center py-4 px-4 lg:px-6">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={() => onAddCandidate?.()} variant="default" className="mr-2">
-                                <MailPlus size={16} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Send invite</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
-                                <Upload size={16} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Send invite in bulk</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={() => concludeUserInterview()} variant="outline" className="mr-2">
-                                <CheckCircle size={16} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Conclude every user interview</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button className="mr-2" variant="outline" onClick={handleDownload}><Download size={16} /></Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Download user report</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-
-                </TooltipProvider>
+                {
+                    !sharedAccess && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={() => onAddCandidate?.()} variant="default" className="mr-2">
+                                        <MailPlus size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Send invite</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button className="mr-2" variant="outline" onClick={() => setShareModalOpen(true)}>
+                                        <Share2 size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Share Interview</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
+                                        <Upload size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Send invite in bulk</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={() => concludeUserInterview()} variant="outline" className="mr-2">
+                                        <CheckCircle size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Conclude every user interview</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button className="mr-2" variant="outline" onClick={handleDownload}><Download size={16} /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Download user report</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )
+                }
                 <Input
                     placeholder="Search emails..."
                     value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
@@ -624,7 +663,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             <Calendar className="w-5 h-5" />
                             <div>
                                 <p className="text-xs text-gray-500">Created</p>
-                                <p className="font-medium">{formatDateTime(new Date(interviewObj?.createdAt||""))}</p>
+                                <p className="font-medium">{formatDateTime(new Date(interviewObj?.createdAt || ""))}</p>
                             </div>
                         </div>
 
@@ -647,8 +686,8 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                     <p className="text-sm text-gray-600">{d.weight}%</p>
                                     <p className="text-sm text-gray-600">• {d.duration}m</p>
                                 </div>
-                                ))
-                                }
+                            ))
+                            }
                         </div>
                     </div>
                 </Card>
@@ -716,14 +755,16 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                                                     <p className="text-sm font-medium">No candidates yet</p>
                                                     <p className="text-xs text-muted-foreground">Start by inviting candidates to this interview</p>
                                                 </div>
-                                                <Button 
-                                                    onClick={()=>onAddCandidate?.()} 
-                                                    size="sm"
-                                                    className="rounded-md px-6"
-                                                >
-                                                    <MailPlus className="w-4 h-4 mr-2" />
-                                                    Invite Candidate
-                                                </Button>
+                                                {!sharedAccess &&
+                                                    <Button
+                                                        onClick={() => onAddCandidate?.()}
+                                                        size="sm"
+                                                        className="rounded-md px-6"
+                                                    >
+                                                        <MailPlus className="w-4 h-4 mr-2" />
+                                                        Invite Candidate
+                                                    </Button>
+                                                }
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -752,16 +793,16 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             Are you sure you want to re-evaluate this interview? The existing scores will be updated based on new AI evaluation.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    
+
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="prompt" className="text-sm font-semibold flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 text-primary" />
                                 Prompt to Re evaluate
                             </Label>
-                            <Textarea 
+                            <Textarea
                                 id="prompt"
-                                placeholder="Add specific instructions for the AI e.g. 'Focus more on coding logic' or 'Be more lenient with communication skills'" 
+                                placeholder="Add specific instructions for the AI e.g. 'Focus more on coding logic' or 'Be more lenient with communication skills'"
                                 className="min-h-[120px] resize-none focus-visible:ring-primary/20"
                                 value={reEvaluatePrompt}
                                 onChange={(e) => setReEvaluatePrompt(e.target.value)}
@@ -775,7 +816,7 @@ export function InterviewCandidateTable(props: DataTableInterface) {
 
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isReEvaluating}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
                                 onConfirmReEvaluate();
@@ -795,6 +836,18 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            {interviewObj && (
+                <ShareInterviewModal
+                    onShare={
+                        handleShareInterview
+                    }
+                    open={shareModalOpen}
+                    setOpen={setShareModalOpen}
+                    interviewName={props.interviewName || "Interview"}
+                    users={interviewObj?.users || []}
+                    onUnshare={handleUnshareInterview}
+                />
+            )}
         </div>
     )
 }

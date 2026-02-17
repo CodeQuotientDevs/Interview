@@ -118,4 +118,7 @@ export default class InterviewRepository {
             }
         );
     }
+    async aggregate(pipeline: mongoose.PipelineStage[]) {
+        return this.model.aggregate(pipeline);
+    }
 }

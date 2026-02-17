@@ -84,9 +84,12 @@ export const interviewListItemSchema = Zod.object({
 		}
 		return arg;
 	}, Zod.date()),
+	meta: Zod.object({
+		sharedAccess: Zod.boolean()
+	}).optional()
 });
 
-export const interviewGetSchema = Zod.object({
+export const interviewGetSchema =Zod.object({
 	id: Zod.string().nonempty(),
 	title: types.title,
 	duration: types.duration,
@@ -98,8 +101,13 @@ export const interviewGetSchema = Zod.object({
 			return new Date(arg)
 		}
 		return arg;
-	}, Zod.date()).optional()
-});
+	}, Zod.date()).optional(),
+	users: Zod.array(Zod.object({
+		id: Zod.string().nonempty(),
+		name: Zod.string().nonempty(),
+		email: Zod.string().nonempty(),
+	})),
+})
 
 const interviewCandidate = {
 	id: Zod.string().nonempty(),

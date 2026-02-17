@@ -8,6 +8,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
 import type InterviewRepositoryInterface from "../data-access/interview.repository"
+import { InterviewTypeEnum } from '@root/constants/candidate';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -80,18 +81,23 @@ export class InterviewService {
         return this.model.findOne(findObj, {});
     }
 
-    async listInterviewPaginated(paginationConfig: PaginationConfig, session: Session) {
+    async listInterviewPaginated(paginationConfig: PaginationConfig, session: Session, type?: InterviewTypeEnum) {
         const { page = 1, limit = 10, searchQuery, sortBy, sortOrder } = paginationConfig;
         const skip = (page - 1) * limit;
 
         const findObj: Record<string, any> = {
-            isActive: true,
-            createdBy: new mongoose.Types.ObjectId(session.userId),
+            isActive: true
         };
 
         // Apply search filter
         if (searchQuery) {
             findObj.title = { $regex: new RegExp(escapeRegex(searchQuery), 'i') };
+        }
+        if (type === InterviewTypeEnum.SHARED) {
+            findObj.sharedIds = new mongoose.Types.ObjectId(session.userId)
+        }
+        else {
+            findObj.createdBy = new mongoose.Types.ObjectId(session.userId)
         }
 
         // Apply sorting
@@ -159,6 +165,92 @@ export class InterviewService {
         return this.model.update(interviewId, updateObj, sess);
     }
 
+    async getUsersWithAccess(interviewId: string) {
+        //get the sharedIds and then use that sharedIds to get user data
+        const pipeline = [
+            {
+                $match: {
+                    id: new mongoose.Types.ObjectId(interviewId),
+                    isActive: true
+                }
+            },
+            {
+                $unwind: "$sharedIds"
+            },
+            {
+                $lookup: {
+                    from: "auths",
+                    localField: "sharedIds",
+                    foreignField: "id",
+                    as: "authInfo"
+                }
+            },
+            {
+                $unwind: "$authInfo"
+            },
+            {
+                $replaceRoot: {
+                    newRoot: "$authInfo"
+                }
+            }
+        ];
+
+        const usersData = await this.model.aggregate(pipeline);
+        return usersData;
+    }
+
+    async shareInterview(interviewId: string, userId: string, sessionObj: Session) {
+        if (!sessionObj.userId || !sessionObj.orgId) {
+            throw new Error('Invalid session: userId and orgId are required');
+        }
+        const sess: { userId: string; orgId: string } = {
+            userId: sessionObj.userId,
+            orgId: sessionObj.orgId,
+        };
+
+        const interview = await this.getInterviewById(interviewId);
+        if (!interview) {
+            throw new Error('Interview not found');
+        }
+
+        const sharedIds = interview.sharedIds || [];
+        // Prevent duplicate sharing
+        if (!sharedIds.some((id: any) => id.type.toString() === userId)) {
+            const { _id, createdAt, updatedAt, ...rest } = interview;
+            const updatedInterview = {
+                ...rest,
+                sharedIds: [...sharedIds, new mongoose.Types.ObjectId(userId)]
+            };
+
+            return this.model.update(interviewId, updatedInterview as any, sess);
+        }
+        return interview;
+    }
+
+
+    async unshareInterview(interviewId: string, userId: string, sessionObj: Session) {
+        if (!sessionObj.userId || !sessionObj.orgId) {
+            throw new Error('Invalid session: userId and orgId are required');
+        }
+        const sess: { userId: string; orgId: string } = {
+            userId: sessionObj.userId,
+            orgId: sessionObj.orgId,
+        };
+
+        const interview = await this.getInterviewById(interviewId);
+
+        const sharedIds = interview.sharedIds || [];
+        // Prevent duplicate sharing
+        const filteredSharedIds = sharedIds.filter((id: mongoose.Types.ObjectId) => id.toString() !== userId)
+        const { _id, createdAt, updatedAt, ...rest } = interview;
+        const updatedInterview = {
+            ...rest,
+            sharedIds: filteredSharedIds
+        };
+
+        return this.model.model.updateOne({ id: interviewId,isActive:true }, updatedInterview as any);
+    }
+
     async getStats(session: Session): Promise<GetStatsResult> {
         const { start: todayStart, end: todayEnd } = getTodayRange(this.timezone);
 
@@ -220,9 +312,9 @@ export class InterviewService {
         });
 
         const recentSessions = await candidateModel.find(
-                { interviewId: { $in: interviewIds }, isActive: true },
-                { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1, score: 1 }
-            )
+            { interviewId: { $in: interviewIds }, isActive: true },
+            { interviewId: 1, userId: 1, startTime: 1, createdAt: 1, completedAt: 1, score: 1 }
+        )
             .populate({ path: 'interview', select: '_id id title duration' })
             .populate({ path: 'user', select: '_id name email' })
             .sort({ completedAt: -1 })
@@ -253,33 +345,33 @@ export class InterviewService {
         const accessibleInterviews = await this.model.find(interviewFilter, { id: 1 });
         const interviewIds = accessibleInterviews.map((i: any) => i.id);
         const sessions = await candidateModel
-        .find(
-            {
-                interviewId: { $in: interviewIds },
-                isActive: true,
-                completedAt: {
-                    $gte: startDate,
-                    $lte: endDate,
+            .find(
+                {
+                    interviewId: { $in: interviewIds },
+                    isActive: true,
+                    completedAt: {
+                        $gte: startDate,
+                        $lte: endDate,
+                    },
                 },
-            },
-            {
-                interviewId: 1,
-                userId: 1,
-                startTime: 1,
-                createdAt: 1,
-                completedAt: 1,
-                score: 1,
-            }
-        )
-        .populate({
-            path: "interview",
-            select: "_id id title duration",
-        })
-        .populate({
-            path: "user",
-            select: "_id name email",
-        })
-        .sort({ completedAt: -1 });
+                {
+                    interviewId: 1,
+                    userId: 1,
+                    startTime: 1,
+                    createdAt: 1,
+                    completedAt: 1,
+                    score: 1,
+                }
+            )
+            .populate({
+                path: "interview",
+                select: "_id id title duration",
+            })
+            .populate({
+                path: "user",
+                select: "_id name email",
+            })
+            .sort({ completedAt: -1 });
         return sessions;
     }
 }

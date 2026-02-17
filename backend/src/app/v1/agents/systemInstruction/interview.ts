@@ -183,7 +183,6 @@ export const systemInstructionCurrentInterview = (
   candidate: Candidate,
   user: BasicUserDetails,
   questionList: string,
-  candidateBehavior?: any
 ): string => {
   return `You are an **AI INTERVIEWER** for **${process.env.COMPANY_NAME}**. You are a professional, strict evaluator. Your role is to ASSESS the candidate's knowledge, NOT to teach or help them learn.
 

@@ -79,13 +79,14 @@ export default class MainClient {
         return obj.data.id;
     }
 
-    async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+    async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: 'owned' | 'shared') {
         const params = new URLSearchParams();
         if (page) params.append('page', page.toString());
         if (limit) params.append('limit', limit.toString());
         if (searchQuery) params.append('searchQuery', searchQuery);
         if (sortBy) params.append('sortBy', sortBy);
         if (sortOrder) params.append('sortOrder', sortOrder);
+        if (type) params.append('type', type);
 
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews?${params.toString()}`));
         const obj = await Zod.object({
@@ -124,7 +125,10 @@ export default class MainClient {
                 totalPages: Zod.number(),
                 hasNext: Zod.boolean(),
                 hasPrev: Zod.boolean()
-            })
+            }),
+            meta: Zod.object({
+                sharedAccess: Zod.boolean()
+            }).optional()
         }).safeParseAsync(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
@@ -139,6 +143,16 @@ export default class MainClient {
             throw new Error('Something went wrong');
         }
         return obj.data;
+    }
+
+    async shareInterview(interviewId: string, email: string) {
+        const response = await this.requestWrapper(this._mainAPI.post(`/api/v1/interviews/${interviewId}/share`, { email }));
+        return response.data;
+    }
+
+    async unshareInterview(interviewId: string, userId: string) {
+        const response = await this.requestWrapper(this._mainAPI.delete(`/api/v1/interviews/${interviewId}/share/${userId}`));
+        return response.data;
     }
 
     async sendInterviewCandidate(id: string, data: typeof candidateInviteSchema._type) {
@@ -270,6 +284,6 @@ export default class MainClient {
     }
     async getInterviewMeta(id: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/interview-meta/${id}`));
-        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number };
+        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number , isInitialized:boolean };
     }
 }

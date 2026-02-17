@@ -5,7 +5,7 @@ import { Router, Request, Response } from 'express';
 import { logger } from '@libs/logger';
 
 import middleware from "@app/v1/middleware";
-import { checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
+import { checkForSharedAccess, checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
 
 
 import { candidateCreateSchema, candidateUpdateSchema } from '@app/v1/zod/candidate';
@@ -127,7 +127,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview Not Found' });
             }
-            if (checkPermissionForContentModification(interviewObj, req.session)) {
+
+            let sharedAccess = checkForSharedAccess(interviewObj, req.session);
+            if (!sharedAccess && checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not Authorized' });
             }
 
@@ -136,6 +138,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.json({
                 data: list,
                 pagination: result.pagination,
+                meta: {
+                    sharedAccess
+                }
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate GET /${id}`, error: error?.message, trace: error?.stack });
@@ -223,28 +228,29 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const serverTime = Date.now();
+            const isInitialized=candidateObj.actualStartTime!==null;
 
-            // Check basic constraints similar to main endpoint but don't start anything
-            if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
-                return res.json({
-                    inviteStatus: candidateObj.inviteStatus,
-                    completedAt: candidateObj.completedAt,
-                    startTime: candidateObj.startTime,
-                    endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email },
-                    currentTime: serverTime
-                });
-            }
-            if (candidateObj.startTime.getTime() > serverTime) {
-                return res.json({
-                    inviteStatus: candidateObj.inviteStatus,
-                    completedAt: candidateObj.completedAt,
-                    startTime: candidateObj.startTime,
-                    endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email },
-                    currentTime: serverTime
-                });
-            }
+            // // Check basic constraints similar to main endpoint but don't start anything
+            // if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
+            //     return res.json({
+            //         inviteStatus: candidateObj.inviteStatus,
+            //         completedAt: candidateObj.completedAt,
+            //         startTime: candidateObj.startTime,
+            //         endTime: candidateObj.endTime,
+            //         candidate: { email: userObj.email },
+            //         currentTime: serverTime
+            //     });
+            // }
+            // if (candidateObj.startTime.getTime() > serverTime) {
+            //     return res.json({
+            //         inviteStatus: candidateObj.inviteStatus,
+            //         completedAt: candidateObj.completedAt,
+            //         startTime: candidateObj.startTime,
+            //         endTime: candidateObj.endTime,
+            //         candidate: { email: userObj.email },
+            //         currentTime: serverTime
+            //     });
+            // }
 
             // Return minimal data needed for verification
             return res.json({
@@ -253,7 +259,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 startTime: candidateObj.startTime,
                 endTime: candidateObj.endTime,
                 candidate: { email: userObj.email },
-                currentTime: serverTime
+                currentTime: serverTime,
+                isInitialized:isInitialized
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });
@@ -486,7 +493,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         try {
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
-            if (checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
+            let sharedAccess=checkForSharedAccess(interviewObj, (req as any).session)
+            if (!sharedAccess && checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
             const attempt = await candidateServices.findById(id);
             if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
 

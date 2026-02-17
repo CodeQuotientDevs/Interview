@@ -6,6 +6,7 @@ import {
     type VisibilityState,
     flexRender,
     getCoreRowModel,
+    type Row,
     useReactTable,
 } from "@tanstack/react-table"
 import { ChevronDown, MoreHorizontal, Plus, FileText } from "lucide-react"
@@ -20,6 +21,13 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import {
     Table,
@@ -53,10 +61,12 @@ interface DataTableInterface {
     onPageChange?: (page: number) => void;
     onPageSizeChange?: (pageSize: number) => void;
     totalCount?: number;
+    filterType?: 'owned' | 'shared';
+    onFilterTypeChange?: (value: 'owned' | 'shared') => void;
 }
 export function InterviewDataTable(props: DataTableInterface) {
     const alertModels = useAppStore().useAlertModel;
-    const { data, loading, cloneInterview, searchFilter, onSearchChange, sortState, onSortChange } = props;
+    const { data, loading, cloneInterview, searchFilter, onSearchChange, sortState, onSortChange, filterType, onFilterTypeChange } = props;
     const [sorting, setSorting] = React.useState<SortingState>([
         {
             id: sortState.id,
@@ -189,11 +199,12 @@ export function InterviewDataTable(props: DataTableInterface) {
                 return <div className="text-center min-w-32">{formatDateTime(row.original.updatedAt)}</div>
             }
         },
-        {
+        ...(filterType !== 'shared' ? [{
             id: "actions",
             header: () => <div className="text-center w-12"></div>,
             enableHiding: false,
-            cell: ({ row }) => {
+
+            cell: ({ row }: { row: Row<typeof interviewListItemSchema._type> }) => {
                 const interview = row.original
                 return (
                     <div className="text-center w-12">
@@ -221,8 +232,8 @@ export function InterviewDataTable(props: DataTableInterface) {
                     </div>
                 )
             },
-        },
-    ], [navigation, handleClone])
+        }] : []),
+    ], [navigation, handleClone, filterType])
 
     const table = useReactTable({
         data,
@@ -242,51 +253,64 @@ export function InterviewDataTable(props: DataTableInterface) {
 
     return (
         <div className="w-full">
-            <div className="flex items-center py-4 px-4 lg:px-6 sticky top-14 z-[10] bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear ">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
-                                <Plus size={16} />
+            <div className="flex items-center justify-between py-4 px-4 lg:px-6 sticky top-14 z-[10] bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear ">
+                <div className="flex items-center">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={() => navigation("/interview/add")} variant="default" className="mr-2">
+                                    <Plus size={16} />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Create new interview</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <Input
+                        placeholder="Search interview..."
+                        value={searchFilter}
+                        onChange={(event) => onSearchChange(event.target.value)}
+                        className="max-w-md w-[300px]"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select value={filterType || 'owned'} onValueChange={(value) => onFilterTypeChange?.(value as 'owned' | 'shared')}>
+                        <SelectTrigger className="w-[150px] ml-2">
+                            <SelectValue placeholder="Filter by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="owned">Owned by me</SelectItem>
+                            <SelectItem value="shared">Shared</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="ml-auto">
+                                Columns <ChevronDown />
                             </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Create new interview</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <Input
-                    placeholder="Search interview..."
-                    value={searchFilter}
-                    onChange={(event) => onSearchChange(event.target.value)}
-                    className="max-w-sm"
-                />
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => {
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) =>
+                                                column.toggleVisibility(!!value)
+                                            }
+                                        >
+                                            {column.id}
+                                        </DropdownMenuCheckboxItem>
+                                    )
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
             <div className="px-4 lg:px-6">
                 <div className="rounded-md border">

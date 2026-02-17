@@ -27,14 +27,15 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
     const updateCandidateInvite = useMainStore().updateInterviewCandidate
     const getInterviewCandidate = useMainStore().getInterviewCandidateList;
     const getCandidateAttempt = useMainStore().getCandidateAttempt;
-
+    const unshareInterview = useMainStore().unshareInterview;
     const concludeInterview = useMainStore().concludeInterview;
+    const shareInterview=useMainStore().shareInterview
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortState, setSortState] = useState<{ id: string, desc: boolean }>({ id: 'createdAt', desc: true });
 
-
+   
     const interviewObj = useQuery({
         queryKey: ['interview', id],
         queryFn: () => {
@@ -177,6 +178,53 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         }
     });
 
+    const unshareInterviewMutation = useMutation({
+        mutationFn: (userId: string) => {
+            return unshareInterview(id, userId);
+        },
+        onSuccess: () => {
+            interviewObj.refetch();
+            showAlert({
+                time: 5,
+                title: 'Access Removed Successfully',
+                type: AlertType.success,
+                message: 'Access has been removed successfully.',
+            });
+        },
+        onError: (error) => {
+            showAlert({
+                time: 5,
+                title: 'Unable to remove access.',
+                type: AlertType.error,
+                message: error.message,
+            });
+        }
+    });
+
+
+    const shareInterviewMutation = useMutation({
+        mutationFn: (email: string) => {
+            return shareInterview(id, email);
+        },
+        onSuccess: () => {
+            interviewObj.refetch();
+            showAlert({
+                time: 5,
+                title: 'Access Granted Successfully',
+                type: AlertType.success,
+                message: 'Access has been granted successfully.',
+            });
+        },
+        onError: (error) => {
+            showAlert({
+                time: 5,
+                title: 'Unable to share interview.',
+                type: AlertType.error,
+                message: error.message,
+            });
+        }
+    });
+
     const [fileUploadData, setFileUploadData] = useState<{ data: Array<typeof candidateInviteSchema._type>, error: Array<{ index: number, error: string, row: Record<string, any> }> } | null>(null);
 
     const [openDrawable, setOpenDrawable] = useState<boolean>(false);
@@ -245,13 +293,6 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         }
         
             setShowResultModal(true);
-        // } else {
-        //      showAlert({
-        //         time: 5,
-        //         title: 'All candidates invited successfully',
-        //         type: AlertType.success,
-        //     });
-        // }
 
         candidateLists.refetch();
         setFileUploadData(null);
@@ -422,6 +463,9 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
                                 onPageChange={handlePageChange}
                                 onPageSizeChange={handlePageSizeChange}
                                 onSortChange={handleSortChange}
+                                sharedAccess={candidateLists.data?.meta?.sharedAccess}
+                                shareInterview={shareInterviewMutation.mutateAsync}
+                                unshareInterview={unshareInterviewMutation.mutateAsync}
                             />
                         </div>
                     </div>
