@@ -49,12 +49,16 @@ export const Interview = (props: InterviewProps) => {
     const startTime = interviewMeta.data.startTime;
     const endTime = interviewMeta.data.endTime;
     const completedAt = interviewMeta.data.completedAt;
+    const isInitialized=interviewMeta.data.isInitialized
+    
+    // Use server's current time for accurate comparison
+    const currentTime = interviewMeta.data.currentTime || new Date().getTime();
 
     // Block if interview hasn't started yet
-    if (startTime && new Date(startTime) > new Date()) return true;
+    if (startTime && new Date(startTime) > new Date(currentTime)) return true;
 
     // Block if interview has ended
-    if (endTime && new Date(endTime) < new Date() && !completedAt) return true;
+    if (endTime && new Date(endTime) < new Date(currentTime) && !completedAt && !isInitialized) return true;
 
     // Block if interview is completed
     if (completedAt) return true;
@@ -238,16 +242,9 @@ export const Interview = (props: InterviewProps) => {
       const candidateEmail = interviewMeta.data.candidate.email;
       const storedEmail = localStorage.getItem(`interview-verified-email-${id}`);
 
-      // Use server's current time for accurate comparison
-      const currentTime = interviewMeta.data.currentTime || new Date().getTime();
-
-      // Check if interview has started, ended, or is completed
-      const isNotStarted = interviewMeta.data.startTime && new Date(interviewMeta.data.startTime) > new Date(currentTime);
-      const isEnded = interviewMeta.data.endTime && new Date(interviewMeta.data.endTime) < new Date(currentTime) && !interviewMeta.data.completedAt;
-      const isCompleted = interviewMeta.data.completedAt;
-
       // Only show email verification if interview is in progress (started, not ended, and not completed)
-      if (!isNotStarted && !isEnded && !isCompleted) {
+      // If query is NOT blocked, it means interview is active
+      if (!shouldBlockQuery) {
         if (storedEmail === candidateEmail) {
           setIsEmailVerified(true);
           setShowEmailVerification(false);
@@ -261,7 +258,7 @@ export const Interview = (props: InterviewProps) => {
         setShowEmailVerification(false);
       }
     }
-  }, [interviewMeta.data, id]);
+  }, [interviewMeta.data, id, shouldBlockQuery]);
 
   useEffect(() => {
     if (!interview.data) return;
@@ -321,10 +318,11 @@ export const Interview = (props: InterviewProps) => {
   // Use startTime from interviewMeta if available, otherwise fall back to interview.data
   const startTime = interviewMeta.data?.startTime || interview.data?.candidate?.startTime;
   const isNotStarted = startTime && new Date(startTime) > new Date(currentTime) ? true : false;
+  const isInitialized=interviewMeta.data?.isInitialized
 
   // Use endTime from interviewMeta if available, otherwise fall back to interview.data
   const endTime = interviewMeta.data?.endTime || interview.data?.candidate?.endTime;
-  const isEnded = endTime && new Date(endTime) < new Date(currentTime) && !interview.data?.completedAt && !interviewMeta.data?.completedAt;
+  const isEnded = endTime && new Date(endTime) < new Date(currentTime) && !interview.data?.completedAt && !interviewMeta.data?.completedAt && !isInitialized;
 
   const isCompleted = interview.data?.completedAt || interviewMeta.data?.completedAt;
 

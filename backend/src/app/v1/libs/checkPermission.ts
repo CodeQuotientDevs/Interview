@@ -17,9 +17,9 @@ export function checkPermissionForContentModification(content: Content, session:
     return content.createdBy?.toString() != session.userId?.toString();
 }
 
-export function checkForSharedAccess(content: Content, session: Session) {
+export function checkForSharedAccess(content: Content, session: Session):boolean {
     if (session.userId) {
-        return content.sharedIds?.map(id => String(id)).includes(session.userId?.toString());
+        return content.sharedIds?.map(id => String(id)).includes(session.userId?.toString()) || false;
     }
     return false;
 }
