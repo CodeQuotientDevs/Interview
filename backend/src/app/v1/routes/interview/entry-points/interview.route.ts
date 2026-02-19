@@ -120,7 +120,7 @@ export function createInterviewRoutes({ interviewServices }: Services) {
             if (String(userId) === (req.session as any).userId) {
                 return res.status(400).json({ error: 'Cannot share with yourself' });
             }
-            if (interviewObj.sharedIds.map(ele => String(ele)).includes(userId)) {
+            if (interviewObj.sharedIds.map(ele => String(ele)).includes(String(userId))) {
                 return res.status(400).json({ error: 'Already shared with this user' });
             }
 
