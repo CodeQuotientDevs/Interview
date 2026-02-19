@@ -9,7 +9,7 @@ import {
     interviewCandidateListSchema,
     interviewCandidateReportSchema,
 } from "@/zod/interview";
-import { candidateInviteSchema, interviewContentSchema, messagesSchema, messageResponseSchema } from "@/zod/candidate";
+import { candidateInviteSchema, interviewContentSchema, messageResponseSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
 import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 import { RecentInterviewSchema } from "@/components/data-table";
