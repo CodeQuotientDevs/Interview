@@ -25,6 +25,7 @@ import type CandidateResponseService from "../../candidate-responses/domain/cand
 import { getPresignedUploadUrl } from '@root/services/s3';
 import { formatDateTime } from '@root/libs/DateUtils';
 import mongoose from 'mongoose';
+import { is } from 'zod/v4/locales';
 
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
@@ -334,14 +335,12 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
-                await agent.recreateLastMessage();
-            }
             return res.json({
                 idleWarningTime,
                 idleSubmitTime,
                 inviteStatus: candidateObj.inviteStatus,
-                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj, startTime: candidateObj.startTime }
+                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj, startTime: candidateObj.startTime },
+                isInterviewGoingOn:await agent.getInterviewStatus()
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
@@ -392,12 +391,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
-                await agent.recreateLastMessage();
-                history = await agent.getHistory();
-            }
-            const response = await agent.sendMessage(payload.userInput, payload.audioUrl, payload.type as MessageTypeEnum, payload.audioDuration);
-            if (response?.latestAiResponse?.structuredResponse?.isInterviewGoingOn === false) {
+            await agent.sendMessage(payload.userInput, payload.audioUrl, payload.type as MessageTypeEnum, payload.audioDuration);
+            const isInterviewGoingOn=await agent.getInterviewStatus();
+            if (!isInterviewGoingOn) {
                 await candidateServices.saveToSubmissionQueue(id);
                 await candidateServices.updateOne({
                     id: id,
@@ -407,8 +403,15 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     }
                 })
             }
+           
+            logger.info(`Interview going on status: ${isInterviewGoingOn}`);
             history = await agent.getHistory();
-            return res.json(history);
+            return res.json({
+                messages: history,
+                meta:{
+                    isInterviewGoingOn:isInterviewGoingOn
+                }
+            });
         } catch (error: any) {
             logger.error(error);
             return res.status(500).json({ error: 'Internal server error' });

@@ -13,14 +13,6 @@ export function parseModelResponseToCompatibleForChat(data: typeof messageSchema
         return {
             id: index.toString(),
             content,
-            parsedData: {
-                editorType: 'inputBox',
-                isInterviewGoingOn: true,
-                message: content,
-                languagesAllowed: [],
-                topic: "n/a",
-                ...data.parsedResponse,
-            },
             role: 'model',
             createdAt: data.createdAt,
             type: data.type,

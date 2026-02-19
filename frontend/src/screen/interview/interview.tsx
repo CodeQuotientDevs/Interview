@@ -38,9 +38,8 @@ export const Interview = (props: InterviewProps) => {
   const interviewMeta = useQuery({
     queryFn: () => getInterviewMeta(id),
     queryKey: ['interview-meta', id],
-    retry: false,
+    retry: false
   });
-
 
   // Memoize interview state checks based on interviewMeta
   const shouldBlockQuery = useMemo(() => {
@@ -49,8 +48,8 @@ export const Interview = (props: InterviewProps) => {
     const startTime = interviewMeta.data.startTime;
     const endTime = interviewMeta.data.endTime;
     const completedAt = interviewMeta.data.completedAt;
-    const isInitialized=interviewMeta.data.isInitialized
-    
+    const isInitialized = interviewMeta.data.isInitialized;
+
     // Use server's current time for accurate comparison
     const currentTime = interviewMeta.data.currentTime || new Date().getTime();
 
@@ -71,7 +70,7 @@ export const Interview = (props: InterviewProps) => {
     queryKey: ['interview-message', id],
     retry: false,
     // Only fetch full interview data if email is verified and interview is in valid state
-    enabled: isEmailVerified && !shouldBlockQuery,
+    enabled: isEmailVerified && !shouldBlockQuery
   });
 
   const startedAt = useMemo(() => {
@@ -113,96 +112,107 @@ export const Interview = (props: InterviewProps) => {
     clearTimeout(idleTimeoutRef.current as NodeJS.Timeout);
     clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
 
-    idleTimeoutRef.current = setTimeout(() => {
-      showAlert({
-        time: 5,
-        title: `No Activity`,
-        type: AlertType.warning,
-        message: `You are idle for a very long Time, Interview will autosubmit after ${formatDurationDayjs(parseInt(idleSubmitTime))}`
-      });
-      submitTimeoutRef.current = setTimeout(async () => {
+    idleTimeoutRef.current = setTimeout(
+      () => {
         showAlert({
-          time: 4,
-          title: 'Concluding interview',
+          time: 5,
+          title: `No Activity`,
           type: AlertType.warning,
-          message: 'You are idle for a very long time now'
+          message: `You are idle for a very long Time, Interview will autosubmit after ${formatDurationDayjs(parseInt(idleSubmitTime))}`
         });
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        await concludeInterviewMutation.mutateAsync(id);
-        setIsInterviewEnded(true);
-      }, parseInt(idleSubmitTime) * 1000);
-    }, parseInt(idleWarningTime) * 1000);
+        submitTimeoutRef.current = setTimeout(
+          async () => {
+            showAlert({
+              time: 4,
+              title: 'Concluding interview',
+              type: AlertType.warning,
+              message: 'You are idle for a very long time now'
+            });
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await concludeInterviewMutation.mutateAsync(id);
+            setIsInterviewEnded(true);
+          },
+          parseInt(idleSubmitTime) * 1000
+        );
+      },
+      parseInt(idleWarningTime) * 1000
+    );
   }, [interview.data, isInterviewEnded, concludeInterviewMutation, id, showAlert]);
 
-
-  const handleAudioSubmission = useCallback(async (audioFile: File, audioDuration: number) => {
-    if (isGenerating || isUploading) {
-      return;
-    }
-    try {
-      setIsUploading(true);
-      setIsGenerating(true);
-      const presignedUrl = await getPresignedUrl(audioFile.type);
-
-      const response = await fetch(presignedUrl.uploadUrl, {
-        method: 'PUT',
-        body: audioFile,
-        headers: {
-          'Content-Type': audioFile.type,
-        }
-      });
-
-      setIsUploading(false);
-
-      if (!response.ok) {
-        throw new Error('Failed to upload audio');
+  const handleAudioSubmission = useCallback(
+    async (audioFile: File, audioDuration: number) => {
+      if (isGenerating || isUploading) {
+        return;
       }
+      try {
+        setIsUploading(true);
+        setIsGenerating(true);
+        const presignedUrl = await getPresignedUrl(audioFile.type);
 
-      const optimisticMessageId = Date.now().toString();
-      // Optimistically add the user's audio message
-      const audioUrl = URL.createObjectURL(audioFile);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: optimisticMessageId,
-          role: 'user',
-          content: "",
-          audioUrl: audioUrl,
-          audioDuration: audioDuration,
-          type: 'audio',
-          error: false,
-          createdAt: new Date(),
-        }
-      ]);
+        const response = await fetch(presignedUrl.uploadUrl, {
+          method: 'PUT',
+          body: audioFile,
+          headers: {
+            'Content-Type': audioFile.type
+          }
+        });
 
-      setIsGenerating(true);
-      const newMessages = await postMessage(id, "", presignedUrl.fileUrl, MessageTypeEnum.AUDIO, audioDuration);
+        setIsUploading(false);
 
-      // Update messages using functional update to avoid stale closures
-      setMessages((prev) => {
-        const optimisticIndex = prev.findIndex(m => m.id === optimisticMessageId);
-
-        if (optimisticIndex !== -1) {
-          const lastServerMessage = parseModelResponseToCompatibleForChat(newMessages[newMessages.length - 1], newMessages.length - 1);
-          return [...prev, lastServerMessage];
+        if (!response.ok) {
+          throw new Error('Failed to upload audio');
         }
 
-        return newMessages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
-      });
-    } catch (error) {
-      logger.error(error);
-      setIsUploading(false);
-      setIsGenerating(false);
-      window.location.reload();
-    } finally {
-      setIsUploading(false);
-      setIsGenerating(false);
-    }
-  }, [isGenerating, isUploading, getPresignedUrl, postMessage, id])
+        const optimisticMessageId = Date.now().toString();
+        // Optimistically add the user's audio message
+        const audioUrl = URL.createObjectURL(audioFile);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: optimisticMessageId,
+            role: 'user',
+            content: '',
+            audioUrl: audioUrl,
+            audioDuration: audioDuration,
+            type: 'audio',
+            error: false,
+            createdAt: new Date()
+          }
+        ]);
+
+        setIsGenerating(true);
+        const {
+          messages: newMessages,
+          meta: { isInterviewGoingOn }
+        } = await postMessage(id, '', presignedUrl.fileUrl, MessageTypeEnum.AUDIO, audioDuration);
+        setIsInterviewEnded(!isInterviewGoingOn);
+        // Update messages using functional update to avoid stale closures
+        setMessages((prev) => {
+          const optimisticIndex = prev.findIndex((m) => m.id === optimisticMessageId);
+
+          if (optimisticIndex !== -1) {
+            const lastServerMessage = parseModelResponseToCompatibleForChat(newMessages[newMessages.length - 1], newMessages.length - 1);
+            return [...prev, lastServerMessage];
+          }
+
+          return newMessages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+        });
+      } catch (error) {
+        logger.error(error);
+        setIsUploading(false);
+        setIsGenerating(false);
+        // window.location.reload();
+      } finally {
+        setIsUploading(false);
+        setIsGenerating(false);
+      }
+    },
+    [isGenerating, isUploading, getPresignedUrl, postMessage, id]
+  );
 
   const handleSubmission = useCallback(
     async (message: string) => {
-      if (isGenerating || message.trim() === "" || isUploading) {
+      if (isGenerating || message.trim() === '' || isUploading) {
         return;
       }
       try {
@@ -219,12 +229,16 @@ export const Interview = (props: InterviewProps) => {
             }
           ];
         });
-        const messages = await postMessage(props.id, message);
-        const parsedMessages = messages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
+         const {
+          messages: newMessages,
+          meta: { isInterviewGoingOn }
+        } = await postMessage(props.id, message);
+        const parsedMessages = newMessages.slice(1).map((ele, index) => parseModelResponseToCompatibleForChat(ele, index));
         setMessages(parsedMessages);
+        setIsInterviewEnded(!isInterviewGoingOn);
       } catch (error) {
         logger.error(error);
-        window.location.reload();
+        // window.location.reload();
       } finally {
         setIsGenerating(false);
       }
@@ -282,10 +296,9 @@ export const Interview = (props: InterviewProps) => {
       clearTimeout(submitTimeoutRef.current as NodeJS.Timeout);
     };
   }, [interview.data, isEmailVerified]);
-  console.log("interview meta error", interviewMeta.error)
 
   if (interview.error || interviewMeta.error) {
-    if (interview.error?.message === "Not Found" || interviewMeta.error?.message === "Not Found") {
+    if (interview.error?.message === 'Not Found' || interviewMeta.error?.message === 'Not Found') {
       return <NotFound />;
     }
     return (
@@ -318,14 +331,13 @@ export const Interview = (props: InterviewProps) => {
   // Use startTime from interviewMeta if available, otherwise fall back to interview.data
   const startTime = interviewMeta.data?.startTime || interview.data?.candidate?.startTime;
   const isNotStarted = startTime && new Date(startTime) > new Date(currentTime) ? true : false;
-  const isInitialized=interviewMeta.data?.isInitialized
+  const isInitialized = interviewMeta.data?.isInitialized;
 
   // Use endTime from interviewMeta if available, otherwise fall back to interview.data
   const endTime = interviewMeta.data?.endTime || interview.data?.candidate?.endTime;
   const isEnded = endTime && new Date(endTime) < new Date(currentTime) && !interview.data?.completedAt && !interviewMeta.data?.completedAt && !isInitialized;
 
   const isCompleted = interview.data?.completedAt || interviewMeta.data?.completedAt;
-
 
   const isBlocked = !!isCompleted || !!isEnded || (Boolean(showEmailVerification) && !isEmailVerified) || !!isProcessing || !!isNotStarted;
 
@@ -343,24 +355,12 @@ export const Interview = (props: InterviewProps) => {
         }}
       />
 
-      {isProcessing && (
-        <BlockingOverlay
-          imageSrc="/interview-not-started.svg"
-          title="Interview is being still processed"
-        />
-      )}
+      {isProcessing && <BlockingOverlay imageSrc="/interview-not-started.svg" title="Interview is being still processed" />}
 
-      {isNotStarted && (
-        <BlockingOverlay
-          imageSrc="/interview-not-started.svg"
-          title="Interview is not started yet, come after sometime"
-        />
-      )}
+      {isNotStarted && <BlockingOverlay imageSrc="/interview-not-started.svg" title="Interview is not started yet, come after sometime" />}
 
       {isEnded && (
-        <BlockingOverlay
-          imageSrc="/Interview-completed.png"
-        >
+        <BlockingOverlay imageSrc="/Interview-completed.png">
           <div className="text-center">
             <Terminal className="h-12 w-12 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Interview has ended</h2>
@@ -370,9 +370,7 @@ export const Interview = (props: InterviewProps) => {
       )}
 
       {isCompleted && (
-        <BlockingOverlay
-          imageSrc="/Interview-completed.png"
-        >
+        <BlockingOverlay imageSrc="/Interview-completed.png">
           <div className="text-center">
             <Terminal className="h-12 w-12 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Interview completed!</h2>

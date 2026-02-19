@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateReportSchema, interviewCandidateListResponseSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
-import { candidateInviteSchema, interviewContentSchema, messagesSchema } from '@/zod/candidate';
+import { candidateInviteSchema, interviewContentSchema, messageResponseSchema } from '@/zod/candidate';
 import { DashboardGraphDataSchema, DashboardSchema } from '@/zod/dashboard';
 import { RecentInterviewSchema } from '@/components/data-table';
 
@@ -176,7 +176,7 @@ export default class MainClient {
             type,
             audioDuration
         }));
-        const obj = messagesSchema.safeParse(response.data);
+        const obj = messageResponseSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }

@@ -1,6 +1,4 @@
-import zod, { check, int, number } from "zod";
-import redisConstant from '@root/constants/redis';
-import redis from '@services/redis';
+import zod, { z } from "zod";
 import { MessageTypeEnum } from '@root/constants/message';
 import {
     StateGraph,
@@ -18,35 +16,24 @@ import type { SingleUserModel as BasicUserDetails } from "@app/v1/routes/user/da
 
 import {
     systemInstructionCurrentInterview,
-    systemInstructionConvertSimpleStringToStructuredOutput,
     systemInstructionForGeneratingReport,
-    systemInstructionToDetectIntent,
-    compressQuestionListSystemInstruction,
 } from "./systemInstruction";
-import { systemInstructionAnalyzeCandidateBehavior } from "./systemInstruction/behaviorAnalysis";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import createModel from "./models";
-import { createAgent } from "langchain";
+import { createAgent, tool } from "langchain";
 
-import { interviewParserSchema, interviewReportSchema, candidateBehaviorSchema, CandidateBehaviorType } from "./schema/interviewAgent";
+import { interviewReportSchema } from "./schema/interviewAgent";
 import { logger } from "@root/libs";
-import { systemInstructionValidateModelResponse } from "./systemInstruction/validation";
-import { ModelResponseValidator } from "./schema/validator";
 import { transcribeAudio } from "./transcribeAudio";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { createFallbackAIMessage, hasTextContent, filterEmptyAIMessages, getCompressedQuestionList } from './interviewAgentGraph.utils';
 
 
-type MessageType = {
+export type MessageType = {
     id: string,
     createdAt: Date,
     message: BaseMessage,
-    structuredResponse: Record<string, any>,
     toDelete?: boolean,
-}
-
-type Intent = {
-    intent: 'answer' | 'clarify_question' | 'dont_know_concept' | 'end_interview' | 'off_topic';
-    confidence: number;
 }
 
 const InterviewState = Annotation.Root({
@@ -71,34 +58,14 @@ const InterviewState = Annotation.Root({
         reducer: (current, update) => update ?? current,
         default: () => null,
     }),
-    shouldConvertToStructured: Annotation<boolean>({
-        reducer: (current, update) => update ?? current,
-        default: () => true,
-    }),
-    conversionAttempts: Annotation<number>({
-        reducer: (current, update) => update ?? current,
-        default: () => 0,
-    }),
     interviewStartTime: Annotation<Date>({
         reducer: (current, update) => update ?? current,
         default: () => new Date(),
     }),
-    // correctionRequired: Annotation<boolean>({
-    //     reducer: (current, update) => update ?? current,
-    //     default: () => false,
-    // }),
-    // detectCandidateIntent: Annotation<boolean>({
-    //     reducer: (current, update) => update ?? current,
-    //     default: () => true,
-    // }),
-    // candidateIntent: Annotation<Intent | null>({
-    //     reducer: (current, update) => update ?? current,
-    //     default: () => null,
-    // }),
-    // CandidateBehaviorType: Annotation<CandidateBehaviorType | null>({
-    //     reducer: (current, update) => update ?? current,
-    //     default: () => null,
-    // })
+    isInterviewGoingOn: Annotation<boolean>({
+        reducer: (current, update) => update ?? current,
+        default: () => true,
+    }),
 });
 
 
@@ -106,72 +73,44 @@ type InterviewStateType = typeof InterviewState.State;
 
 let compiledGraph: any = null;
 
+const endInterviewTool = tool(() => "Interview ended successfully", {
+    name: "end_interview",
+    description: "end the interview immediately. This tool should be used when the interview is complete and you want to end it.",
+    schema: z.object({
+    }),
+});
+
 async function ensureGraphCompiled() {
     if (compiledGraph) return compiledGraph;
     const builder = new StateGraph(InterviewState)
         .addNode("askAndRespond", async (state: InterviewStateType, config: any) => {
+
+            if (state.isInterviewGoingOn === false) {
+                const lastMsg = state.messages[state.messages.length - 1];
+                if (lastMsg?.message instanceof AIMessage && !hasTextContent(lastMsg.message)) {
+                    const fallback = createFallbackAIMessage();
+                    return { messages: [fallback], latestAiResponse: fallback };
+                }
+                return {};
+            }
             const ctx = config.configurable?.context ?? {};
             const { interview, candidate, user, model } = ctx;
 
             if (!model || typeof model.invoke !== "function") {
                 throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
             }
-            const questionListKey = redisConstant.getInterviewQuestions(interview.id.toString());
-            const isPresentRedis = await redis.exists(questionListKey);
-            let compressedQuestionList = "";
-            if (!isPresentRedis) {
-                let questionList = "";
-                for (let diff of interview.difficulty) {
-                    questionList += diff.skill + "\n" + diff.questionList + "\n\n";
-                }
-                if (questionList == "") {
-                    compressedQuestionList = "";
-                }
-                else {
-                    logger.info('Compressing question list for interview id: ' + interview.id.toString());
-                    const agent = createAgent({
-                        model: createModel("gemini-2.5-flash-lite"),
-                        tools: [],
-                    });
-                    const modelResponse = await agent.invoke({ messages: [new SystemMessage(compressQuestionListSystemInstruction), new HumanMessage(questionList)] });
-                    compressedQuestionList = modelResponse.messages[modelResponse.messages.length - 1].content as string
-                    console.log(modelResponse.messages[modelResponse.messages.length - 1].content)
-                    await redis.set(questionListKey, compressedQuestionList);
-                    logger.info('Compressed question list stored in redis for interview id: ' + interview.id.toString());
-                }
-            }
-            else {
-                logger.info('Found question list in redis for interview id: ' + interview.id.toString());
-                compressedQuestionList = await redis.get(questionListKey) as string;
-            }
+            let compressedQuestionList = await getCompressedQuestionList(interview as Interview);
             const systemPrompt = systemInstructionCurrentInterview(
                 interview as Interview,
                 candidate as Candidate,
                 user as BasicUserDetails,
                 compressedQuestionList,
-                // state.CandidateBehaviorType
             );
             let enhancedSystemPrompt = systemPrompt;
 
             const messagesToDelete: Array<MessageType> = [];
 
             const messagesToAdd = state.messages.map(ele => ele.message);
-            // if (state.correctionRequired) {
-            //     for (let index = messagesToAdd.length - 1; index >= 0; index--) {
-            //         const message = messagesToAdd[index];
-            //         if (message instanceof HumanMessage) {
-            //             break;
-            //         }
-            //         messagesToAdd.pop();
-            //         const msg = state.messages.pop();
-            //         if (msg) {
-            //             messagesToDelete.push({
-            //                 toDelete: true,
-            //                 ...msg,
-            //             });
-            //         }
-            //     }
-            // }
             let updates: any = {};
 
             const isFirstMessage = messagesToAdd.length == 1;
@@ -200,17 +139,14 @@ async function ensureGraphCompiled() {
             let modelResponse;
             const maxRetries = 6;
             let lastError: any;
-
+            const modelWithTools = model.bindTools([endInterviewTool]);
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    modelResponse = await model.invoke(messagesForModel);
+                    modelResponse = await modelWithTools.invoke(messagesForModel);
 
                     if (!modelResponse) {
                         throw new Error("Model returned empty response");
                     }
-
-                    // Success
-                    const lastMsg = messagesForModel[messagesForModel.length - 1];
 
                     break;
                 } catch (error: any) {
@@ -240,183 +176,21 @@ async function ensureGraphCompiled() {
             }
             logger.info('Ai Response Came');
             modelResponse.content = modelResponse.content.filter((ele: any) => ele.type == 'text');
+
+
             const newAiMessage: MessageType = {
                 id: crypto.randomUUID(),
                 message: modelResponse,
                 createdAt: new Date(),
-                structuredResponse: {},
             };
 
             updates.messages = [newAiMessage, ...messagesToDelete];
             updates.latestAiResponse = newAiMessage;
 
+
             return {
                 ...updates,
-                correctionRequired: false,
             };
-        })
-        // .addNode("validateModelResponse", async (state: InterviewStateType, config: any) => {
-        //     const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
-        //     if (!lastMessageWrapper) {
-        //         return;
-        //     }
-        //     const ctx = config?.configurable?.context ?? {};
-        //     const { model, user } = ctx;
-        //     const validatorAgent = createAgent({
-        //         model,
-        //         systemPrompt: systemInstructionValidateModelResponse(),
-        //         responseFormat: ModelResponseValidator,
-        //     });
-        //     if (!lastMessageWrapper.message.text) {
-        //         return {
-        //             correctionRequired: true,
-        //         }
-        //     }
-        //     const response = await validatorAgent.invoke({
-        //         messages: [new HumanMessage(lastMessageWrapper.message.text)],
-        //     });
-        //     if (!response.structuredResponse.valid) {
-        //         logger.info({
-        //             message: "Response From AI not valid",
-        //             reason: response.structuredResponse.reason,
-        //             aiMessage: lastMessageWrapper.message.text,
-        //         });
-        //         return {
-        //             correctionRequired: true,
-        //         }
-        //     };
-        //     logger.info({
-        //         message: "Valid response came from model",
-        //     });
-        //     return {
-        //         correctionRequired: false,
-        //     };
-        // })
-        // .addNode("analyzeCandidateBehavior", async (state: InterviewStateType, config: any) => {
-        //     const ctx = config?.configurable?.context ?? {};
-        //     const { model } = ctx;
-
-        //     // Only analyze if we have substantive candidate responses
-        //     const candidateMessages = state.messages
-        //         .filter(msg => msg.message instanceof HumanMessage)
-        //         .slice(-1); // Get last candidate message
-
-        //     if (candidateMessages.length === 0) {
-        //         return {};
-        //     }
-
-        //     const lastCandidateMessage = candidateMessages[0];
-        //     const candidateResponse = lastCandidateMessage.message.content;
-
-        //     if (candidateResponse == 'Lets start the interview' || candidateResponse == "Let's skip this question") {
-        //         return {}
-        //     }
-
-        //     // Skip analysis for minimal responses (too short)
-        //     if (typeof candidateResponse === 'string' && candidateResponse.length < 15) {
-        //         return {};
-        //     }
-
-        //     try {
-        //         const behaviorAnalysisAgent = createAgent({
-        //             model,
-        //             systemPrompt: systemInstructionAnalyzeCandidateBehavior(state.CandidateBehaviorType || undefined),
-        //             responseFormat: candidateBehaviorSchema,
-        //         });
-        //         const behaviorResponse = await behaviorAnalysisAgent.invoke({
-        //             messages: [new HumanMessage(`\n\nCandidate Response to Analyze:\n"${candidateResponse}"`)],
-        //         });
-
-        //         // Extract the parsed content
-        //         const behaviorData = behaviorResponse.structuredResponse;
-
-        //         logger.info({
-        //             message: 'Candidate behavior analyzed',
-        //             intelligenceLevel: behaviorData.intelligenceLevel,
-        //             confidenceLevel: behaviorData.confidenceLevel,
-        //             reasoning: behaviorData.brief_reasoning,
-        //             hasPreviousContext: !!state.CandidateBehaviorType,
-        //         });
-
-        //         return {
-        //             CandidateBehaviorType: {
-        //                 ...behaviorData,
-        //                 lastUpdatedAt: new Date(),
-        //             },
-        //         };
-        //     } catch (error) {
-        //         logger.error({
-        //             message: 'Error analyzing candidate behavior',
-        //             error,
-        //         });
-        //         return {};
-        //     }
-        // })
-        .addNode("convertToStructuredResponse", async (state: InterviewStateType, config: any) => {
-            const instruction = systemInstructionConvertSimpleStringToStructuredOutput();
-            const ctx = config.configurable?.context ?? {};
-            const { model, user } = ctx;
-
-            if (!model || typeof model.invoke !== "function") {
-                throw new Error("runtime.context.model missing or invalid. Pass a model instance with invoke({ messages }).");
-            }
-
-            const numberOfMessagesAdditionalRequired = Math.ceil(state.conversionAttempts * 25 * state.messages.length) / 100;
-            const messagesToGive = InterviewAgent.parseMessage({ includeToolCalls: false }, state.messages.slice(state.messages.length - numberOfMessagesAdditionalRequired));
-            const lastAIMessageWrapper = state.messages.slice().reverse().find(
-                wrapper => wrapper.message instanceof AIMessage
-            );
-            if (!lastAIMessageWrapper) {
-                return {};
-            }
-            const lastAIMessage = lastAIMessageWrapper.message.content[lastAIMessageWrapper.message.content.length - 1];
-            const messages = [
-                new SystemMessage(instruction),
-                ...(messagesToGive.map(ele => ele.message)),
-                new HumanMessage(`PARSE THIS MESSAGE CONTENT:\n${lastAIMessage?.text ?? ""}`),
-            ];
-            const agent = createAgent({
-                model: createModel("gemini-2.5-flash-lite"),
-                responseFormat: interviewParserSchema,
-                tools: [],
-            });
-            const response = await agent.invoke({
-                messages: messages,
-            });
-            const structuredData = response.structuredResponse;
-            try {
-                const updatedMessage: MessageType = {
-                    id: lastAIMessageWrapper.id,
-                    createdAt: lastAIMessageWrapper.createdAt,
-                    message: lastAIMessageWrapper.message,
-                    structuredResponse: structuredData,
-                };
-                if (structuredData.isInterviewGoingOn === false) {
-                    updatedMessage.message = new AIMessage(`Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!`)
-                }
-                return {
-                    messages: [updatedMessage],
-                    latestAiResponse: updatedMessage,
-                    conversionAttempts: state.conversionAttempts + 1,
-                    candidateIntent: false,
-                };
-
-            } catch (error) {
-                const updatedMessage: MessageType = {
-                    id: lastAIMessageWrapper.id,
-                    message: lastAIMessageWrapper.message,
-                    createdAt: lastAIMessageWrapper.createdAt,
-                    structuredResponse: {
-                        __raw: error,
-                        __error: "JSON parse failed"
-                    },
-                };
-                return {
-                    candidateIntent: false,
-                    conversionAttempts: state.conversionAttempts + 1,
-                    messages: [updatedMessage],
-                };
-            }
         })
         .addNode("executeTools", async (state: InterviewStateType) => {
             const lastMessageWrapper = state.messages[state.messages.length - 1];
@@ -429,11 +203,15 @@ async function ensureGraphCompiled() {
                 return { messages: [] };
             }
             const toolMessages: ToolMessage[] = [];
+            let updates: any = {};
             for (const toolCall of lastMessage.tool_calls) {
                 try {
                     let result: any;
                     switch (toolCall.name) {
-                        // Future tools can be added here
+                        case "end_interview":
+                            updates.isInterviewGoingOn = false;
+                            result = "Interview ended successfully";
+                            break;
                         default:
                             result = `Tool ${toolCall.name} not found`;
                     }
@@ -459,10 +237,9 @@ async function ensureGraphCompiled() {
                 id: crypto.randomUUID(),
                 message: toolMsg,
                 createdAt: new Date(),
-                structuredResponse: {},
             }));
 
-            return { messages: newToolMessages };
+            return { messages: newToolMessages, ...updates };
         })
         .addEdge(START, "askAndRespond")
         .addEdge("executeTools", "askAndRespond")
@@ -479,41 +256,13 @@ async function ensureGraphCompiled() {
                 if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
                     return "tools";
                 }
-                return "structured_conversion";
+                return "end";
             },
             {
                 tools: "executeTools",
-                structured_conversion: "convertToStructuredResponse",
                 end: END,
-                // analyzeCandidateBehavior: "analyzeCandidateBehavior",
             }
-        )
-        // .addConditionalEdges("validateModelResponse", (state: InterviewStateType) => {
-        //     if (state.correctionRequired) {
-        //         return "askAndRespond";
-        //     }
-        //     return "analyzeCandidateBehavior";
-        // }, {
-        //     askAndRespond: "askAndRespond",
-        //     analyzeCandidateBehavior: "analyzeCandidateBehavior"
-        // })
-        // .addEdge("analyzeCandidateBehavior", "convertToStructuredResponse")
-        .addConditionalEdges("convertToStructuredResponse", (state: InterviewStateType) => {
-            const lastMessageWrapper = state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
-            if (!lastMessageWrapper?.structuredResponse?.confidence) {
-                return "end";
-            }
-            if (state.conversionAttempts > 3) {
-                return "end";
-            }
-            if (lastMessageWrapper?.structuredResponse?.confidence > 0.7) {
-                return "end";
-            }
-            return "retry";
-        }, {
-            retry: "convertToStructuredResponse",
-            end: END,
-        })
+        );
 
 
     compiledGraph = builder.compile({ checkpointer: checkPointer });
@@ -562,8 +311,6 @@ export class InterviewAgent {
                     candidate: this.candidate,
                     user: this.user,
                     model: this.model,
-                    detectCandidateIntent: true,
-                    candidateIntent: null,
                 }
             },
         };
@@ -613,7 +360,7 @@ export class InterviewAgent {
             });
 
             if (state && state.values && Array.isArray(state.values.messages)) {
-                return state.values.messages;
+                return filterEmptyAIMessages(state.values.messages);
             }
         } catch (error) {
             console.error("Error fetching persisted messages:", error);
@@ -621,24 +368,34 @@ export class InterviewAgent {
         return [];
     }
 
+    async getInterviewStatus(): Promise<boolean> {
+        const graph = await ensureGraphCompiled();
+        try {
+            const state = await graph.getState({
+                configurable: { thread_id: this.threadId },
+            });
+
+            if (state && state.values && typeof state.values.isInterviewGoingOn === 'boolean') {
+                return state.values.isInterviewGoingOn;
+            }
+        } catch (error) {
+            console.error("Error fetching interview status:", error);
+        }
+        return true; // Default to true if status cannot be determined
+    }
+
     static parseMessage(config: { includeToolCalls: boolean } = { includeToolCalls: false }, messages: Array<MessageType>) {
         return messages.reduce((result: Array<MessageType>, msg) => {
             if (msg.message instanceof AIMessage && ((msg.message.tool_calls?.length ?? 0) > 0)) {
-                if (config.includeToolCalls) {
-                    result.push(msg);
-                }
+                // if (config.includeToolCalls) {
+                result.push(msg);
+                // }
             } else if (msg.message instanceof ToolMessage) {
                 if (config.includeToolCalls) {
                     result.push(msg);
                 }
             } else {
-                if (msg.message instanceof AIMessage) {
-                    if (msg.structuredResponse?.confidence) {
-                        result.push(msg);
-                    }
-                } else {
-                    result.push(msg);
-                }
+                result.push(msg);
             }
             return result;
         }, []);
@@ -647,13 +404,13 @@ export class InterviewAgent {
     async getHistory(config: { includeToolCalls: boolean } = { includeToolCalls: false }) {
         const messages = await this.getPersistedMessages();
         const messageToInclude = InterviewAgent.parseMessage(config, messages);
+
         return messageToInclude.reduce((result: Array<any>, msg) => {
             const base = {
                 id: msg.id,
                 createdAt: msg.createdAt,
                 role: msg.message._getType(),
                 rowText: typeof msg.message.content === 'string' ? msg.message.content : msg.message.content[msg.message.content.length - 1]?.text,
-                parsedResponse: msg.structuredResponse,
                 audioUrl: msg.message.additional_kwargs?.audioUrl,
                 type: msg.message.additional_kwargs?.type,
                 audioDuration: msg.message.additional_kwargs?.audioDuration,

@@ -217,29 +217,6 @@ export const interviewCandidateListResponseSchema =  Zod.object({
 			}).optional()
 		})
 
-
-// export const interviewListSchema = Zod.object({
-// 	id: Zod.string().nonempty(),
-// 	name: Zod.string().nonempty(),
-// 	email: Zod.string().email(),
-// 	jobTitle: Zod.string().nonempty(),
-// 	phone: Zod.string().nonempty(),
-// 	startTime: Zod.date(),
-// 	endTime: Zod.date().optional().nullable(),
-// 	duration: Zod.number().nonnegative().min(1),
-// 	completedAt: Zod.date().optional(),
-// 	score: Zod.number()?.optional(),
-// 	difficulty: Zod.array(Zod.object({
-// 		skill: Zod.string(),
-// 		difficulty: Zod.number(),
-// 	}))?.optional(),
-// 	detailedReport: Zod.array(Zod.object({
-// 		topic: Zod.string(),
-// 		score: Zod.string(),
-// 		detailedReport: Zod.string(),
-// 	})).optional(),
-// });
-
 export const sessionSchema = Zod.object({
 	userId: Zod.string().nonempty().min(1),
 	displayname: Zod.string().nonempty(),

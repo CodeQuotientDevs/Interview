@@ -9,13 +9,13 @@ import {
     interviewCandidateListSchema,
     interviewCandidateReportSchema,
 } from "@/zod/interview";
-import { candidateInviteSchema, interviewContentSchema, messagesSchema } from "@/zod/candidate";
+import { candidateInviteSchema, interviewContentSchema, messagesSchema, messageResponseSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
 import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
-    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messagesSchema._type>;
+    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messageResponseSchema._type>;
     interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: 'owned' | 'shared') => Promise<{
         data: Array<typeof interviewListItemSchema._type>;
         pagination: {
