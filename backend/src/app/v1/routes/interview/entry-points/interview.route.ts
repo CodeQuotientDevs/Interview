@@ -82,7 +82,7 @@ export function createInterviewRoutes({ interviewServices }: Services) {
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview not found' });
             }
-            const sharedAccess=checkForSharedAccess(interviewObj, req.session)
+            const sharedAccess = checkForSharedAccess(interviewObj, req.session)
             if (!sharedAccess && checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not authorized' });
             }
@@ -120,6 +120,9 @@ export function createInterviewRoutes({ interviewServices }: Services) {
             if (String(userId) === (req.session as any).userId) {
                 return res.status(400).json({ error: 'Cannot share with yourself' });
             }
+            if (interviewObj.sharedIds.map(ele => String(ele)).includes(userId)) {
+                return res.status(400).json({ error: 'Already shared with this user' });
+            }
 
 
             const newInterviewObj = await interviewServices.shareInterview(id, userId, req.session);
@@ -131,18 +134,18 @@ export function createInterviewRoutes({ interviewServices }: Services) {
     })
 
 
-    router.delete("/:id/share/:sharedId",middleware.authMiddleware.checkIfLogin,async(req:Request & {session?:Session},res:Response)=>{
-        const {id,sharedId}=req.params;
+    router.delete("/:id/share/:sharedId", middleware.authMiddleware.checkIfLogin, async (req: Request & { session?: Session }, res: Response) => {
+        const { id, sharedId } = req.params;
         try {
-            const interviewObj=await interviewServices.getInterviewById(id);
-            if(!interviewObj){
-                return res.status(404).json({error:'Interview not found'})
+            const interviewObj = await interviewServices.getInterviewById(id);
+            if (!interviewObj) {
+                return res.status(404).json({ error: 'Interview not found' })
             }
-            if(checkPermissionForContentModification(interviewObj,req.session)){
-                return res.status(403).json({error:'Not authorized'})
+            if (checkPermissionForContentModification(interviewObj, req.session)) {
+                return res.status(403).json({ error: 'Not authorized' })
             }
-            const newInterviewObj=await interviewServices.unshareInterview(id,sharedId,req.session);
-            return res.status(200).json({id:newInterviewObj.id});
+            const newInterviewObj = await interviewServices.unshareInterview(id, sharedId, req.session);
+            return res.status(200).json({ id: newInterviewObj.id });
         } catch (error: any) {
             logger.error({ endpoint: `interview DELETE /${id}/share`, error, data: req.body });
             return res.status(500).json({ error: 'Internal Server Error' });
