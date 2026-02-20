@@ -229,7 +229,7 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const serverTime = Date.now();
-            const isInitialized=candidateObj.actualStartTime!==null;
+            const isInitialized = candidateObj.actualStartTime && candidateObj.actualStartTime !== null;
 
             // // Check basic constraints similar to main endpoint but don't start anything
             // if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
