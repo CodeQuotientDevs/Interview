@@ -120,14 +120,17 @@ export function createInterviewRoutes({ interviewServices }: Services) {
             if (String(userId) === (req.session as any).userId) {
                 return res.status(400).json({ error: 'Cannot share with yourself' });
             }
-            if (interviewObj.sharedIds.map(ele => String(ele)).includes(String(userId))) {
-                return res.status(400).json({ error: 'Already shared with this user' });
+            if(interviewObj.sharedIds){
+                if (interviewObj.sharedIds.map(ele => String(ele)).includes(String(userId))) {
+                    return res.status(400).json({ error: 'Already shared with this user' });
+                }
             }
 
 
             const newInterviewObj = await interviewServices.shareInterview(id, userId, req.session);
             return res.status(200).json({ id: newInterviewObj.id });
         } catch (error: any) {
+            console.log(error?.message);
             logger.error({ endpoint: `interview POST /${id}/share`, error, data: req.body });
             return res.status(500).json({ error: 'Internal Server Error' });
         }
