@@ -567,22 +567,22 @@ export function InterviewCandidateTable(props: DataTableInterface) {
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button className="mr-2" variant="outline" onClick={() => setShareModalOpen(true)}>
-                                        <Share2 size={16} />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Share Interview</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
                                     <Button onClick={() => openBulkUploadDrawer(true)} variant="outline" className="mr-2">
                                         <Upload size={16} />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p>Send invite in bulk</p>
+                                </TooltipContent>
+                            </Tooltip>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button className="mr-2" variant="outline" onClick={() => setShareModalOpen(true)}>
+                                        <Share2 size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Share Interview</p>
                                 </TooltipContent>
                             </Tooltip>
                             <Tooltip>
