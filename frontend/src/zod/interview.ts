@@ -84,9 +84,12 @@ export const interviewListItemSchema = Zod.object({
 		}
 		return arg;
 	}, Zod.date()),
+	meta: Zod.object({
+		sharedAccess: Zod.boolean()
+	}).optional()
 });
 
-export const interviewGetSchema = Zod.object({
+export const interviewGetSchema =Zod.object({
 	id: Zod.string().nonempty(),
 	title: types.title,
 	duration: types.duration,
@@ -98,8 +101,13 @@ export const interviewGetSchema = Zod.object({
 			return new Date(arg)
 		}
 		return arg;
-	}, Zod.date()).optional()
-});
+	}, Zod.date()).optional(),
+	users: Zod.array(Zod.object({
+		id: Zod.string().nonempty(),
+		name: Zod.string().nonempty(),
+		email: Zod.string().nonempty(),
+	})),
+})
 
 const interviewCandidate = {
 	id: Zod.string().nonempty(),
@@ -194,28 +202,20 @@ export const interviewCandidateReportSchema = Zod.intersection(
 	})
 );
 
-
-// export const interviewListSchema = Zod.object({
-// 	id: Zod.string().nonempty(),
-// 	name: Zod.string().nonempty(),
-// 	email: Zod.string().email(),
-// 	jobTitle: Zod.string().nonempty(),
-// 	phone: Zod.string().nonempty(),
-// 	startTime: Zod.date(),
-// 	endTime: Zod.date().optional().nullable(),
-// 	duration: Zod.number().nonnegative().min(1),
-// 	completedAt: Zod.date().optional(),
-// 	score: Zod.number()?.optional(),
-// 	difficulty: Zod.array(Zod.object({
-// 		skill: Zod.string(),
-// 		difficulty: Zod.number(),
-// 	}))?.optional(),
-// 	detailedReport: Zod.array(Zod.object({
-// 		topic: Zod.string(),
-// 		score: Zod.string(),
-// 		detailedReport: Zod.string(),
-// 	})).optional(),
-// });
+export const interviewCandidateListResponseSchema =  Zod.object({
+			data: Zod.array(interviewCandidateListSchema),
+			pagination: Zod.object({
+				page: Zod.number(),
+				limit: Zod.number(),
+				total: Zod.number(),
+				totalPages: Zod.number(),
+				hasNext: Zod.boolean(),
+				hasPrev: Zod.boolean()
+			}),
+			meta: Zod.object({
+				sharedAccess: Zod.boolean()
+			}).optional()
+		})
 
 export const sessionSchema = Zod.object({
 	userId: Zod.string().nonempty().min(1),

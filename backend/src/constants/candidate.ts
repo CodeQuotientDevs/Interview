@@ -4,3 +4,8 @@ export enum InviteStatusEnum {
     PROCESSING = 'processing',
     FAILED = 'failed',
 }
+
+export enum InterviewTypeEnum {
+    SHARED = 'shared',
+    OWNED = 'owned',
+}

@@ -1,8 +1,8 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateListSchema, interviewCandidateReportSchema } from '@/zod/interview';
+import { interviewItemSchema, interviewGetSchema, interviewUpdateSchema, interviewListItemSchema, interviewCandidateReportSchema, interviewCandidateListResponseSchema } from '@/zod/interview';
 import logger from '@/lib/logger';
 import Zod from 'zod';
-import { candidateInviteSchema, interviewContentSchema, messagesSchema } from '@/zod/candidate';
+import { candidateInviteSchema, interviewContentSchema, messageResponseSchema } from '@/zod/candidate';
 import { DashboardGraphDataSchema, DashboardSchema } from '@/zod/dashboard';
 import { RecentInterviewSchema } from '@/components/data-table';
 
@@ -79,13 +79,14 @@ export default class MainClient {
         return obj.data.id;
     }
 
-    async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+    async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: 'owned' | 'shared') {
         const params = new URLSearchParams();
         if (page) params.append('page', page.toString());
         if (limit) params.append('limit', limit.toString());
         if (searchQuery) params.append('searchQuery', searchQuery);
         if (sortBy) params.append('sortBy', sortBy);
         if (sortOrder) params.append('sortOrder', sortOrder);
+        if (type) params.append('type', type);
 
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/interviews?${params.toString()}`));
         const obj = await Zod.object({
@@ -115,17 +116,7 @@ export default class MainClient {
         const queryString = params.toString();
         const url = queryString ? `/api/v1/candidates/${id}?${queryString}` : `/api/v1/candidates/${id}`;
         const response = await this.requestWrapper(this._mainAPI.get(url));
-        const obj = await Zod.object({
-            data: Zod.array(interviewCandidateListSchema),
-            pagination: Zod.object({
-                page: Zod.number(),
-                limit: Zod.number(),
-                total: Zod.number(),
-                totalPages: Zod.number(),
-                hasNext: Zod.boolean(),
-                hasPrev: Zod.boolean()
-            })
-        }).safeParseAsync(response.data);
+        const obj = interviewCandidateListResponseSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -139,6 +130,16 @@ export default class MainClient {
             throw new Error('Something went wrong');
         }
         return obj.data;
+    }
+
+    async shareInterview(interviewId: string, email: string) {
+        const response = await this.requestWrapper(this._mainAPI.post(`/api/v1/interviews/${interviewId}/share`, { email }));
+        return response.data;
+    }
+
+    async unshareInterview(interviewId: string, userId: string) {
+        const response = await this.requestWrapper(this._mainAPI.delete(`/api/v1/interviews/${interviewId}/share/${userId}`));
+        return response.data;
     }
 
     async sendInterviewCandidate(id: string, data: typeof candidateInviteSchema._type) {
@@ -175,7 +176,7 @@ export default class MainClient {
             type,
             audioDuration
         }));
-        const obj = messagesSchema.safeParse(response.data);
+        const obj = messageResponseSchema.safeParse(response.data);
         if (!obj.success) {
             throw new Error('Something went wrong');
         }
@@ -270,6 +271,6 @@ export default class MainClient {
     }
     async getInterviewMeta(id: string) {
         const response = await this.requestWrapper(this._mainAPI.get(`/api/v1/candidates/interview-meta/${id}`));
-        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number };
+        return response.data as { inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number , isInitialized:boolean };
     }
 }

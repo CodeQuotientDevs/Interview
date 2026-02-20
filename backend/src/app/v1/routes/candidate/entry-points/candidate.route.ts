@@ -5,7 +5,7 @@ import { Router, Request, Response } from 'express';
 import { logger } from '@libs/logger';
 
 import middleware from "@app/v1/middleware";
-import { checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
+import { checkForSharedAccess, checkPermissionForContentModification } from "@app/v1/libs/checkPermission";
 
 
 import { candidateCreateSchema, candidateUpdateSchema } from '@app/v1/zod/candidate';
@@ -25,6 +25,7 @@ import type CandidateResponseService from "../../candidate-responses/domain/cand
 import { getPresignedUploadUrl } from '@root/services/s3';
 import { formatDateTime } from '@root/libs/DateUtils';
 import mongoose from 'mongoose';
+import { is } from 'zod/v4/locales';
 
 interface createCandidateRoutesProps {
     candidateResponseService: CandidateResponseService,
@@ -127,7 +128,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             if (!interviewObj) {
                 return res.status(404).json({ error: 'Interview Not Found' });
             }
-            if (checkPermissionForContentModification(interviewObj, req.session)) {
+
+            let sharedAccess = checkForSharedAccess(interviewObj, req.session);
+            if (!sharedAccess && checkPermissionForContentModification(interviewObj, req.session)) {
                 return res.status(403).json({ error: 'Not Authorized' });
             }
 
@@ -136,6 +139,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             return res.json({
                 data: list,
                 pagination: result.pagination,
+                meta: {
+                    sharedAccess
+                }
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate GET /${id}`, error: error?.message, trace: error?.stack });
@@ -223,28 +229,29 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
             }
 
             const serverTime = Date.now();
+            const isInitialized=candidateObj.actualStartTime!==null;
 
-            // Check basic constraints similar to main endpoint but don't start anything
-            if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
-                return res.json({
-                    inviteStatus: candidateObj.inviteStatus,
-                    completedAt: candidateObj.completedAt,
-                    startTime: candidateObj.startTime,
-                    endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email },
-                    currentTime: serverTime
-                });
-            }
-            if (candidateObj.startTime.getTime() > serverTime) {
-                return res.json({
-                    inviteStatus: candidateObj.inviteStatus,
-                    completedAt: candidateObj.completedAt,
-                    startTime: candidateObj.startTime,
-                    endTime: candidateObj.endTime,
-                    candidate: { email: userObj.email },
-                    currentTime: serverTime
-                });
-            }
+            // // Check basic constraints similar to main endpoint but don't start anything
+            // if (candidateObj.inviteStatus !== InviteStatusEnum.SENT) {
+            //     return res.json({
+            //         inviteStatus: candidateObj.inviteStatus,
+            //         completedAt: candidateObj.completedAt,
+            //         startTime: candidateObj.startTime,
+            //         endTime: candidateObj.endTime,
+            //         candidate: { email: userObj.email },
+            //         currentTime: serverTime
+            //     });
+            // }
+            // if (candidateObj.startTime.getTime() > serverTime) {
+            //     return res.json({
+            //         inviteStatus: candidateObj.inviteStatus,
+            //         completedAt: candidateObj.completedAt,
+            //         startTime: candidateObj.startTime,
+            //         endTime: candidateObj.endTime,
+            //         candidate: { email: userObj.email },
+            //         currentTime: serverTime
+            //     });
+            // }
 
             // Return minimal data needed for verification
             return res.json({
@@ -253,7 +260,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 startTime: candidateObj.startTime,
                 endTime: candidateObj.endTime,
                 candidate: { email: userObj.email },
-                currentTime: serverTime
+                currentTime: serverTime,
+                isInitialized:isInitialized
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview-meta GET /${id}`, error: error?.message, trace: error?.stack });
@@ -327,14 +335,12 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
-                await agent.recreateLastMessage();
-            }
             return res.json({
                 idleWarningTime,
                 idleSubmitTime,
                 inviteStatus: candidateObj.inviteStatus,
-                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj, startTime: candidateObj.startTime }
+                completedAt: candidateObj.completedAt, messages: history, candidate: { user: userObj, startTime: candidateObj.startTime },
+                isInterviewGoingOn:await agent.getInterviewStatus()
             });
         } catch (error: any) {
             logger.error({ endpoint: `candidate/interview GET /${id}`, error: error?.message, trace: error?.stack });
@@ -385,12 +391,9 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                 await agent.sendMessage();
                 history = await agent.getHistory();
             }
-            if (history[history.length - 1].role === "ai" && !history[history.length - 1].parsedResponse.confidence) {
-                await agent.recreateLastMessage();
-                history = await agent.getHistory();
-            }
-            const response = await agent.sendMessage(payload.userInput, payload.audioUrl, payload.type as MessageTypeEnum, payload.audioDuration);
-            if (response?.latestAiResponse?.structuredResponse?.isInterviewGoingOn === false) {
+            await agent.sendMessage(payload.userInput, payload.audioUrl, payload.type as MessageTypeEnum, payload.audioDuration);
+            const isInterviewGoingOn=await agent.getInterviewStatus();
+            if (!isInterviewGoingOn) {
                 await candidateServices.saveToSubmissionQueue(id);
                 await candidateServices.updateOne({
                     id: id,
@@ -400,8 +403,15 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
                     }
                 })
             }
+           
+            logger.info(`Interview going on status: ${isInterviewGoingOn}`);
             history = await agent.getHistory();
-            return res.json(history);
+            return res.json({
+                messages: history,
+                meta:{
+                    isInterviewGoingOn:isInterviewGoingOn
+                }
+            });
         } catch (error: any) {
             logger.error(error);
             return res.status(500).json({ error: 'Internal server error' });
@@ -486,7 +496,8 @@ export function createCandidateRoutes({ interviewServices, candidateServices, us
         try {
             const interviewObj = await interviewServices.getInterviewById(interviewId);
             if (!interviewObj) return res.status(404).json({ error: 'Interview not found' });
-            if (checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
+            let sharedAccess=checkForSharedAccess(interviewObj, (req as any).session)
+            if (!sharedAccess && checkPermissionForContentModification(interviewObj, (req as any).session)) return res.status(403).json({ error: 'Not Authorized' });
             const attempt = await candidateServices.findById(id);
             if (!attempt) return res.status(404).json({ error: 'Candidate attempt not found' });
 

@@ -16,10 +16,11 @@ export const InterviewList = () => {
     const [pageSize, setPageSize] = useState(10);
     const [searchFilter, setSearchFilter] = useState("");
     const [sortState, setSortState] = useState({ id: "updatedAt", desc: true });
+    const [filterType, setFilterType] = useState<'owned' | 'shared'>('owned');
 
     const interviewListFetchResult = useQuery({
-        queryKey: ['interview-list', currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc],
-        queryFn: () => getListItems(currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc ? 'desc' : 'asc'),
+        queryKey: ['interview-list', currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc, filterType],
+        queryFn: () => getListItems(currentPage, pageSize, searchFilter.trim(), sortState.id, sortState.desc ? 'desc' : 'asc', filterType),
     });
 
     const cloneMutation = useMutation({
@@ -90,6 +91,8 @@ export const InterviewList = () => {
                                 onPageChange={handlePageChange}
                                 onPageSizeChange={handlePageSizeChange}
                                 totalCount={pagination?.total || 0}
+                                filterType={filterType}
+                                onFilterTypeChange={setFilterType}
                             />
 
                             {/* Pagination Controls Removed */}

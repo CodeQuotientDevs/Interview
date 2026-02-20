@@ -15,7 +15,10 @@ const types = {
     ),
     startTime: Zod.date(),
     endTime: Zod.date(),
-    userSpecificDescription: Zod.string().nonempty("Description must contain at least 1 character(s)"),
+    userSpecificDescription: Zod.string({
+        required_error: "Description is required",
+        invalid_type_error: "Description must be a string",
+    }).min(1, "Description must contain at least 1 character(s)"),
 }
 
 const excelDateParser = (value: unknown) => {
@@ -62,18 +65,6 @@ export const messageSchema = Zod.object({
     }, Zod.date()),
     role: Zod.string(),
     rowText: Zod.string().default(""),
-    parsedResponse: Zod.object({
-        confidence: Zod.number().min(0).max(1),
-        intent: Zod.string(),
-        isInterviewGoingOn: Zod.boolean(),
-        shortSummary: Zod.string(),
-        timestamp: Zod.preprocess((args) => {
-            if (typeof args === 'string' || args instanceof Date) {
-                return new Date(args);
-            }
-            return args;
-        }, Zod.date()),
-    }).optional(),
     toolCalls: Zod.array(Zod.any()).optional(),
     type: Zod.string().optional(),
     audioUrl: Zod.string().optional(),
@@ -81,6 +72,15 @@ export const messageSchema = Zod.object({
 });
 
 export const messagesSchema = Zod.array(messageSchema);
+
+export const metaSchema = Zod.object({
+    isInterviewGoingOn: Zod.boolean(),
+});
+
+export const messageResponseSchema = Zod.object({
+    messages: messagesSchema,
+    meta: metaSchema,
+});
 
 export const interviewContentSchema = Zod.object({
     idleWarningTime: Zod.coerce.string(),
@@ -93,6 +93,7 @@ export const interviewContentSchema = Zod.object({
     }, Zod.date().optional()),
     inviteStatus: Zod.enum(['pending', 'processing', 'sent', 'failed']).optional(),
     messages: messagesSchema,
+    isInterviewGoingOn: Zod.boolean(),
     candidate: Zod.object({
         // _id: Zod.string(),
         user: Zod.object({

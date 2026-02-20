@@ -20,6 +20,10 @@ type Interview = {
         duration: Number,
         questionList: string,
     }>
+    sharedIds: Array<{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Auth"
+    }>
 }
 
 type InterviewModel = mongoose.Model<Interview>

@@ -37,7 +37,6 @@ export default function AiChat(props: AiChatProp) {
     isUploading,
     interviewEnded,
     handleSubmission,
-    setIsInterviewEnded,
     handleIntervieweeIdle,
     handleAudioSubmission: propsHandleAudioSubmission,
     layout
@@ -109,18 +108,6 @@ export default function AiChat(props: AiChatProp) {
   //     editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
   //   }
   // }, []);
-
-  useEffect(() => {
-    for (let index = messages.length - 1; index >= 0; index--) {
-      const currentMessage = messages[index];
-      if (currentMessage?.role === 'model') {
-        if (currentMessage.parsedData && 'isInterviewGoingOn' in currentMessage.parsedData) {
-          setIsInterviewEnded(!currentMessage.parsedData.isInterviewGoingOn);
-        }
-        break;
-      }
-    }
-  }, [messages, setIsInterviewEnded]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {

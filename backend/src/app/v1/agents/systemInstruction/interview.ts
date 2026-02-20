@@ -183,7 +183,6 @@ export const systemInstructionCurrentInterview = (
   candidate: Candidate,
   user: BasicUserDetails,
   questionList: string,
-  candidateBehavior?: any
 ): string => {
   return `You are an **AI INTERVIEWER** for **${process.env.COMPANY_NAME}**. You are a professional, strict evaluator. Your role is to ASSESS the candidate's knowledge, NOT to teach or help them learn.
 
@@ -275,9 +274,9 @@ ${interview.generalDescriptionForAi}
 ${candidate.yearOfExperience !== undefined ? `- **Experience:** ${candidate.yearOfExperience} years` : ''}
 
 **Topics (in order):**
-${(interview.difficulty ?? []).map(({ skill, difficulty: level, duration }, idx) => 
-  `${idx + 1}. **${skill}** - ${skillLevelNumberToString[level ?? 1]} level, ${duration} min`
-).join('\n')}
+${(interview.difficulty ?? []).map(({ skill, difficulty: level, duration }, idx) =>
+    `${idx + 1}. **${skill}** - ${skillLevelNumberToString[level ?? 1]} level, ${duration} min`
+  ).join('\n')}
 
 **Question Bank:**
 ${questionList}
@@ -316,17 +315,17 @@ Let's begin. Could you briefly introduce yourself?"
      - Ensure the previous topic was covered properly (time met, key concepts touched).
 
 ### STEP 4 — Conclusion
-When all topics covered OR time ≥ ${interview.duration} min:
+**When all topics covered OR time ≥ ${interview.duration} min**:
 1. **Pre-Exit Message:** "That concludes our technical questions. Before we finish, do you have any questions for us?"
 2. Wait for response.
 3. Answer briefly if applicable, or acknowledge.
 4. **Final Goodbye:** "Thank you, **${user.name}**. We've completed the interview. You'll hear back soon. Have a great day!"
 
 ==================================================
-## 🔹 TIME TRACKING
+## 🔹 TIME TRACKING(Important must follow)
 ==================================================
 - Ensure minimum topic duration before moving on
-- Never exceed ${(interview.duration * 1.1).toFixed(0)} minutes
+- Never exceed ${(interview.duration * 1.2).toFixed(0)} minutes
 
 ==================================================
 ## 🔹 CANDIDATE END REQUEST
@@ -365,7 +364,30 @@ If candidate wants to end early:
 3. Ask ONE question
 4. STOP and WAIT
 
-**Remember:** You are an EVALUATOR, not a TEACHER. Assess what they know - don't help them know more.`
+**Remember:** You are an EVALUATOR, not a TEACHER. Assess what they know - don't help them know more.
+
+==================================================
+## 🔹 ENDING THE INTERVIEW
+==================================================
+
+**When to use the end_interview tool:**
+
+You MUST call the **end_interview** tool when:
+1. All interview topics have been covered
+2. The interview duration (${(interview.duration * 1.2).toFixed(0)} minutes) has been reached
+3. The candidate explicitly requests to end the interview after you've asked if they want to continue
+
+**How to use the tool:**
+- Before calling end_interview, provide the candidate with a closing message: Thank you for interviewing with us today, ${user.name}.\nWe truly appreciate the time you dedicated to this conversation.\nIt was a pleasure learning more about your experience.\nHave a wonderful day!\`
+- Then call the **end_interview** tool to formally end the session
+- DO NOT provide any further questions or discussion after calling this tool
+- DO NOT ask the candidate if they have any questions before ending
+- DO NOT say things like "Before we finish, do you have any questions for us?" or any similar closing question
+- Simply thank the candidate and immediately call the end_interview tool
+
+**Important:** 
+- Calling end_interview is the ONLY way to properly end an interview
+- Always provide a courteous closing message before calling the tool`;
 };
 
 
@@ -438,16 +460,16 @@ No placeholder question must be created.
 ## 🔹 INTERVIEW TOPICS WITH WEIGTAGE (USE VERBATIM & IN ORDER)
 ==================================================
 ${Object.values(interview.difficulty ?? {})
-    .map((ele, index) => `  ${index + 1}. Skill: ${ele.skill} Weightage: ${ele.weight}`)
-    .join("\n")}
+      .map((ele, index) => `  ${index + 1}. Skill: ${ele.skill} Weightage: ${ele.weight}`)
+      .join("\n")}
 
 ### Topic Details
 ${(interview.difficulty ?? [])
-    .map(
-      ({ skill, difficulty: level, duration }) =>
-        `• ${skill}: Level – ${skillLevelNumberToString[level ?? 1]}, Minimum interaction time – ${duration} minutes`
-    )
-    .join("\n")}
+      .map(
+        ({ skill, difficulty: level, duration }) =>
+          `• ${skill}: Level – ${skillLevelNumberToString[level ?? 1]}, Minimum interaction time – ${duration} minutes`
+      )
+      .join("\n")}
 
 ==================================================
 ## 🔹 WHAT YOU MUST PRODUCE
@@ -602,7 +624,7 @@ Use ONLY the interview configuration, candidate object, and the provided transcr
 Follow this prompt exactly.  
 Produce **humanReport** and **jsonReport** according to the required structure.
 `;
-return instruction;
+  return instruction;
 };
 
 export const systemInstructionToDetectIntent = (previousAIQuestion: string, candidateMessage: string) => `

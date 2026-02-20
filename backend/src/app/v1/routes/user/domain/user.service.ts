@@ -13,6 +13,10 @@ export default class UserService {
         }, data);
     }
 
+    async find(query: Record<string, any>, projection: Record<string, any>) {
+        return this.model.find(query, projection);
+    }
+
     async getUserMap(ids: Array<string>, projection: Record<string, any>, options: Record<string, any> = {}) {
         const users = await this.model.find({ id: ids }, { ...projection, id: 1 }, { ...options, lean: true });
         const userMap = new Map<string, UserDocument>();

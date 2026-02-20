@@ -9,14 +9,14 @@ import {
     interviewCandidateListSchema,
     interviewCandidateReportSchema,
 } from "@/zod/interview";
-import { candidateInviteSchema, interviewContentSchema, messagesSchema } from "@/zod/candidate";
+import { candidateInviteSchema, interviewContentSchema, messageResponseSchema } from "@/zod/candidate";
 import logger from "@/lib/logger";
 import { DashboardGraphDataSchema, DashboardSchema } from "@/zod/dashboard";
 import { RecentInterviewSchema } from "@/components/data-table";
 
 interface MainStoreState {
-    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messagesSchema._type>;
-    interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<{
+    sendMessageAi: (id: string, message: string, audioUrl?: string, type?: string, audioDuration?: number) => Promise<typeof messageResponseSchema._type>;
+    interviewList: (page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: 'owned' | 'shared') => Promise<{
         data: Array<typeof interviewListItemSchema._type>;
         pagination: {
             page: number;
@@ -42,6 +42,9 @@ interface MainStoreState {
             hasNext: boolean;
             hasPrev: boolean;
         };
+        meta?: {
+            sharedAccess?: boolean;
+        }
     }>;
     getDataForInterview: (id: string) => Promise<typeof interviewContentSchema._type>;
     cloneInterview: (id: string) => Promise<string>
@@ -53,7 +56,9 @@ interface MainStoreState {
     getDashboardGraphdata: (startDate?: Date, endDate?: Date) => Promise<typeof DashboardGraphDataSchema._type>;
     getInterviewsByDate: (date: Date, type: 'hour' | 'date' | 'month') => Promise<Array<typeof RecentInterviewSchema._type>>;
     getPresignedUrl: (contentType: string) => Promise<{ uploadUrl: string; fileUrl: string; key: string }>;
-    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number }>;
+    getInterviewMeta: (id: string) => Promise<{ inviteStatus: string; completedAt?: string; startTime?: string; endTime?: string; candidate: { email: string }; currentTime?: number, isInitialized:boolean }>;
+    shareInterview: (interviewId: string, email: string) => Promise<void>;
+    unshareInterview: (interviewId: string, userId: string) => Promise<void>;
 }
 
 
@@ -67,8 +72,8 @@ export const createMainStore = (client: MainApi) => {
             const res = await client.addInterview(data);
             return res;
         },
-        async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') {
-            const res = await client.interviewList(page, limit, searchQuery, sortBy, sortOrder);
+        async interviewList(page?: number, limit?: number, searchQuery?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: 'owned' | 'shared') {
+            const res = await client.interviewList(page, limit, searchQuery, sortBy, sortOrder, type);
             return res;
         },
         async updateInterview(data) {
@@ -133,6 +138,12 @@ export const createMainStore = (client: MainApi) => {
         async getInterviewMeta(id: string) {
             const res = await client.getInterviewMeta(id);
             return res;
+        },
+        async shareInterview(interviewId: string, email: string) {
+            await client.shareInterview(interviewId, email);
+        },
+        async unshareInterview(interviewId: string, userId: string) {
+            await client.unshareInterview(interviewId, userId);
         }
     };
 

@@ -5,7 +5,7 @@ import TokenRepository from './data-access/token.repository';
 import TokenService from './domain/token.service';
 import { createAuthRouter } from './entry-points/auth.router';
 
-const authService = new AuthService(new AuthRepository(authModel));
+export const authService = new AuthService(new AuthRepository(authModel));
 const tokenService = new TokenService(new TokenRepository());
 
 export const authRouter = createAuthRouter({

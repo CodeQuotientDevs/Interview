@@ -54,6 +54,15 @@ const schema = new Schema<Interview>({
             questionList: String,
         }]
     },
+    sharedIds: {
+        type: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "auth"
+            }
+        ],
+        default: []
+    },
     keywords: {
         type: [String],
     }

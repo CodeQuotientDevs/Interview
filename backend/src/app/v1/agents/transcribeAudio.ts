@@ -56,7 +56,6 @@ export const transcribeAudio = async (audioUrl: string) => {
       const waitTime = Math.pow(2, attempt - 1) * 1000
       const uniqueSuffix = crypto.randomUUID()
 
-      // 🔥 Modify last text message slightly to avoid model cache issues
       if (Array.isArray(message.content)) {
         message.content = message.content.map((item: any) =>
           item.type === "text"
