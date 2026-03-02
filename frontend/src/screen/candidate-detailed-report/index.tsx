@@ -5,14 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Loader } from "@/components/ui/loader";
-import { CheckCircle, XCircle, AlertCircle, Trophy, Target, MessageSquare, Code, ArrowLeft } from "lucide-react";
-
+import { CheckCircle, XCircle, AlertCircle, Trophy, Target, MessageSquare, Code, ArrowLeft, Download } from "lucide-react";
+import { useReactToPrint } from 'react-to-print';
 import { useAppStore, useMainStore } from "@/store";
 import { AlertType } from "@/constants";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatDurationDayjs } from "@/lib/utils";
 
@@ -50,6 +50,8 @@ export function CandidateDetailedReport() {
     const showAlert = useAppStore().showAlert;
     const getCandidateAttempt = useMainStore().getCandidateAttempt;
     const navigate = useNavigate();
+    const [isPrinting, setIsPrinting] = useState(false);
+    const printRef = useRef<HTMLDivElement>(null);
 
     const reportQuery = useQuery({
         queryKey: ['candidate-report', interviewId, candidateId],
@@ -59,6 +61,8 @@ export function CandidateDetailedReport() {
         enabled: !!(interviewId && candidateId),
         retry: false,
     });
+
+
 
 
     // Handle errors
@@ -85,6 +89,26 @@ export function CandidateDetailedReport() {
             { label: candidateName ? `${candidateName}'s Report` : "Report" }
         ];
     };
+    const reportData = reportQuery.data;
+
+    const allTopicValues = (reportData?.detailedReport ?? []).map((r: DetailedReport) => r.topic);
+    const allQuestionValues = (reportData?.detailedReport ?? []).flatMap(
+        (report: DetailedReport, index: number) =>
+            report.questionsAsked.map((_: any, qIndex: number) => `q-${index}-${qIndex}`)
+    );
+
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `${reportData?.name ?? 'Candidate'} - Interview Report`,
+        onBeforePrint: async () => {
+            setIsPrinting(true);
+            // Give React a tick to re-render with all accordions open
+            await new Promise((resolve) => setTimeout(resolve, 300));
+        },
+        onAfterPrint: () => {
+            setIsPrinting(false);
+        },
+    });
 
 
 
@@ -141,7 +165,9 @@ export function CandidateDetailedReport() {
         );
     }
 
-    const reportData = reportQuery.data;
+
+
+
 
     // Helper function to get score color
     const getScoreColor = (score: number) => {
@@ -189,33 +215,46 @@ export function CandidateDetailedReport() {
     return (
         <>
             <SiteHeader
-                breadcrumbs={getBreadcrumbs(reportData.name)}
+                breadcrumbs={getBreadcrumbs(reportData?.name)}
                 showBack={true}
                 backTo={`/interview/candidates/${interviewId}`}
             />
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col" ref={printRef}>
                 <div className="@container/main flex flex-1 flex-col">
                     <div className="flex flex-col py-2">
                         <div className="px-4 lg:px-6 space-y-6">
                             {/* Candidate Overview Card */}
                             <Card>
                                 <CardHeader>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-start justify-between">
                                         <div>
                                             <CardTitle className="flex items-center gap-2">
                                                 <Trophy className="w-5 h-5 text-yellow-500" />
-                                                {reportData.name}'s Interview Report
+                                                {reportData?.name}'s Interview Report
                                             </CardTitle>
                                             <CardDescription>
-                                                Interview: {reportData.interview?.title || 'N/A'} •
-                                                Completed: {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
+                                                Interview: {reportData?.interview?.title || 'N/A'} •
+                                                Completed: {reportData?.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
                                             </CardDescription>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-3xl font-bold text-primary">
-                                                {reportData.score}/100
+
+                                        {/* Right side: score + download button */}
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="text-right">
+                                                <div className="text-3xl font-bold text-primary">
+                                                    {reportData?.score}/100
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">Overall Score</div>
                                             </div>
-                                            <div className="text-sm text-muted-foreground">Overall Score</div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handlePrint}
+                                                className="flex items-center gap-2 print:hidden"  // hide button in the PDF itself
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Download PDF
+                                            </Button>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -224,35 +263,35 @@ export function CandidateDetailedReport() {
                                         <div>
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="text-sm font-medium">Performance</span>
-                                                <span className="text-sm text-muted-foreground">{reportData.score}%</span>
+                                                <span className="text-sm text-muted-foreground">{reportData?.score}%</span>
                                             </div>
-                                            <Progress value={reportData.score} fillColor={getProgressColor(reportData.score ?? 0)} className="h-3" />
+                                            <Progress value={reportData?.score} fillColor={getProgressColor(reportData?.score ?? 0)} className="h-3" />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-blue-600">
-                                                    {(reportData.detailedReport ?? []).length}
+                                                    {(reportData?.detailedReport ?? []).length}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Topics Covered</div>
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-green-600">
-                                                    {(reportData.detailedReport ?? []).reduce((acc: number, report: DetailedReport) =>
+                                                    {(reportData?.detailedReport ?? []).reduce((acc: number, report: DetailedReport) =>
                                                         acc + (report.questionsAsked?.length || 0), 0)}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Questions Asked</div>
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-orange-600">
-                                                    {reportData.actualStartTime && reportData.completedAt ? 
-                                                        formatDurationDayjs(Math.floor((new Date(reportData.completedAt).getTime() - new Date(reportData.actualStartTime).getTime()) / 1000)) 
+                                                    {reportData?.actualStartTime && reportData?.completedAt ?
+                                                        formatDurationDayjs(Math.floor((new Date(reportData?.completedAt).getTime() - new Date(reportData?.actualStartTime).getTime()) / 1000))
                                                         : 'N/A'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Total Time Taken</div>
                                             </div>
                                             <div className="text-center">
                                                 <div className="text-xl font-bold text-purple-600">
-                                                    {reportData.completedAt ? formatDateTime(new Date(reportData.completedAt)) : 'N/A'}
+                                                    {reportData?.completedAt ? formatDateTime(new Date(reportData?.completedAt)) : 'N/A'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">Completion Time</div>
                                             </div>
@@ -272,7 +311,7 @@ export function CandidateDetailedReport() {
                                 <CardContent>
                                     <div className="prose prose-sm max-w-none">
                                         {/* Render summary as Markdown preview so any formatting in AI response shows properly */}
-                                        <MarkdownRenderer type="light">{reportData.summaryReport || ''}</MarkdownRenderer>
+                                        <MarkdownRenderer type="light">{reportData?.summaryReport || ''}</MarkdownRenderer>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -284,8 +323,10 @@ export function CandidateDetailedReport() {
                                     Topic-wise Analysis
                                 </h2>
 
-                                <Accordion type="multiple" className="w-full space-y-4">
-                                    {(reportData.detailedReport ?? []).map((report: DetailedReport, index: number) => (
+                                <Accordion type="multiple"
+                                    value={isPrinting ? allTopicValues : undefined}
+                                    className="w-full space-y-4">
+                                    {(reportData?.detailedReport ?? []).map((report: DetailedReport, index: number) => (
                                         <AccordionItem key={report.topic} value={report.topic} className="border rounded-lg overflow-hidden">
                                             <AccordionTrigger className="px-6 py-4 hover:no-underline">
                                                 <div className="flex items-center justify-between w-full">
@@ -319,7 +360,9 @@ export function CandidateDetailedReport() {
                                                             <MessageSquare className="w-4 h-4" />
                                                             Questions & Answers ({report.questionsAsked.length})
                                                         </h4>
-                                                        <Accordion type="single" collapsible className="w-full">
+                                                        <Accordion type={isPrinting ? "multiple" : "single"}
+                                                            value={isPrinting ? allQuestionValues.filter(v => v.startsWith(`q-${index}-`)) : undefined}
+                                                            collapsible={!isPrinting} className="w-full">
                                                             {report.questionsAsked.map((question: DetailedReport['questionsAsked'][0], qIndex: number) => {
                                                                 const qStyle = getQuestionScoreStyle(question.score);
                                                                 return (
