@@ -360,7 +360,7 @@ export function CandidateDetailedReport() {
                                                             <MessageSquare className="w-4 h-4" />
                                                             Questions & Answers ({report.questionsAsked.length})
                                                         </h4>
-                                                        <Accordion type={isPrinting ? "multiple" : "single"}
+                                                        <Accordion type={isPrinting ? "multiple" : "single" as any}
                                                             value={isPrinting ? allQuestionValues.filter(v => v.startsWith(`q-${index}-`)) : undefined}
                                                             collapsible={!isPrinting} className="w-full">
                                                             {report.questionsAsked.map((question: DetailedReport['questionsAsked'][0], qIndex: number) => {
