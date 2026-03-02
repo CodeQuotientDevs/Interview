@@ -85,6 +85,13 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         }
     });
 
+    // Separate mutation for bulk uploads — no onError toast since errors are shown in the error sheet
+    const saveCandidateBulk = useMutation({
+         mutationFn: async (data: CandidateInvite) => {
+           return sendCandidateInvite(id, data);
+        },
+    });
+
     const updateCandidate = useMutation({
         mutationFn: async ({ candidateId, data }: { candidateId: string, data: CandidateInvite }) => {
             return updateCandidateInvite(id, candidateId, data);
@@ -264,7 +271,7 @@ export const InterviewCandidateList = (props: InterviewCandidateList) => {
         const validData = fileUploadData?.data ?? [];
         
         validData.forEach((data) => {
-             const promise = saveCandidate.mutateAsync(data)
+             const promise = saveCandidateBulk.mutateAsync(data)
                 .catch((error) => {
                      currentUploadErrors.push({
                          row: data,
