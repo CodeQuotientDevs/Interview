@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "tsx watch src/index.ts --port 7008 --worker true | pino-pretty",
-    "start": "infisical run --token=\"$INFISICAL_TOKEN\" --projectId=71266c51-86c0-4a30-bdcc-7ff407f638d9 --env=backend-prod -- node dist/index.js --worker true",
+    "start": "infisical run  --projectId=71266c51-86c0-4a30-bdcc-7ff407f638d9 --env=backend-prod -- node dist/index.js --worker true",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
